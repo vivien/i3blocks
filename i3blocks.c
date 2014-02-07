@@ -54,14 +54,14 @@ struct block {
 	unsigned long last_update;
 };
 
-struct bar {
+struct status_line {
 	struct block *blocks;
 	unsigned int num;
 	unsigned int sleeptime;
 };
 
 static void
-calculate_sleeptime(struct bar *bar)
+calculate_sleeptime(struct status_line *status)
 {
 	/* The maximum sleep time is actually the GCD between all block intervals */
 	int gcd(int a, int b) {
@@ -71,17 +71,17 @@ calculate_sleeptime(struct bar *bar)
 		return a;
 	}
 
-	bar->sleeptime = 5; /* default */
+	status->sleeptime = 5; /* default */
 
-	if (bar->num >= 2) {
+	if (status->num >= 2) {
 		int i, d;
 
-		d = bar->blocks->interval; /* first block's interval */
-		for (i = 0; i < bar->num - 1; ++i)
-			d = gcd(d, (bar->blocks + i + 1)->interval);
+		d = status->blocks->interval; /* first block's interval */
+		for (i = 0; i < status->num - 1; ++i)
+			d = gcd(d, (status->blocks + i + 1)->interval);
 
 		if (d > 0)
-			bar->sleeptime = d;
+			status->sleeptime = d;
 	}
 }
 
@@ -99,17 +99,17 @@ init_block(struct block *block)
 }
 
 struct block *
-new_block(struct bar *bar)
+new_block(struct status_line *status)
 {
 	struct block *block = NULL;
 	void *reloc;
 
-	reloc = realloc(bar->blocks, sizeof(struct block) * (bar->num + 1));
+	reloc = realloc(status->blocks, sizeof(struct block) * (status->num + 1));
 	if (reloc) {
-		bar->blocks = reloc;
-		block = bar->blocks + bar->num;
+		status->blocks = reloc;
+		block = status->blocks + status->num;
 		init_block(block);
-		bar->num++;
+		status->num++;
 	}
 
 	return block;
@@ -236,9 +236,9 @@ parse_property(const char *line, struct block *block)
 }
 
 static int
-parse_config(FILE *fp, struct bar *bar)
+parse_status_line(FILE *fp, struct status_line *status)
 {
-	struct block *block = bar->blocks;
+	struct block *block = status->blocks;
 	char line[1024];
 	char *name;
 
@@ -263,7 +263,7 @@ parse_config(FILE *fp, struct bar *bar)
 			if (!name)
 				return 1;
 
-			block = new_block(bar);
+			block = new_block(status);
 			if (!block) {
 				free(name);
 				return 1;
@@ -292,7 +292,7 @@ parse_config(FILE *fp, struct bar *bar)
 		}
 	}
 
-	calculate_sleeptime(bar);
+	calculate_sleeptime(status);
 	return 0;
 }
 
@@ -327,21 +327,21 @@ block_to_json(struct block *block)
 }
 
 static void
-bar_to_json(struct bar *bar)
+print_status_line(struct status_line *status)
 {
 	int i = 0;
 
 	fprintf(stdout, ",[");
 
-	for (i = 0; i < bar->num; ++i) {
-		struct block *block = bar->blocks + i;
+	for (i = 0; i < status->num; ++i) {
+		struct block *block = status->blocks + i;
 
 		/* full_text is the only mandatory key */
 		if (!block->full_text)
 			continue;
 
 		block_to_json(block);
-		if (i < bar->num - 1)
+		if (i < status->num - 1)
 			fprintf(stdout, ",");
 	}
 
@@ -413,12 +413,12 @@ need_update(struct block *block)
 }
 
 static void
-update_bar(struct bar *bar)
+update_status_line(struct status_line *status)
 {
 	int i;
 
-	for (i = 0; i < bar->num; ++i) {
-		struct block *block = bar->blocks + i;
+	for (i = 0; i < status->num; ++i) {
+		struct block *block = status->blocks + i;
 
 		if (need_update(block) && update_block(block))
 			fprintf(stderr, "failed to update block %s\n", block->name);
@@ -433,36 +433,36 @@ start(void)
 }
 
 static void
-free_bar(struct bar *bar)
+free_status_line(struct status_line *status)
 {
 	int i;
 
-	for (i = 0; i < bar->num; ++i)
-		free_block(bar->blocks + i);
+	for (i = 0; i < status->num; ++i)
+		free_block(status->blocks + i);
 
-	free(bar);
+	free(status);
 }
 
-static struct bar *
-load_config(const char *inifile)
+static struct status_line *
+load_status_line(const char *inifile)
 {
 	static const char * const system = SYSCONFDIR "/i3blocks.conf";
 	const char * const home = getenv("HOME");
 	char buf[PATH_MAX];
 	FILE *fp;
-	struct bar *bar;
+	struct status_line *status;
 
-	struct bar *parse(void) {
-		bar = calloc(1, sizeof(struct bar));
-		if (bar && parse_config(fp, bar)) {
-			free_bar(bar);
-			bar = NULL;
+	struct status_line *parse(void) {
+		status = calloc(1, sizeof(struct status_line));
+		if (status && parse_status_line(fp, status)) {
+			free_status_line(status);
+			status = NULL;
 		}
 
 		if (fclose(fp))
 			perror("fclose");
 
-		return bar;
+		return status;
 	}
 
 	/* command line config file? */
@@ -502,12 +502,12 @@ load_config(const char *inifile)
 }
 
 static void
-mark_update(struct bar *bar)
+mark_update(struct status_line *status)
 {
 	int i;
 
-	for (i = 0; i < bar->num; ++i)
-		(bar->blocks + i)->last_update = 0;
+	for (i = 0; i < status->num; ++i)
+		(status->blocks + i)->last_update = 0;
 }
 
 int
@@ -515,7 +515,7 @@ main(int argc, char *argv[])
 {
 	char *inifile = NULL;
 	struct sigaction sa;
-	struct bar *bar;
+	struct status_line *status;
 	int c;
 
 	while (c = getopt(argc, argv, "c:hv"), c != -1) {
@@ -535,8 +535,8 @@ main(int argc, char *argv[])
 		}
 	}
 
-	bar = load_config(inifile);
-	if (!bar) {
+	status = load_status_line(inifile);
+	if (!status) {
 		fprintf(stderr, "Try '%s -h' for more information.\n", argv[0]);
 		return 1;
 	}
@@ -553,12 +553,12 @@ main(int argc, char *argv[])
 	start();
 
 	while (1) {
-		update_bar(bar);
-		bar_to_json(bar);
+		update_status_line(status);
+		print_status_line(status);
 
 		/* Sleep or force check on interruption */
-		if (sleep(bar->sleeptime))
-			mark_update(bar);
+		if (sleep(status->sleeptime))
+			mark_update(status);
 	}
 
 	//stop();
