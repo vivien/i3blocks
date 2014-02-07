@@ -352,8 +352,8 @@ bar_to_json(struct bar *bar)
 static int
 update_block(struct block *block)
 {
-	FILE *fp;
-	int status;
+	FILE *child_stdout;
+	int child_status;
 	char buf[1024];
 	char *line = NULL;
 
@@ -362,13 +362,13 @@ update_block(struct block *block)
 		return 0;
 
 	/* TODO setup env */
-	fp = popen(block->command, "r");
-	if (!fp) {
+	child_stdout = popen(block->command, "r");
+	if (!child_stdout) {
 		perror("popen");
 		return 1;
 	}
 
-	if (fgets(buf, 1024, fp) != NULL) {
+	if (fgets(buf, 1024, child_stdout) != NULL) {
 		size_t len = strlen(buf);
 
 		/* TODO handle multiline, with short_text and color */
@@ -378,14 +378,14 @@ update_block(struct block *block)
 		}
 	}
 
-	status = pclose(fp);
-	switch (status) {
+	child_status = pclose(child_stdout);
+	switch (child_status) {
 	case -1:
 		perror("pclose");
 		return 1;
 	case 0:
 	case 3:
-		block->urgent = status == 3;
+		block->urgent = child_status == 3;
 
 		if (line) {
 			if (block->full_text)
@@ -396,7 +396,7 @@ update_block(struct block *block)
 		block->last_update = time(NULL);
 		break;
 	default:
-		fprintf(stderr, "bad return code %d, skipping\n", status);
+		fprintf(stderr, "bad return code %d, skipping\n", child_status);
 		return 1;
 	}
 
