@@ -1,5 +1,5 @@
 ifndef PREFIX
-  PREFIX=/usr
+  PREFIX=/usr/local
 endif
 ifndef SYSCONFDIR
   ifeq ($(PREFIX),/usr)
