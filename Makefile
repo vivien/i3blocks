@@ -14,8 +14,8 @@ CFLAGS += -g
 CPPFLAGS += -DSYSCONFDIR=\"$(SYSCONFDIR)\"
 CPPFLAGS += -DVERSION=\"${GIT_VERSION}\"
 
-VERSION := $(shell git describe --tags --abbrev=0)
-GIT_VERSION := "$(shell git describe --tags --always) ($(shell git log --pretty=format:%cd --date=short -n1))"
+VERSION = $(shell git describe --tags --abbrev=0)
+GIT_VERSION = "$(shell git describe --tags --always) ($(shell git log --pretty=format:%cd --date=short -n1))"
 
 all: i3blocks
 
