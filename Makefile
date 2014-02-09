@@ -28,4 +28,8 @@ install: all
 	install -m 755 i3blocks $(DESTDIR)$(PREFIX)/bin/i3blocks
 	install -m 644 i3blocks.conf $(DESTDIR)$(SYSCONFDIR)/i3blocks.conf
 
-.PHONY: all clean install
+uninstall:
+	rm -f $(DESTDIR)$(PREFIX)/bin/i3blocks
+	rm -f $(DESTDIR)$(SYSCONFDIR)/i3blocks.conf
+
+.PHONY: all clean install uninstall
