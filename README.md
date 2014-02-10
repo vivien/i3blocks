@@ -30,6 +30,20 @@ Two additional properties are added to a block definition: `command` which
 defines the shell command to execute to get the block text, and the `interval` 
 the block should be updated.
 
+A block command may return 3 lines. If so, they will overwrite (in this order) 
+the following block property:
+
+  1. full_text
+  2. short_text
+  3. color
+
+For example, a script setting a full_text in blue but no short_text would look 
+like:
+
+    echo "Here's my label"
+    echo
+    echo \#0000FF
+
 ## EXAMPLES
 
 Here is an example configuration:

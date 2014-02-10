@@ -76,13 +76,30 @@ block_to_json(struct block *block)
 
 }
 
+static char *
+readline(FILE *fp)
+{
+	char *line = NULL;
+	char buf[1024];
+
+	if (fgets(buf, sizeof(buf), fp) != NULL) {
+		size_t len = strlen(buf);
+
+		if (buf[len - 1] == '\n')
+			buf[len - 1] = '\0';
+
+		line = strdup(buf);
+	}
+
+	return line;
+}
+
 int
 update_block(struct block *block)
 {
 	FILE *child_stdout;
 	int child_status, code;
-	char buf[1024];
-	char *line = NULL;
+	char *full_text, *short_text, *color;
 
 	/* static block */
 	if (!block->command)
@@ -95,15 +112,9 @@ update_block(struct block *block)
 		return 1;
 	}
 
-	if (fgets(buf, 1024, child_stdout) != NULL) {
-		size_t len = strlen(buf);
-
-		/* TODO handle multiline, with short_text and color */
-		if (buf[len - 1] == '\n') {
-			buf[len - 1] = '\0';
-			line = strdup(buf);
-		}
-	}
+	full_text = readline(child_stdout);
+	short_text = readline(child_stdout);
+	color = readline(child_stdout);
 
 	child_status = pclose(child_stdout);
 	if (child_status == -1) {
@@ -122,10 +133,22 @@ update_block(struct block *block)
 
 		block->urgent = code == 3;
 
-		if (line) {
+		if (full_text && *full_text != '\0') {
 			if (block->full_text)
 				free(block->full_text);
-			block->full_text = line;
+			block->full_text = full_text;
+		}
+
+		if (short_text && *short_text != '\0') {
+			if (block->short_text)
+				free(block->short_text);
+			block->short_text = short_text;
+		}
+
+		if (color && *color != '\0') {
+			if (block->color)
+				free(block->color);
+			block->color = color;
 		}
 
 		block->last_update = time(NULL);
