@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/wait.h>
 #include <time.h>
 
 #include "block.h"
@@ -79,7 +80,7 @@ int
 update_block(struct block *block)
 {
 	FILE *child_stdout;
-	int child_status;
+	int child_status, code;
 	char buf[1024];
 	char *line = NULL;
 
@@ -105,13 +106,21 @@ update_block(struct block *block)
 	}
 
 	child_status = pclose(child_stdout);
-	switch (child_status) {
-	case -1:
+	if (child_status == -1) {
 		perror("pclose");
 		return 1;
-	case 0:
-	case 3:
-		block->urgent = child_status == 3;
+	} else if (!WIFEXITED(child_status)) {
+		fprintf(stderr, "child did not exit correctly\n");
+		return 1;
+	} else {
+		code = WEXITSTATUS(child_status);
+
+		if (code != 0 && code != 3) {
+			fprintf(stderr, "bad return code %d, skipping\n", code);
+			return 1;
+		}
+
+		block->urgent = code == 3;
 
 		if (line) {
 			if (block->full_text)
@@ -120,10 +129,6 @@ update_block(struct block *block)
 		}
 
 		block->last_update = time(NULL);
-		break;
-	default:
-		fprintf(stderr, "bad return code %d, skipping\n", child_status);
-		return 1;
 	}
 
 	return 0;
