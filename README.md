@@ -44,6 +44,16 @@ like:
     echo
     echo \#0000FF
 
+A block should return 0 on success or 127 to overwrite the *urgent* property.
+
+For example, this script prints the battery percentage and sets the urgent flag 
+if it is below 10%:
+
+    BAT=`upower --show-info /org/freedesktop/UPower/devices/battery_BAT0 | grep percentage | grep -E -o '[0-9][0-9]?%'` 
+
+    echo "BAT: $BAT"
+    test ${BAT%?} -le 10 && exit 127 || exit 0
+
 ## EXAMPLES
 
 Here is an example configuration:

@@ -126,12 +126,12 @@ update_block(struct block *block)
 	} else {
 		code = WEXITSTATUS(child_status);
 
-		if (code != 0 && code != 3) {
+		if (code != 0 && code != 127) {
 			fprintf(stderr, "bad return code %d, skipping\n", code);
 			return 1;
 		}
 
-		block->urgent = code == 3;
+		block->urgent = code == 127;
 
 		if (full_text && *full_text != '\0') {
 			if (block->full_text)
