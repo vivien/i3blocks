@@ -82,7 +82,7 @@ Here is an example configuration:
 
 ## SEE ALSO
 
-The development of i3blocks takes place at https://github.com/vivien/i3blocks
+The development of i3blocks takes place on [Github](https://github.com/vivien/i3blocks).
 
 i3(1), i3bar(1), i3status(1)
 
