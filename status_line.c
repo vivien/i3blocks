@@ -241,6 +241,7 @@ parse_status_line(FILE *fp, struct status_line *status)
 void
 print_status_line(struct status_line *status)
 {
+	bool first = true;
 	int i = 0;
 
 	fprintf(stdout, ",[");
@@ -252,9 +253,12 @@ print_status_line(struct status_line *status)
 		if (!block->full_text)
 			continue;
 
-		block_to_json(block);
-		if (i < status->num - 1)
+		if (!first)
 			fprintf(stdout, ",");
+		else
+			first = false;
+
+		block_to_json(block);
 	}
 
 	fprintf(stdout, "]\n");
