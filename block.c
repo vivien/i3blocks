@@ -94,6 +94,22 @@ readline(FILE *fp)
 	return line;
 }
 
+static int
+setup_env(struct block *block)
+{
+	if (setenv("BLOCK_NAME", block->name, 1) == -1) {
+		perror("setenv(name)");
+		return 1;
+	}
+
+	if (setenv("BLOCK_INSTANCE", block->instance, 1) == -1) {
+		perror("setenv(instance)");
+		return 1;
+	}
+
+	return 0;
+}
+
 int
 update_block(struct block *block)
 {
@@ -105,7 +121,9 @@ update_block(struct block *block)
 	if (!block->command)
 		return 0;
 
-	/* TODO setup env */
+	if (setup_env(block))
+		return 1;
+
 	child_stdout = popen(block->command, "r");
 	if (!child_stdout) {
 		perror("popen");

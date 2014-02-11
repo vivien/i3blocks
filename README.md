@@ -54,6 +54,19 @@ if it is below 10%:
     echo "BAT: $BAT"
     test ${BAT%?} -le 10 && exit 127 || exit 0
 
+When forking a block command, i3blocks will set the environment with some 
+BLOCK_* variables. Actually BLOCK_NAME and BLOCK_INSTANCE are provided.
+Here is an example using the environment:
+
+    [test1]
+    command=echo NAME=$BLOCK_NAME INSTANCE=$BLOCK_INSTANCE
+    interval=1
+
+    [test2]
+    command=echo NAME=$BLOCK_NAME INSTANCE=$BLOCK_INSTANCE
+    instance=foobar
+    interval=1
+
 ## EXAMPLES
 
 Here is an example configuration:
