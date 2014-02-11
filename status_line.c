@@ -118,12 +118,6 @@ parse_property(const char *line, struct block *block)
 		return 0;
 	}
 
-	if (strncmp(line, "full_text", sizeof("full_text") - 1) == 0) {
-		block->full_text = strdup(property);
-		if (!block->full_text) return 1;
-		return 0;
-	}
-
 	if (strncmp(line, "short_text", sizeof("short_text") - 1) == 0) {
 		block->short_text = strdup(property);
 		if (!block->short_text) return 1;
