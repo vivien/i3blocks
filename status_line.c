@@ -32,6 +32,8 @@
 static void
 calculate_sleeptime(struct status_line *status)
 {
+	int time = 0;
+
 	/* The maximum sleep time is actually the GCD between all block intervals */
 	int gcd(int a, int b) {
 		while (b != 0)
@@ -40,18 +42,18 @@ calculate_sleeptime(struct status_line *status)
 		return a;
 	}
 
-	status->sleeptime = 5; /* default */
+	if (status->num > 0) {
+		time = status->blocks->interval; /* first block's interval */
 
-	if (status->num >= 2) {
-		int i, d;
+		if (status->num >= 2) {
+			int i;
 
-		d = status->blocks->interval; /* first block's interval */
-		for (i = 0; i < status->num - 1; ++i)
-			d = gcd(d, (status->blocks + i + 1)->interval);
-
-		if (d > 0)
-			status->sleeptime = d;
+			for (i = 1; i < status->num; ++i)
+				time = gcd(time, (status->blocks + i)->interval);
+		}
 	}
+
+	status->sleeptime = time > 0 ? time : 5; /* default */
 }
 
 static struct block *
