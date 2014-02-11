@@ -1,5 +1,5 @@
-i3blocks(1) -- simple i3 status line
-====================================
+i3blocks(1) -- define blocks for your i3 status line
+====================================================
 
 ## SYNOPSIS
 
