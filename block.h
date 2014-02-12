@@ -37,7 +37,6 @@ struct block {
 	/* Keys used by i3blocks */
 	char *command;
 	unsigned interval;
-	unsigned timeout;
 	unsigned long last_update;
 };
 
