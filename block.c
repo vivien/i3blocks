@@ -25,55 +25,14 @@
 #include "block.h"
 
 void
-init_block(struct block *block)
-{
-	memset(block, 0, sizeof(struct block));
-	block->separator = true;
-	block->separator_block_width = 9;
-}
-
-void
 free_block(struct block *block)
 {
-	if (block->full_text) free(block->full_text);
-	if (block->short_text) free(block->short_text);
-	if (block->color) free(block->color);
-	if (block->min_width) free(block->min_width);
-	if (block->align) free(block->align);
-	if (block->name) free(block->name);
-	if (block->instance) free(block->instance);
-	if (block->command) free(block->command);
-	free(block);
-}
+#define FREE(_name, _type) \
+	if (block->_name) \
+		free(block->_name);
 
-void
-block_to_json(struct block *block)
-{
-	fprintf(stdout, "{");
-
-	fprintf(stdout, "\"full_text\":\"%s\"", block->full_text);
-
-	if (block->short_text)
-		fprintf(stdout, ",\"short_text\":\"%s\"", block->short_text);
-	if (block->color)
-		fprintf(stdout, ",\"color\":\"%s\"", block->color);
-	if (block->min_width)
-		fprintf(stdout, ",\"min_width\":\"%s\"", block->min_width);
-	if (block->align)
-		fprintf(stdout, ",\"align\":\"%s\"", block->align);
-	if (block->name)
-		fprintf(stdout, ",\"name\":\"%s\"", block->name);
-	if (block->instance)
-		fprintf(stdout, ",\"instance\":\"%s\"", block->instance);
-	if (block->urgent)
-		fprintf(stdout, ",\"urgent\":true");
-	if (!block->separator)
-		fprintf(stdout, ",\"separator\":false");
-	if (block->separator_block_width != 9)
-		fprintf(stdout, ",\"separator_block_width\":%d", block->separator_block_width);
-
-	fprintf(stdout, "}");
-
+	PROTOCOL_KEYS(FREE);
+	FREE(command, string);
 }
 
 static char *
@@ -149,7 +108,15 @@ update_block(struct block *block)
 			return 1;
 		}
 
-		block->urgent = code == 127;
+		if (block->urgent)
+			free(block->urgent);
+		if (code == 127) {
+			block->urgent = strdup("true");
+			if (!block->urgent) {
+				perror("strdup(urgent)");
+				return 1;
+			}
+		}
 
 		if (full_text && *full_text != '\0') {
 			if (block->full_text)

@@ -21,27 +21,30 @@
 
 #include <stdbool.h>
 
-struct block {
-	/* Keys part of the i3bar protocol */
-	char *full_text;
-	char *short_text;
-	char *color;
-	char *min_width;
-	char *align;
-	char *name;
-	char *instance;
-	bool urgent;
-	bool separator;
-	unsigned separator_block_width;
+/* Keys part of the i3bar protocol */
+#define PROTOCOL_KEYS(_) \
+	_(full_text,             string) \
+	_(short_text,            string) \
+	_(color,                 string) \
+	_(min_width,             string_or_number) \
+	_(align,                 string) \
+	_(name,                  string) \
+	_(instance,              string) \
+	_(urgent,                boolean) \
+	_(separator,             boolean) \
+	_(separator_block_width, number) \
 
-	/* Keys used by i3blocks */
+struct block {
+#define MEMBER(_name, _type) char *_name;
+
+	PROTOCOL_KEYS(MEMBER)
+
 	char *command;
 	unsigned interval;
 	unsigned long last_update;
 };
 
 void init_block(struct block *);
-void block_to_json(struct block *);
 int update_block(struct block *);
 inline int need_update(struct block *);
 void free_block(struct block *);

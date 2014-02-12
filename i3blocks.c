@@ -21,6 +21,8 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#include "ini.h"
+#include "json.h"
 #include "status_line.h"
 
 #ifndef VERSION

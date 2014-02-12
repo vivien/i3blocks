@@ -16,18 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _STATUS_LINE_H
-#define _STATUS_LINE_H
+#ifndef _JSON_H
+#define _JSON_H
 
-struct status_line {
-	struct block *blocks;
-	unsigned int num;
-	unsigned int sleeptime;
-};
+void print_status_line(struct status_line *);
 
-void calculate_sleeptime(struct status_line *);
-void update_status_line(struct status_line *);
-void mark_update(struct status_line *);
-void free_status_line(struct status_line *);
+#endif /* _JSON_H */
 
-#endif /* _STATUS_LINE_H */

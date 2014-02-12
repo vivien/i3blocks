@@ -16,18 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _STATUS_LINE_H
-#define _STATUS_LINE_H
+#ifndef _INI_H
+#define _INI_H
 
-struct status_line {
-	struct block *blocks;
-	unsigned int num;
-	unsigned int sleeptime;
-};
+struct status_line *load_status_line(const char *);
 
-void calculate_sleeptime(struct status_line *);
-void update_status_line(struct status_line *);
-void mark_update(struct status_line *);
-void free_status_line(struct status_line *);
-
-#endif /* _STATUS_LINE_H */
+#endif /* _INI_H */
