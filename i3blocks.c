@@ -21,9 +21,9 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#include "block.h"
 #include "ini.h"
 #include "json.h"
-#include "status_line.h"
 
 #ifndef VERSION
 #define VERSION "unknown"

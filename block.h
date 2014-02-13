@@ -19,8 +19,6 @@
 #ifndef _BLOCK_H
 #define _BLOCK_H
 
-#include <stdbool.h>
-
 /* Keys part of the i3bar protocol */
 #define PROTOCOL_KEYS(_) \
 	_(full_text,             string) \
@@ -44,9 +42,15 @@ struct block {
 	unsigned long last_update;
 };
 
-void init_block(struct block *);
-int update_block(struct block *);
-inline int need_update(struct block *);
-void free_block(struct block *);
+struct status_line {
+	struct block *blocks;
+	unsigned int num;
+	unsigned int sleeptime;
+};
+
+void calculate_sleeptime(struct status_line *);
+void update_status_line(struct status_line *);
+void mark_update(struct status_line *);
+void free_status_line(struct status_line *);
 
 #endif /* _BLOCK_H */

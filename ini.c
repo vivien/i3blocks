@@ -23,7 +23,6 @@
 #include <string.h>
 
 #include "block.h"
-#include "status_line.h"
 
 #ifndef SYSCONFDIR
 #define SYSCONFDIR "/etc"

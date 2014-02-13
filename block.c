@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,7 +25,7 @@
 
 #include "block.h"
 
-void
+static void
 free_block(struct block *block)
 {
 #define FREE(_name, _type) \
@@ -69,7 +70,7 @@ setup_env(struct block *block)
 	return 0;
 }
 
-int
+static int
 update_block(struct block *block)
 {
 	FILE *child_stdout;
@@ -142,11 +143,71 @@ update_block(struct block *block)
 	return 0;
 }
 
-inline int
+static inline int
 need_update(struct block *block)
 {
 	const unsigned long now = time(NULL);
 	const unsigned long next_update = block->last_update + block->interval;
 
 	return ((long) (next_update - now)) <= 0;
+}
+
+void
+calculate_sleeptime(struct status_line *status)
+{
+	int time = 0;
+
+	/* The maximum sleep time is actually the GCD between all block intervals */
+	int gcd(int a, int b) {
+		while (b != 0)
+			a %= b, a ^= b, b ^= a, a ^= b;
+
+		return a;
+	}
+
+	if (status->num > 0) {
+		time = status->blocks->interval; /* first block's interval */
+
+		if (status->num >= 2) {
+			int i;
+
+			for (i = 1; i < status->num; ++i)
+				time = gcd(time, (status->blocks + i)->interval);
+		}
+	}
+
+	status->sleeptime = time > 0 ? time : 5; /* default */
+}
+
+void
+update_status_line(struct status_line *status)
+{
+	int i;
+
+	for (i = 0; i < status->num; ++i) {
+		struct block *block = status->blocks + i;
+
+		if (need_update(block) && update_block(block))
+			fprintf(stderr, "failed to update block %s\n", block->name);
+	}
+}
+
+void
+free_status_line(struct status_line *status)
+{
+	int i;
+
+	for (i = 0; i < status->num; ++i)
+		free_block(status->blocks + i);
+
+	free(status);
+}
+
+void
+mark_update(struct status_line *status)
+{
+	int i;
+
+	for (i = 0; i < status->num; ++i)
+		(status->blocks + i)->last_update = 0;
 }
