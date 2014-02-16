@@ -77,27 +77,37 @@ block_to_json(struct block *block)
 	fprintf(stdout, "}");
 }
 
+static int
+prepare_block(struct status_line *status, unsigned int num, struct block *block)
+{
+	const struct block *config_block = status->blocks + num;
+
+	*block = *config_block;
+
+	/* full_text is the only mandatory key */
+	if (!block->full_text)
+		return 1;
+
+	return 0;
+}
+
 void
 print_status_line(struct status_line *status)
 {
 	bool first = true;
 	int i = 0;
+	struct block block;
 
 	fprintf(stdout, ",[");
 
 	for (i = 0; i < status->num; ++i) {
-		struct block *block = status->blocks + i;
-
-		/* full_text is the only mandatory key */
-		if (!block->full_text)
+		if (prepare_block(status, i, &block))
 			continue;
 
-		if (!first)
-			fprintf(stdout, ",");
-		else
-			first = false;
+		if (!first) fprintf(stdout, ",");
+		else first = false;
 
-		block_to_json(block);
+		block_to_json(&block);
 	}
 
 	fprintf(stdout, "]\n");
