@@ -143,11 +143,21 @@ update_block(struct block *block)
 	return 0;
 }
 
-static inline int
-need_update(struct block *block)
+static inline const unsigned int
+get_interval(struct status_line *status, unsigned blocknum)
 {
+	const unsigned int blockint = (status->blocks + blocknum)->interval;
+	const unsigned int globint = status->global ? status->global->interval : 0;
+
+	return blockint ? blockint : globint;
+}
+
+static inline int
+need_update(struct status_line *status, unsigned blocknum)
+{
+	const struct block *block = status->blocks + blocknum;
 	const unsigned long now = time(NULL);
-	const unsigned long next_update = block->last_update + block->interval;
+	const unsigned long next_update = block->last_update + get_interval(status, blocknum);
 
 	return ((long) (next_update - now)) <= 0;
 }
@@ -166,13 +176,13 @@ calculate_sleeptime(struct status_line *status)
 	}
 
 	if (status->num > 0) {
-		time = status->blocks->interval; /* first block's interval */
+		time = get_interval(status, 0); /* first block's interval */
 
 		if (status->num >= 2) {
 			int i;
 
 			for (i = 1; i < status->num; ++i)
-				time = gcd(time, (status->blocks + i)->interval);
+				time = gcd(time, get_interval(status, i));
 		}
 	}
 
@@ -187,7 +197,7 @@ update_status_line(struct status_line *status)
 	for (i = 0; i < status->num; ++i) {
 		struct block *block = status->blocks + i;
 
-		if (need_update(block) && update_block(block))
+		if (need_update(status, i) && update_block(block))
 			fprintf(stderr, "failed to update block %s\n", block->name);
 	}
 }

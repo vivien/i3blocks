@@ -43,6 +43,7 @@ struct block {
 };
 
 struct status_line {
+	struct block *global;
 	struct block *blocks;
 	unsigned int num;
 	unsigned int sleeptime;

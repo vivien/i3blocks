@@ -100,7 +100,7 @@ parse_property(const char *line, struct block *block)
 static int
 parse_status_line(FILE *fp, struct status_line *status)
 {
-	struct block *block = status->blocks;
+	struct block *block = NULL;
 	char line[1024];
 	char *name;
 
@@ -138,8 +138,11 @@ parse_status_line(FILE *fp, struct status_line *status)
 		/* Property? */
 		case 'a' ... 'z':
 			if (!block) {
-				fprintf(stderr, "global properties not supported, need a section\n");
-				return 1;
+				fprintf(stderr, "no section yet, creating global properties\n");
+				status->global = calloc(1, sizeof(struct block));
+				if (!status->global)
+					return 1;
+				block = status->global;
 			}
 
 			if (parse_property(line, block))

@@ -67,6 +67,15 @@ Here is an example using the environment:
     instance=foobar
     interval=1
 
+It is possible to define global properties at the beginning of the config file, 
+outside any block:
+
+    interval=5
+    color=#0000FF
+
+    [block1]
+    command=date +%T
+
 ## EXAMPLES
 
 Here is an example configuration:

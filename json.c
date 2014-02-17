@@ -77,12 +77,26 @@ block_to_json(struct block *block)
 	fprintf(stdout, "}");
 }
 
+static void
+merge_block(struct block *block, const struct block *overlay)
+{
+#define MERGE(_name, _) \
+	if (overlay->_name) block->_name = overlay->_name;
+
+	PROTOCOL_KEYS(MERGE);
+}
+
 static int
 prepare_block(struct status_line *status, unsigned int num, struct block *block)
 {
 	const struct block *config_block = status->blocks + num;
 
-	*block = *config_block;
+	memset(block, 0, sizeof(struct block));
+
+	if (status->global)
+		merge_block(block, status->global);
+
+	merge_block(block, config_block);
 
 	/* full_text is the only mandatory key */
 	if (!block->full_text)
