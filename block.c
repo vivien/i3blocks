@@ -131,13 +131,22 @@ update_block(struct block *block)
 static inline bool
 need_update(struct block *block)
 {
-	const unsigned long now = time(NULL);
-	const unsigned long next_update = block->last_update + block->interval;
+	bool first_time = false, outdated = false, signaled = false;
 
-	bool outdated = ((long) (next_update - now)) <= 0;
-	bool signaled = caughtsig > 0 && caughtsig == block->signal;
+	if (block->last_update == 0)
+		first_time = true;
 
-	return outdated || signaled;
+	if (block->interval) {
+		const unsigned long now = time(NULL);
+		const unsigned long next_update = block->last_update + block->interval;
+
+		outdated = ((long) (next_update - now)) <= 0;
+	}
+
+	if (caughtsig)
+		signaled = caughtsig == block->signal;
+
+	return first_time || outdated || signaled;
 }
 
 void
