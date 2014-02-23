@@ -40,7 +40,7 @@ handler(int signum)
 static void
 start(void)
 {
-	fprintf(stdout, "{\"version\":1,\"click_events\":true}\n[[]\n");
+	fprintf(stdout, "{\"version\":1}\n[[]\n");
 	fflush(stdout);
 }
 
