@@ -61,6 +61,16 @@ linecpy(char **lines, char *dest, unsigned int size)
 		*lines += 1;
 }
 
+static void
+failed(const char *reason, struct block *block)
+{
+	strncpy(block->full_text, reason, sizeof(block->full_text) - 1);
+	strncpy(block->min_width, reason, sizeof(block->min_width) - 1);
+	strcpy(block->short_text, "FAILED");
+	strcpy(block->color, "#FF0000");
+	strcpy(block->urgent, "true");
+}
+
 static int
 update_block(struct block *block)
 {
@@ -96,7 +106,11 @@ update_block(struct block *block)
 
 	code = WEXITSTATUS(child_status);
 	if (code != 0 && code != 127) {
-		fprintf(stderr, "bad return code %d, skipping\n", code);
+		char reason[1024];
+
+		fprintf(stderr, "bad return code %d, skipping %s\n", code, block->name);
+		sprintf(reason, "[%s] ERROR: bad return code %d", block->name, code);
+		failed(reason, block);
 		return 1;
 	}
 
