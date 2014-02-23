@@ -38,26 +38,32 @@ add_block(struct status_line *status)
 	if (reloc) {
 		status->blocks = reloc;
 		block = status->blocks + status->num;
-		memset(block, 0, sizeof(struct block));
 		status->num++;
 	}
 
 	return block;
 }
 
-static char *
-parse_section(const char *line)
+static int
+parse_section(const char *line, char *name, unsigned int size)
 {
 	char *closing = strchr(line, ']');
-	int len = strlen(line);
+	const int len = strlen(line);
 
 	/* stop if the last char is not a closing bracket */
 	if (!closing || line + len - 1 != closing) {
 		fprintf(stderr, "malformated section \"%s\"\n", line);
-		return NULL;
+		return 1;
 	}
 
-	return strndup(line + 1, len - 2);
+	if (size - 1 < len - 2) {
+		fprintf(stderr, "section name too long \"%s\"\n", line);
+		return 1;
+	}
+
+	memcpy(name, line + 1, len - 2);
+	name[len - 1] = '\0';
+	return 0;
 }
 
 static int
@@ -76,10 +82,10 @@ parse_property(const char *line, struct block *block)
 	property = line;
 	value = equal + 1;
 
-#define PARSE(_name, _) \
+#define PARSE(_name, _size, _type) \
 	if (strcmp(property, #_name) == 0) { \
-		block->_name = strdup(value); \
-		return block->_name == NULL; \
+		strncpy(block->_name, value, _size - 1); \
+		return 0; \
 	} \
 
 #define PARSE_NUM(_name) \
@@ -89,7 +95,7 @@ parse_property(const char *line, struct block *block)
 	} \
 
 	PROTOCOL_KEYS(PARSE);
-	PARSE(command, _);
+	PARSE(command, sizeof(block->command), _);
 	PARSE_NUM(interval);
 	/* TODO some better check for numbers and boolean */
 
@@ -98,11 +104,26 @@ parse_property(const char *line, struct block *block)
 }
 
 static int
+duplicate_blocks(struct status_line *status)
+{
+	const size_t size = status->num * sizeof(struct block);
+
+	status->updated_blocks = malloc(size);
+	if (!status->updated_blocks)
+		return 1;
+
+	memcpy(status->updated_blocks, status->blocks, size);
+	return 0;
+}
+
+static int
 parse_status_line(FILE *fp, struct status_line *status)
 {
 	struct block *block = NULL;
-	char line[1024];
-	char *name;
+	struct block global;
+	char line[2048];
+
+	memset(&global, 0, sizeof(struct block));
 
 	while (fgets(line, sizeof(line), fp) != NULL) {
 		int len = strlen(line);
@@ -121,28 +142,24 @@ parse_status_line(FILE *fp, struct status_line *status)
 
 		/* Section? */
 		case '[':
-			name = parse_section(line);
-			if (!name)
-				return 1;
-
 			block = add_block(status);
-			if (!block) {
-				free(name);
+			if (!block)
 				return 1;
-			}
 
-			block->name = name;
+			/* Init the block with default settings (if any) */
+			memcpy(block, &global, sizeof(struct block));
+
+			if (parse_section(line, block->name, sizeof(block->name)))
+				return 1;
+
 			/* fprintf(stderr, "new block named: \"%s\"\n", block->name); */
 			break;
 
 		/* Property? */
 		case 'a' ... 'z':
 			if (!block) {
-				fprintf(stderr, "no section yet, creating global properties\n");
-				status->global = calloc(1, sizeof(struct block));
-				if (!status->global)
-					return 1;
-				block = status->global;
+				fprintf(stderr, "no section yet, parsing global properties\n");
+				block = &global;
 			}
 
 			if (parse_property(line, block))
@@ -158,7 +175,7 @@ parse_status_line(FILE *fp, struct status_line *status)
 	}
 
 	calculate_sleeptime(status);
-	return 0;
+	return duplicate_blocks(status);
 }
 
 struct status_line *

@@ -64,8 +64,8 @@ block_to_json(struct block *block)
 {
 	int first = true;
 
-#define JSON(_name, _type) \
-	if (block->_name) { \
+#define JSON(_name, _size, _type) \
+	if (*block->_name) { \
 		if (!first) fprintf(stdout, ","); \
 		else first = false; \
 		fprintf(stdout, "\"" #_name "\":"); \
@@ -77,51 +77,25 @@ block_to_json(struct block *block)
 	fprintf(stdout, "}");
 }
 
-static void
-merge_block(struct block *block, const struct block *overlay)
-{
-#define MERGE(_name, _) \
-	if (overlay->_name) block->_name = overlay->_name;
-
-	PROTOCOL_KEYS(MERGE);
-}
-
-static int
-prepare_block(struct status_line *status, unsigned int num, struct block *block)
-{
-	const struct block *config_block = status->blocks + num;
-
-	memset(block, 0, sizeof(struct block));
-
-	if (status->global)
-		merge_block(block, status->global);
-
-	merge_block(block, config_block);
-
-	/* full_text is the only mandatory key */
-	if (!block->full_text)
-		return 1;
-
-	return 0;
-}
-
 void
 print_status_line(struct status_line *status)
 {
 	bool first = true;
 	int i = 0;
-	struct block block;
 
 	fprintf(stdout, ",[");
 
 	for (i = 0; i < status->num; ++i) {
-		if (prepare_block(status, i, &block))
+		struct block *block = status->updated_blocks + i;
+
+		/* full_text is the only mandatory key, skip if empty */
+		if (!*block->full_text)
 			continue;
 
 		if (!first) fprintf(stdout, ",");
 		else first = false;
 
-		block_to_json(&block);
+		block_to_json(block);
 	}
 
 	fprintf(stdout, "]\n");

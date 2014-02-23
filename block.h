@@ -21,30 +21,29 @@
 
 /* Keys part of the i3bar protocol */
 #define PROTOCOL_KEYS(_) \
-	_(full_text,             string) \
-	_(short_text,            string) \
-	_(color,                 string) \
-	_(min_width,             string_or_number) \
-	_(align,                 string) \
-	_(name,                  string) \
-	_(instance,              string) \
-	_(urgent,                boolean) \
-	_(separator,             boolean) \
-	_(separator_block_width, number) \
+	_(full_text,             1024, string) \
+	_(short_text,            512,  string) \
+	_(color,                 8,    string) \
+	_(min_width,             1024, string_or_number) \
+	_(align,                 8,    string) \
+	_(name,                  32,   string) \
+	_(instance,              32,   string) \
+	_(urgent,                8,    boolean) \
+	_(separator,             8,    boolean) \
+	_(separator_block_width, 8,    number) \
 
 struct block {
-#define MEMBER(_name, _type) char *_name;
+#define MEMBER(_name, _size, _type) char _name[_size];
 
-	PROTOCOL_KEYS(MEMBER)
-
-	char *command;
+	PROTOCOL_KEYS(MEMBER);
+	MEMBER(command, 1024, string);
 	unsigned interval;
 	unsigned long last_update;
 };
 
 struct status_line {
-	struct block *global;
 	struct block *blocks;
+	struct block *updated_blocks;
 	unsigned int num;
 	unsigned int sleeptime;
 };

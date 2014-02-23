@@ -25,35 +25,6 @@
 
 #include "block.h"
 
-static void
-free_block(struct block *block)
-{
-#define FREE(_name, _type) \
-	if (block->_name) \
-		free(block->_name);
-
-	PROTOCOL_KEYS(FREE);
-	FREE(command, string);
-}
-
-static char *
-readline(FILE *fp)
-{
-	char *line = NULL;
-	char buf[1024];
-
-	if (fgets(buf, sizeof(buf), fp) != NULL) {
-		size_t len = strlen(buf);
-
-		if (buf[len - 1] == '\n')
-			buf[len - 1] = '\0';
-
-		line = strdup(buf);
-	}
-
-	return line;
-}
-
 static int
 setup_env(struct block *block)
 {
@@ -70,94 +41,80 @@ setup_env(struct block *block)
 	return 0;
 }
 
+static void
+linecpy(char **lines, char *dest, unsigned int size)
+{
+	char *newline = strchr(*lines, '\n');
+
+	/* split if there's a newline */
+	if (newline)
+		*newline = '\0';
+
+	/* if text in non-empty, copy it */
+	if (**lines) {
+		strncpy(dest, *lines, size);
+		*lines += strlen(dest);
+	}
+
+	/* increment if next char is non-null */
+	if (*(*lines + 1))
+		*lines += 1;
+}
+
 static int
 update_block(struct block *block)
 {
 	FILE *child_stdout;
 	int child_status, code;
-	char *full_text, *short_text, *color;
-
-	/* static block */
-	if (!block->command)
-		return 0;
+	char output[2048], *text = output;
 
 	if (setup_env(block))
 		return 1;
 
+	/* Pipe, fork and exec a shell for the block command line */
 	child_stdout = popen(block->command, "r");
 	if (!child_stdout) {
 		perror("popen");
 		return 1;
 	}
 
-	full_text = readline(child_stdout);
-	short_text = readline(child_stdout);
-	color = readline(child_stdout);
+	/* Do not distinguish EOF or error, just read child's output */
+	memset(output, 0, sizeof(output));
+	fread(output, 1, sizeof(output) - 1, child_stdout);
 
+	/* Wait for the child process to terminate */
 	child_status = pclose(child_stdout);
 	if (child_status == -1) {
 		perror("pclose");
 		return 1;
-	} else if (!WIFEXITED(child_status)) {
+	}
+
+	if (!WIFEXITED(child_status)) {
 		fprintf(stderr, "child did not exit correctly\n");
 		return 1;
-	} else {
-		code = WEXITSTATUS(child_status);
-
-		if (code != 0 && code != 127) {
-			fprintf(stderr, "bad return code %d, skipping\n", code);
-			return 1;
-		}
-
-		if (block->urgent)
-			free(block->urgent);
-		if (code == 127) {
-			block->urgent = strdup("true");
-			if (!block->urgent) {
-				perror("strdup(urgent)");
-				return 1;
-			}
-		}
-
-		if (full_text && *full_text != '\0') {
-			if (block->full_text)
-				free(block->full_text);
-			block->full_text = full_text;
-		}
-
-		if (short_text && *short_text != '\0') {
-			if (block->short_text)
-				free(block->short_text);
-			block->short_text = short_text;
-		}
-
-		if (color && *color != '\0') {
-			if (block->color)
-				free(block->color);
-			block->color = color;
-		}
-
-		block->last_update = time(NULL);
 	}
+
+	code = WEXITSTATUS(child_status);
+	if (code != 0 && code != 127) {
+		fprintf(stderr, "bad return code %d, skipping\n", code);
+		return 1;
+	}
+
+	/* From here, the update went ok so merge the output */
+	strncpy(block->urgent, code == 127 ? "true" : "false", sizeof(block->urgent) - 1);
+	linecpy(&text, block->full_text, sizeof(block->full_text) - 1);
+	linecpy(&text, block->short_text, sizeof(block->short_text) - 1);
+	linecpy(&text, block->color, sizeof(block->color) - 1);
+	block->last_update = time(NULL);
 
 	return 0;
 }
 
-static inline const unsigned int
-get_interval(struct status_line *status, unsigned blocknum)
-{
-	const unsigned int blockint = (status->blocks + blocknum)->interval;
-	const unsigned int globint = status->global ? status->global->interval : 0;
-
-	return blockint ? blockint : globint;
-}
-
 static inline int
-need_update(struct status_line *status, unsigned blocknum)
+need_update(struct block *block)
 {
-	const struct block *block = status->blocks + blocknum;
 	const unsigned long now = time(NULL);
-	const unsigned long next_update = block->last_update + get_interval(status, blocknum);
+	const unsigned long next_update = block->last_update + block->interval;
 
 	return ((long) (next_update - now)) <= 0;
 }
@@ -176,13 +133,13 @@ calculate_sleeptime(struct status_line *status)
 	}
 
 	if (status->num > 0) {
-		time = get_interval(status, 0); /* first block's interval */
+		time = status->blocks->interval; /* first block's interval */
 
 		if (status->num >= 2) {
 			int i;
 
 			for (i = 1; i < status->num; ++i)
-				time = gcd(time, get_interval(status, i));
+				time = gcd(time, (status->blocks + i)->interval);
 		}
 	}
 
@@ -195,10 +152,19 @@ update_status_line(struct status_line *status)
 	int i;
 
 	for (i = 0; i < status->num; ++i) {
-		struct block *block = status->blocks + i;
+		const struct block *config_block = status->blocks + i;
+		struct block *updated_block = status->updated_blocks + i;
 
-		if (need_update(status, i) && update_block(block))
-			fprintf(stderr, "failed to update block %s\n", block->name);
+		/* Skip static block */
+		if (!*config_block->command)
+			continue;
+
+		/* If a block needs an update, reset and execute it */
+		if (need_update(updated_block)) {
+			memcpy(updated_block, config_block, sizeof(struct block));
+			if (update_block(updated_block))
+				fprintf(stderr, "failed to update block %s\n", updated_block->name);
+		}
 	}
 }
 
@@ -208,7 +174,7 @@ free_status_line(struct status_line *status)
 	int i;
 
 	for (i = 0; i < status->num; ++i)
-		free_block(status->blocks + i);
+		free(status->blocks + i);
 
 	free(status);
 }
@@ -219,5 +185,5 @@ mark_update(struct status_line *status)
 	int i;
 
 	for (i = 0; i < status->num; ++i)
-		(status->blocks + i)->last_update = 0;
+		(status->updated_blocks + i)->last_update = 0;
 }
