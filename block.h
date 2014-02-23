@@ -38,6 +38,7 @@ struct block {
 	PROTOCOL_KEYS(MEMBER);
 	MEMBER(command, 1024, string);
 	unsigned interval;
+	unsigned signal;
 	unsigned long last_update;
 };
 

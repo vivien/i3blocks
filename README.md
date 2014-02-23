@@ -26,9 +26,10 @@ manager. Here are the available options:
 The blocks are defined in a simple ini configuration file. Each section define 
 a new block. The properties and values are the keys describing a block, 
 according to the [i3bar protocol](http://i3wm.org/docs/i3bar-protocol.html).
-Two additional properties are added to a block definition: `command` which 
-defines the shell command to execute to get the block text, and the `interval` 
-the block should be updated.
+Three additional properties are added to a block definition: `command` which 
+defines the shell command to execute to get the block text, `interval` which 
+specifies when the block should be updated, and `signal` which specifies the 
+signal used to update the block.
 
 A block command may return 3 lines. If so, they will overwrite (in this order) 
 the following block property:

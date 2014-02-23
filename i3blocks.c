@@ -29,9 +29,12 @@
 #define VERSION "unknown"
 #endif
 
+volatile sig_atomic_t caughtsig = 0;
+
 void
 handler(int signum)
 {
+	caughtsig = signum;
 }
 
 static void
@@ -76,7 +79,7 @@ main(int argc, char *argv[])
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags = SA_RESTART; /* Restart functions if interrupted by handler */
 
-	if (sigaction(SIGUSR1, &sa, NULL) == -1) {
+	if (sigaction(SIGUSR1, &sa, NULL) == -1 || sigaction(SIGUSR2, &sa, NULL) == -1) {
 		fprintf(stderr, "failed to setup a signal handler\n");
 		return 1;
 	}
@@ -88,8 +91,7 @@ main(int argc, char *argv[])
 		print_status_line(status);
 
 		/* Sleep or force check on interruption */
-		if (sleep(status->sleeptime))
-			mark_update(status);
+		sleep(status->sleeptime);
 	}
 
 	//stop();

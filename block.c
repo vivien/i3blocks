@@ -17,6 +17,8 @@
  */
 
 #include <errno.h>
+#include <signal.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,6 +26,8 @@
 #include <time.h>
 
 #include "block.h"
+
+extern volatile sig_atomic_t caughtsig;
 
 static int
 setup_env(struct block *block)
@@ -124,13 +128,16 @@ update_block(struct block *block)
 	return 0;
 }
 
-static inline int
+static inline bool
 need_update(struct block *block)
 {
 	const unsigned long now = time(NULL);
 	const unsigned long next_update = block->last_update + block->interval;
 
-	return ((long) (next_update - now)) <= 0;
+	bool outdated = ((long) (next_update - now)) <= 0;
+	bool signaled = caughtsig > 0 && caughtsig == block->signal;
+
+	return outdated || signaled;
 }
 
 void
@@ -180,6 +187,9 @@ update_status_line(struct status_line *status)
 				fprintf(stderr, "failed to update block %s\n", updated_block->name);
 		}
 	}
+
+	if (caughtsig > 0)
+		caughtsig = 0;
 }
 
 void
@@ -191,13 +201,4 @@ free_status_line(struct status_line *status)
 		free(status->blocks + i);
 
 	free(status);
-}
-
-void
-mark_update(struct status_line *status)
-{
-	int i;
-
-	for (i = 0; i < status->num; ++i)
-		(status->updated_blocks + i)->last_update = 0;
 }

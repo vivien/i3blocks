@@ -97,6 +97,7 @@ parse_property(const char *line, struct block *block)
 	PROTOCOL_KEYS(PARSE);
 	PARSE(command, sizeof(block->command), _);
 	PARSE_NUM(interval);
+	PARSE_NUM(signal);
 	/* TODO some better check for numbers and boolean */
 
 	printf("unknown property: \"%s\"\n", property);
