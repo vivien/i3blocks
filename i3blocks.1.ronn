@@ -1,0 +1,206 @@
+i3blocks(1) -- define blocks for your i3 status line
+====================================================
+
+## SYNOPSIS
+
+`i3blocks` [-c <configfile>] [-h] [-v]
+
+## DESCRIPTION
+
+**i3blocks** generates a status line for i3bar(1).
+
+## OPTIONS
+
+  * `-c` <configfile>:
+    Specifies an alternate configuration file path. By default, i3blocks looks 
+    for configuration files in the following order:
+
+        1. ~/.i3blocks.conf
+        2. /etc/i3blocks.conf or /usr/local/etc/i3blocks.conf
+
+  * `-v`:
+    Print the version and exit.
+
+  * `-h`:
+    Print the help message and exit.
+
+## CONFIGURATION
+
+The configuration file is an ini file. Each section describes a new block.
+A line beginning with a `#` sign is a comment, and empty lines are ignored.
+A property is a `key=value` pair per line, with no space around the equal sign.
+Properties declared outside a block (i.e. at the beginning of the file)
+describe global settings.
+
+Here is an example config file:
+
+    # This is a comment
+    interval=5
+    color=#00FF00
+
+    [weather]
+    command=~/bin/weather.pl
+    interval=1800
+
+    [time]
+    command=date +%T
+
+## BLOCK
+
+The properties used to describe a block are the keys specified in the [i3bar
+protocol](http://i3wm.org/docs/i3bar-protocol.html), plus additional properties
+used by **i3blocks** to describe when and how to update a block.
+All the supported properties are described below.
+
+The following keys are standard, see
+[http://i3wm.org/docs/i3bar-protocol.html]() for details.
+
+  * `full_text`
+  * `short_text`
+  * `color`
+  * `min_width`
+  * `align`
+  * `name`
+  * `instance`
+  * `urgent`
+  * `separator`
+  * `separator_block_width`
+
+The following keys are specific to **i3blocks**.
+
+  * `command`:
+	The command executed by a shell, used to update the block. The expected
+    behavior is described below, in the [COMMAND][] section.
+
+  * `interval`:
+	The time in second to wait before updating the block. If 0, the block won't
+    be updated again.
+
+  * `signal`:
+	The signal number used to update the block. For instance, `signal=10` means
+	that this block will be updated when **i3blocks** receives a SIGUSR1.
+    Currently, SIGUSR1 and SIGUSR2 are supported.
+
+## COMMAND
+
+The value of the `command` key will be passed and executed as is by a shell.
+
+The standard output of the command line is used to update the block content.
+Each non-empty line of the output will overwrite the corresponding property:
+
+  1. full_text
+  2. short_text
+  3. color
+
+For example, this script sets the `full_text` in blue but no `short_text`:
+
+    echo "Here's my label"
+    echo
+    echo \#0000FF
+
+If the command line returns 0 or 127, the block is updated. Otherwise, it is
+considered a failure and the block will be skipped. A return code of 127 will
+set the `urgent` flag to true.
+
+For example, this script prints the battery percentage and sets the urgent flag 
+if it is below 10%:
+
+    BAT=`upower --show-info /org/freedesktop/UPower/devices/battery_BAT0 | grep percentage | grep -E -o '[0-9][0-9]?%'` 
+
+    echo "BAT: $BAT"
+    test ${BAT%?} -le 10 && exit 127 || exit 0
+
+When forking a block command, **i3blocks** will set the environment with some 
+`BLOCK_*` variables. Actually the following variables are provided:
+
+  * `BLOCK_NAME`:
+    The name of the block (usually the section name).
+
+  * `BLOCK_INSTANCE`:
+    An optional argument to the script.
+
+Here is an example using the environment:
+
+    [block1]
+    command=echo name=$BLOCK_NAME instance=$BLOCK_INSTANCE
+    interval=1
+
+    [block2]
+    command=echo name=$BLOCK_NAME instance=$BLOCK_INSTANCE
+    instance=foobar
+    interval=1
+
+Note that **i3blocks** provides a set of optional scripts for convenience, such
+as network status, battery check, cpu load, volume, etc.
+
+## EXAMPLES
+
+As an example, here is a close configuration to i3status(1) default settings:
+
+**TODO**
+
+    interval=5
+    signal=10
+
+	[ipv6]
+
+    [free]
+
+    [dhcp]
+
+    [vpn]
+
+    [wifi]
+
+    [ethernet]
+    min_width=E: 255.255.255.255 (1000 Mbit/s)
+
+    [battery]
+
+    [cpu]
+
+    [datetime]
+
+The following block shows the usage of `signal` with some i3(1) bindings
+which adjust the volume, before issuing a `killall -USR1 i3blocks`:
+
+    [volume]
+    command=echo -n 'Volume: '; amixer get Master | grep -E -o '[0-9][0-9]?%'
+    signal=10
+    # no interval, only check on SIGUSR1
+
+Here is an example of a very minimalist config, assuming you have a bunch of
+scripts under `~/bin/blocks/` with the same name as the blocks:
+
+    command=~/bin/blocks/$BLOCK_NAME
+    interval=1
+
+    [free]
+    [wifi]
+    [ethernet]
+    [battery]
+    [cpu]
+    [datetime]
+
+## SEE ALSO
+
+The development of i3blocks takes place on [Github](https://github.com/vivien/i3blocks).
+
+i3(1), i3bar(1), i3status(1)
+
+## BUGS
+
+Currently the output is not JSON-escaped. This means that a script echoing
+chars such as `"` will break the status line.
+
+## AUTHOR
+
+Written by Vivien Didelot <vivien.didelot@gmail.com>.
+
+## COPYRIGHT
+
+Copyright (C) 2014 Vivien Didelot <vivien.didelot@gmail.com>
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
+
+This is free software: you are free to change and redistribute it. There is NO 
+WARRANTY, to the extent permitted by law.

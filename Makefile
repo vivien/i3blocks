@@ -32,8 +32,8 @@ i3blocks: ${OBJS}
 
 man: i3blocks.1
 
-i3blocks.1: README.md
-	ronn -w -r --pipe README.md > i3blocks.1 || echo "install 'ronn' gem for the manpage" >&2
+i3blocks.1: i3blocks.1.ronn
+	ronn -w -r $< || echo "install 'ronn' gem for the manpage" >&2
 
 clean:
 	rm -f *.o i3blocks i3blocks.1
