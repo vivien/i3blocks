@@ -45,6 +45,13 @@ Here is an example config file:
     [time]
     command=date +%T
 
+To use i3blocks as your status line, define it in a *bar* block of your
+`~/i3/config` file:
+
+    bar {
+      status_command i3blocks
+    }
+
 ## BLOCK
 
 The properties used to describe a block are the keys specified in the [i3bar
