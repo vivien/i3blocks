@@ -10,7 +10,7 @@
 \fBi3blocks\fR [\-c \fIconfigfile\fR] [\-h] [\-v]
 .
 .SH "DESCRIPTION"
-\fBi3blocks\fR generates a status line for i3bar(1)\.
+\fBi3blocks\fR generates a status line for i3bar(1)\. It handles clicks, signals and user scripts\.
 .
 .SH "OPTIONS"
 .
@@ -193,6 +193,14 @@ The name of the block (usually the section name)\.
 \fBBLOCK_INSTANCE\fR
 An optional argument to the script\.
 .
+.TP
+\fBBLOCK_BUTTON\fR
+Mouse button (1, 2 or 3) if the block was clicked\.
+.
+.TP
+\fBBLOCK_X\fR and \fBBLOCK_Y\fR
+Coordinates where the click occured, if the block was clicked\.
+.
 .P
 Here is an example using the environment:
 .
@@ -200,14 +208,14 @@ Here is an example using the environment:
 .
 .nf
 
-[block1]
+[block]
 command=echo name=$BLOCK_NAME instance=$BLOCK_INSTANCE
 interval=1
 
-[block2]
-command=echo name=$BLOCK_NAME instance=$BLOCK_INSTANCE
-instance=foobar
-interval=1
+[clickme]
+command=echo button=$BLOCK_BUTTON x=$BLOCK_X y=$BLOCK_Y
+min_width=button=1 x=1366 y=768
+align=left
 .
 .fi
 .

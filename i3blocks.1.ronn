@@ -8,6 +8,7 @@ i3blocks(1) -- define blocks for your i3 status line
 ## DESCRIPTION
 
 **i3blocks** generates a status line for i3bar(1).
+It handles clicks, signals and user scripts.
 
 ## OPTIONS
 
@@ -126,16 +127,22 @@ When forking a block command, **i3blocks** will set the environment with some
   * `BLOCK_INSTANCE`:
     An optional argument to the script.
 
+  * `BLOCK_BUTTON`:
+    Mouse button (1, 2 or 3) if the block was clicked.
+
+  * `BLOCK_X` and `BLOCK_Y`:
+	Coordinates where the click occured, if the block was clicked.
+
 Here is an example using the environment:
 
-    [block1]
+    [block]
     command=echo name=$BLOCK_NAME instance=$BLOCK_INSTANCE
     interval=1
 
-    [block2]
-    command=echo name=$BLOCK_NAME instance=$BLOCK_INSTANCE
-    instance=foobar
-    interval=1
+    [clickme]
+    command=echo button=$BLOCK_BUTTON x=$BLOCK_X y=$BLOCK_Y
+    min_width=button=1 x=1366 y=768
+    align=left
 
 Note that **i3blocks** provides a set of optional scripts for convenience, such
 as network status, battery check, cpu load, volume, etc.

@@ -42,6 +42,29 @@ setup_env(struct block *block)
 		return 1;
 	}
 
+	/* FIXME define BLOCK_{BUTTON,X,Y} to 0 if no click? */
+	if (block->button) {
+		char s[8];
+
+		snprintf(s, sizeof(s), "%d", block->button);
+		if (setenv("BLOCK_BUTTON", s, 1) == -1) {
+			perror("setenv(button)");
+			return 1;
+		}
+
+		snprintf(s, sizeof(s), "%d", block->x);
+		if (setenv("BLOCK_X", s, 1) == -1) {
+			perror("setenv(x)");
+			return 1;
+		}
+
+		snprintf(s, sizeof(s), "%d", block->y);
+		if (setenv("BLOCK_Y", s, 1) == -1) {
+			perror("setenv(y)");
+			return 1;
+		}
+	}
+
 	return 0;
 }
 
@@ -131,7 +154,9 @@ update_block(struct block *block)
 static inline bool
 need_update(struct block *block)
 {
-	bool first_time = false, outdated = false, signaled = false;
+	bool first_time, outdated, signaled, clicked;
+
+	first_time = outdated = signaled = clicked = false;
 
 	if (block->last_update == 0)
 		first_time = true;
@@ -143,10 +168,12 @@ need_update(struct block *block)
 		outdated = ((long) (next_update - now)) <= 0;
 	}
 
-	if (caughtsig)
+	if (caughtsig) {
 		signaled = caughtsig == block->signal;
+		clicked = block->button > 0;
+	}
 
-	return first_time || outdated || signaled;
+	return first_time || outdated || signaled || clicked;
 }
 
 void
@@ -191,9 +218,21 @@ update_status_line(struct status_line *status)
 
 		/* If a block needs an update, reset and execute it */
 		if (need_update(updated_block)) {
+			const unsigned button = updated_block->button;
+			const unsigned x = updated_block->x;
+			const unsigned y = updated_block->y;
+
 			memcpy(updated_block, config_block, sizeof(struct block));
+
+			updated_block->button = button;
+			updated_block->x = x;
+			updated_block->y = y;
+
 			if (update_block(updated_block))
 				fprintf(stderr, "failed to update block %s\n", updated_block->name);
+
+			if (updated_block->button)
+				updated_block->button = updated_block->x = updated_block->y = 0;
 		}
 	}
 

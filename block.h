@@ -40,6 +40,11 @@ struct block {
 	unsigned interval;
 	unsigned signal;
 	unsigned long last_update;
+
+	/* click event */
+	unsigned button;
+	unsigned x;
+	unsigned y;
 };
 
 struct status_line {
