@@ -179,7 +179,7 @@ parse_status_line(FILE *fp, struct status_line *status)
 }
 
 struct status_line *
-load_status_line(const char *inifile)
+ini_load_status_line(const char *inifile)
 {
 	static const char * const system = SYSCONFDIR "/i3blocks.conf";
 	const char * const home = getenv("HOME");
@@ -190,7 +190,7 @@ load_status_line(const char *inifile)
 	struct status_line *parse(void) {
 		status = calloc(1, sizeof(struct status_line));
 		if (status && parse_status_line(fp, status)) {
-			free_status_line(status);
+			block_free_status_line(status);
 			status = NULL;
 		}
 

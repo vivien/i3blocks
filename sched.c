@@ -113,7 +113,7 @@ update_status_line(struct status_line *status)
 			updated_block->x = x;
 			updated_block->y = y;
 
-			if (update_block(updated_block))
+			if (block_update(updated_block))
 				fprintf(stderr, "failed to update block %s\n", updated_block->name);
 
 			if (updated_block->button)
@@ -274,7 +274,7 @@ sched_start(struct status_line *status)
 
 	while (1) {
 		update_status_line(status);
-		print_status_line(status);
+		json_print_status_line(status);
 
 		/* Sleep or force check on interruption */
 		if (sleep(sleeptime))

@@ -99,7 +99,7 @@ failed(const char *reason, struct block *block)
 }
 
 int
-update_block(struct block *block)
+block_update(struct block *block)
 {
 	FILE *child_stdout;
 	int child_status, code;
@@ -152,7 +152,7 @@ update_block(struct block *block)
 }
 
 void
-free_status_line(struct status_line *status)
+block_free_status_line(struct status_line *status)
 {
 	int i;
 

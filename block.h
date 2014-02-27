@@ -53,7 +53,7 @@ struct status_line {
 	unsigned int num;
 };
 
-void free_status_line(struct status_line *);
-int update_block(struct block *);
+void block_free_status_line(struct status_line *);
+int block_update(struct block *);
 
 #endif /* _BLOCK_H */

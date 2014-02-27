@@ -19,7 +19,7 @@
 #ifndef _JSON_H
 #define _JSON_H
 
-void print_status_line(struct status_line *);
+void json_print_status_line(struct status_line *);
 
 #endif /* _JSON_H */
 

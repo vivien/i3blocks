@@ -78,7 +78,7 @@ block_to_json(struct block *block)
 }
 
 void
-print_status_line(struct status_line *status)
+json_print_status_line(struct status_line *status)
 {
 	bool first = true;
 	int i = 0;

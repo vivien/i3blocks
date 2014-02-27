@@ -19,6 +19,6 @@
 #ifndef _INI_H
 #define _INI_H
 
-struct status_line *load_status_line(const char *);
+struct status_line *ini_load_status_line(const char *);
 
 #endif /* _INI_H */

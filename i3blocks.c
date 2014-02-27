@@ -62,7 +62,7 @@ main(int argc, char *argv[])
 		}
 	}
 
-	status = load_status_line(inifile);
+	status = ini_load_status_line(inifile);
 	if (!status) {
 		fprintf(stderr, "Try '%s -h' for more information.\n", argv[0]);
 		return 1;
