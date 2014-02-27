@@ -11,7 +11,7 @@ user.
 
 It aims to respect the
 [i3bar protocol](http://i3wm.org/docs/i3bar-protocol.html), providing 
-customization such as width, text alignment, separator, urgence, color, etc.
+customization such as text alignment, urgency, color, and more.
 
 - - -
 
