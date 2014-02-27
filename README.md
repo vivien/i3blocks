@@ -11,14 +11,21 @@ the output of a *command* provided by the user. Blocks are updated at a given
 Here is an example of status line, showing the time (updated every 5 seconds) 
 and the volume, updated only when **i3blocks** receives a SIGUSR1:
 
-    [volume]
-    command=echo -n 'Volume: '; amixer get Master | grep -E -o '[0-9][0-9]?%'
-    signal=10
-    # use 'killall -USR1 i3blocks' after changing the volume
+```` ini
+[volume]
+command=echo -n 'Volume: '; amixer get Master | grep -E -o '[0-9][0-9]?%'
+signal=10
+# use 'killall -USR1 i3blocks' after changing the volume
 
-    [time]
-    command=date '+%D %T'
-    interval=5
+[time]
+command=date '+%D %T'
+interval=5
+
+[clickme]
+command=echo button=$BLOCK_BUTTON x=$BLOCK_X y=$BLOCK_Y
+min_width=button=1 x=1366 y=768
+align=left
+````
 
 *For more information about how it works, please see the 
 [**manpage**](http://vivien.github.io/i3blocks).*
