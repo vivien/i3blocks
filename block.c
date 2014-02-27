@@ -91,28 +91,35 @@ linecpy(char **lines, char *dest, unsigned int size)
 static void
 failed(const char *reason, struct block *block)
 {
-	strncpy(block->full_text, reason, sizeof(block->full_text) - 1);
-	strncpy(block->min_width, reason, sizeof(block->min_width) - 1);
+	char text[1024];
+
+	snprintf(text, sizeof(text), "[%s] ERROR: %s", block->name, reason);
+	strncpy(block->full_text, text, sizeof(block->full_text) - 1);
+	strncpy(block->min_width, text, sizeof(block->min_width) - 1);
 	strcpy(block->short_text, "FAILED");
 	strcpy(block->color, "#FF0000");
 	strcpy(block->urgent, "true");
 }
 
-int
+void
 block_update(struct block *block)
 {
 	FILE *child_stdout;
 	int child_status, code;
 	char output[2048], *text = output;
+	char reason[1024]; /* in case of failure */
 
-	if (setup_env(block))
-		return 1;
+	if (setup_env(block)) {
+		sprintf(reason, "failed to setup env");
+		goto fail;
+	}
 
 	/* Pipe, fork and exec a shell for the block command line */
 	child_stdout = popen(block->command, "r");
 	if (!child_stdout) {
 		perror("popen");
-		return 1;
+		sprintf(reason, "failed to fork");
+		goto fail;
 	}
 
 	/* Do not distinguish EOF or error, just read child's output */
@@ -123,22 +130,21 @@ block_update(struct block *block)
 	child_status = pclose(child_stdout);
 	if (child_status == -1) {
 		perror("pclose");
-		return 1;
+		sprintf(reason, "failed to wait");
+		goto fail;
 	}
 
 	if (!WIFEXITED(child_status)) {
 		fprintf(stderr, "child did not exit correctly\n");
-		return 1;
+		sprintf(reason, "command did not exit");
+		goto fail;
 	}
 
 	code = WEXITSTATUS(child_status);
 	if (code != 0 && code != 127) {
-		char reason[1024];
-
 		fprintf(stderr, "bad return code %d, skipping %s\n", code, block->name);
-		sprintf(reason, "[%s] ERROR: bad return code %d", block->name, code);
-		failed(reason, block);
-		return 1;
+		sprintf(reason, "bad return code %d", code);
+		goto fail;
 	}
 
 	/* From here, the update went ok so merge the output */
@@ -148,7 +154,11 @@ block_update(struct block *block)
 	linecpy(&text, block->color, sizeof(block->color) - 1);
 	block->last_update = time(NULL);
 
-	return 0;
+	fprintf(stderr, "[%s] updated successfully\n", block->name);
+	return;
+
+fail:
+	failed(reason, block);
 }
 
 void

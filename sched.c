@@ -110,8 +110,7 @@ update_status_line(struct status_line *status)
 			memcpy(updated_block, config_block, sizeof(struct block));
 			memcpy(&updated_block->click, &click, sizeof(struct click));
 
-			if (block_update(updated_block))
-				fprintf(stderr, "failed to update block %s\n", updated_block->name);
+			block_update(updated_block);
 
 			/* clear click info */
 			memset(&updated_block->click, 0, sizeof(struct click));

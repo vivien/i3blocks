@@ -57,6 +57,6 @@ struct status_line {
 };
 
 void block_free_status_line(struct status_line *);
-int block_update(struct block *);
+void block_update(struct block *);
 
 #endif /* _BLOCK_H */
