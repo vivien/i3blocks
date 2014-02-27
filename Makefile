@@ -36,7 +36,7 @@ i3blocks.1: i3blocks.1.ronn
 	ronn -w -r $<
 
 clean:
-	rm -f *.o i3blocks i3blocks.1
+	rm -f *.o i3blocks
 
 install: all
 	install -m 755 -d $(DESTDIR)$(PREFIX)/bin
