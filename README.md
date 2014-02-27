@@ -49,7 +49,12 @@ possibilities it offers you.
 
 ## Installation
 
-To install i3blocks, run `make install` within the source directory.
+To install i3blocks, run `make install` within the source directory,
+then set your `status_command` in a `bar` block of your `~/.i3/config` file:
+
+    bar {
+      status_command i3blocks
+    }
 
 ## Copying
 
