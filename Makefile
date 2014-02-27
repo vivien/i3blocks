@@ -50,7 +50,7 @@ ifneq ($(PREFIX),/usr)
 else
 	install -m 644 i3blocks.conf $(DESTDIR)$(SYSCONFDIR)/i3blocks.conf
 endif
-	install -m 644 i3blocks.1 $(DESTDIR)$(PREFIX)/share/man/man1 || true
+	install -m 644 i3blocks.1 $(DESTDIR)$(PREFIX)/share/man/man1
 	install -m 755 scripts/* $(DESTDIR)$(PREFIX)/libexec/i3blocks/
 
 uninstall:
