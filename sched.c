@@ -82,7 +82,7 @@ need_update(struct block *block)
 
 	if (caughtsig) {
 		signaled = caughtsig == block->signal;
-		clicked = block->button > 0;
+		clicked = block->click.button > 0;
 	}
 
 	return first_time || outdated || signaled || clicked;
@@ -103,21 +103,18 @@ update_status_line(struct status_line *status)
 
 		/* If a block needs an update, reset and execute it */
 		if (need_update(updated_block)) {
-			const unsigned button = updated_block->button;
-			const unsigned x = updated_block->x;
-			const unsigned y = updated_block->y;
+			struct click click;
 
+			/* save click info and restore config values */
+			memcpy(&click, &updated_block->click, sizeof(struct click));
 			memcpy(updated_block, config_block, sizeof(struct block));
-
-			updated_block->button = button;
-			updated_block->x = x;
-			updated_block->y = y;
+			memcpy(&updated_block->click, &click, sizeof(struct click));
 
 			if (block_update(updated_block))
 				fprintf(stderr, "failed to update block %s\n", updated_block->name);
 
-			if (updated_block->button)
-				updated_block->button = updated_block->x = updated_block->y = 0;
+			/* clear click info */
+			memset(&updated_block->click, 0, sizeof(struct click));
 		}
 	}
 
@@ -133,11 +130,10 @@ update_status_line(struct status_line *status)
  *     ',{"name":"foo","instance":"bar","button":1,"x":1186,"y":13}\n'
  */
 static void
-parse_click(char *click, const char **name, const char **instance,
-		unsigned *button, unsigned *x, unsigned *y)
+parse_click(char *json, const char **name, const char **instance, struct click *click)
 {
 #define ATOI(_key) \
-	*_key = atoi(strstr(click, "\"" #_key "\":") + strlen("\"" #_key "\":"))
+	click->_key = atoi(strstr(json, "\"" #_key "\":") + strlen("\"" #_key "\":"))
 
 	ATOI(button);
 	ATOI(x);
@@ -146,7 +142,7 @@ parse_click(char *click, const char **name, const char **instance,
 #undef ATOI
 
 #define STR(_key) \
-	*_key = strstr(click, "\"" #_key "\":\""); \
+	*_key = strstr(json, "\"" #_key "\":\""); \
 	if (*_key) { \
 		*_key += strlen("\"" #_key "\":\""); \
 		*strchr(*_key, '"') = '\0'; \
@@ -161,15 +157,15 @@ parse_click(char *click, const char **name, const char **instance,
 static void
 handle_click(struct status_line *status)
 {
-	char click[1024];
+	char json[1024];
 
 	const char *name, *instance;
-	unsigned button, x, y;
+	struct click click;
 
-	memset(click, 0, sizeof(click));
-	fread(click, 1, sizeof(click) - 1, stdin);
+	memset(json, 0, sizeof(json));
+	fread(json, 1, sizeof(json) - 1, stdin);
 
-	parse_click(click, &name, &instance, &button, &x, &y);
+	parse_click(json, &name, &instance, &click);
 
 	if (!name)
 		name = "\0";
@@ -177,7 +173,7 @@ handle_click(struct status_line *status)
 		instance = "\0";
 
 	fprintf(stderr, "got a click: name=%s instance=%s button=%d x=%d y=%d\n",
-			name, instance, button, x, y);
+			name, instance, click.button, click.x, click.y);
 
 	/* find the corresponding block */
 	if (*name || *instance) {
@@ -186,11 +182,8 @@ handle_click(struct status_line *status)
 		for (i = 0; i < status->num; ++i) {
 			struct block *block = status->updated_blocks + i;
 
-			if (strcmp(block->name, name) == 0 &&
-					strcmp(block->instance, instance) == 0) {
-				block->button = button;
-				block->x = x;
-				block->y = y;
+			if (strcmp(block->name, name) == 0 && strcmp(block->instance, instance) == 0) {
+				memcpy(&block->click, &click, sizeof(struct click));
 
 				/* It shouldn't be likely to have several blocks with the same name/instance, so stop here */
 				break;

@@ -32,6 +32,13 @@
 	_(separator,             8,    boolean) \
 	_(separator_block_width, 8,    number) \
 
+/* click event */
+struct click {
+	unsigned button;
+	unsigned x;
+	unsigned y;
+};
+
 struct block {
 #define MEMBER(_name, _size, _type) char _name[_size];
 
@@ -40,11 +47,7 @@ struct block {
 	unsigned interval;
 	unsigned signal;
 	unsigned long last_update;
-
-	/* click event */
-	unsigned button;
-	unsigned x;
-	unsigned y;
+	struct click click;
 };
 
 struct status_line {

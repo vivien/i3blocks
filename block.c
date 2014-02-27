@@ -43,22 +43,22 @@ setup_env(struct block *block)
 	}
 
 	/* FIXME define BLOCK_{BUTTON,X,Y} to 0 if no click? */
-	if (block->button) {
+	if (block->click.button) {
 		char s[8];
 
-		snprintf(s, sizeof(s), "%d", block->button);
+		snprintf(s, sizeof(s), "%d", block->click.button);
 		if (setenv("BLOCK_BUTTON", s, 1) == -1) {
 			perror("setenv(button)");
 			return 1;
 		}
 
-		snprintf(s, sizeof(s), "%d", block->x);
+		snprintf(s, sizeof(s), "%d", block->click.x);
 		if (setenv("BLOCK_X", s, 1) == -1) {
 			perror("setenv(x)");
 			return 1;
 		}
 
-		snprintf(s, sizeof(s), "%d", block->y);
+		snprintf(s, sizeof(s), "%d", block->click.y);
 		if (setenv("BLOCK_Y", s, 1) == -1) {
 			perror("setenv(y)");
 			return 1;
