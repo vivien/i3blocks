@@ -175,7 +175,6 @@ parse_status_line(FILE *fp, struct status_line *status)
 		}
 	}
 
-	calculate_sleeptime(status);
 	return duplicate_blocks(status);
 }
 

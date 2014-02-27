@@ -51,12 +51,9 @@ struct status_line {
 	struct block *blocks;
 	struct block *updated_blocks;
 	unsigned int num;
-	unsigned int sleeptime;
 };
 
-void calculate_sleeptime(struct status_line *);
-void update_status_line(struct status_line *);
-void mark_update(struct status_line *);
 void free_status_line(struct status_line *);
+int update_block(struct block *);
 
 #endif /* _BLOCK_H */

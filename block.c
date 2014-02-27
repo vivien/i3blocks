@@ -98,7 +98,7 @@ failed(const char *reason, struct block *block)
 	strcpy(block->urgent, "true");
 }
 
-static int
+int
 update_block(struct block *block)
 {
 	FILE *child_stdout;
@@ -149,95 +149,6 @@ update_block(struct block *block)
 	block->last_update = time(NULL);
 
 	return 0;
-}
-
-static inline bool
-need_update(struct block *block)
-{
-	bool first_time, outdated, signaled, clicked;
-
-	first_time = outdated = signaled = clicked = false;
-
-	if (block->last_update == 0)
-		first_time = true;
-
-	if (block->interval) {
-		const unsigned long now = time(NULL);
-		const unsigned long next_update = block->last_update + block->interval;
-
-		outdated = ((long) (next_update - now)) <= 0;
-	}
-
-	if (caughtsig) {
-		signaled = caughtsig == block->signal;
-		clicked = block->button > 0;
-	}
-
-	return first_time || outdated || signaled || clicked;
-}
-
-void
-calculate_sleeptime(struct status_line *status)
-{
-	int time = 0;
-
-	/* The maximum sleep time is actually the GCD between all block intervals */
-	int gcd(int a, int b) {
-		while (b != 0)
-			a %= b, a ^= b, b ^= a, a ^= b;
-
-		return a;
-	}
-
-	if (status->num > 0) {
-		time = status->blocks->interval; /* first block's interval */
-
-		if (status->num >= 2) {
-			int i;
-
-			for (i = 1; i < status->num; ++i)
-				time = gcd(time, (status->blocks + i)->interval);
-		}
-	}
-
-	status->sleeptime = time > 0 ? time : 5; /* default */
-}
-
-void
-update_status_line(struct status_line *status)
-{
-	int i;
-
-	for (i = 0; i < status->num; ++i) {
-		const struct block *config_block = status->blocks + i;
-		struct block *updated_block = status->updated_blocks + i;
-
-		/* Skip static block */
-		if (!*config_block->command)
-			continue;
-
-		/* If a block needs an update, reset and execute it */
-		if (need_update(updated_block)) {
-			const unsigned button = updated_block->button;
-			const unsigned x = updated_block->x;
-			const unsigned y = updated_block->y;
-
-			memcpy(updated_block, config_block, sizeof(struct block));
-
-			updated_block->button = button;
-			updated_block->x = x;
-			updated_block->y = y;
-
-			if (update_block(updated_block))
-				fprintf(stderr, "failed to update block %s\n", updated_block->name);
-
-			if (updated_block->button)
-				updated_block->button = updated_block->x = updated_block->y = 0;
-		}
-	}
-
-	if (caughtsig > 0)
-		caughtsig = 0;
 }
 
 void
