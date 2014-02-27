@@ -1,8 +1,9 @@
 # i3blocks
 
 **i3blocks** is a highly flexible *status line* for the [i3](http://i3wm.org) 
-window manager.
-It handles *clicks*, *signals* and *language-agnostic* user *scripts*.
+window manager. It handles *clicks*, *signals* and *language-agnostic* user 
+*scripts*. It aims to respect the
+[i3bar protocol](http://i3wm.org/docs/i3bar-protocol.html).
 
 The content of each *block* (e.g. time, battery status, network state, ...) is 
 the output of a *command* provided by the user. Blocks are updated at a given 
