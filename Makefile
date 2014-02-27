@@ -9,6 +9,8 @@ ifndef SYSCONFDIR
   endif
 endif
 
+PROGRAM = i3blocks
+
 CFLAGS += -Wall
 CFLAGS += -g
 CPPFLAGS += -DSYSCONFDIR=\"$(SYSCONFDIR)\"
@@ -24,39 +26,39 @@ OBJS := $(OBJS:.c=.o)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 	@echo " CC $<"
 
-all: i3blocks man
+all: $(PROGRAM) man
 
-i3blocks: ${OBJS}
+$(PROGRAM): ${OBJS}
 	$(CC) $(LDFLAGS) -o $@ $^
 	@echo " LD $@"
 
-man: i3blocks.1
+man: $(PROGRAM).1
 
-i3blocks.1: i3blocks.1.ronn
+$(PROGRAM).1: $(PROGRAM).1.ronn
 	ronn -w -r $<
 
 clean:
-	rm -f *.o i3blocks
+	rm -f *.o $(PROGRAM)
 
 install: all
 	install -m 755 -d $(DESTDIR)$(PREFIX)/bin
 	install -m 755 -d $(DESTDIR)$(SYSCONFDIR)
 	install -m 755 -d $(DESTDIR)$(PREFIX)/share/man/man1
-	install -m 755 -d $(DESTDIR)$(PREFIX)/libexec/i3blocks
-	install -m 755 i3blocks $(DESTDIR)$(PREFIX)/bin/i3blocks
+	install -m 755 -d $(DESTDIR)$(PREFIX)/libexec/$(PROGRAM)
+	install -m 755 $(PROGRAM) $(DESTDIR)$(PREFIX)/bin/$(PROGRAM)
 ifneq ($(PREFIX),/usr)
-	sed 's,/usr/,$(PREFIX)/,' i3blocks.conf > $(DESTDIR)$(SYSCONFDIR)/i3blocks.conf
-	chmod 644 $(DESTDIR)$(SYSCONFDIR)/i3blocks.conf
+	sed 's,/usr/,$(PREFIX)/,' $(PROGRAM).conf > $(DESTDIR)$(SYSCONFDIR)/$(PROGRAM).conf
+	chmod 644 $(DESTDIR)$(SYSCONFDIR)/$(PROGRAM).conf
 else
-	install -m 644 i3blocks.conf $(DESTDIR)$(SYSCONFDIR)/i3blocks.conf
+	install -m 644 $(PROGRAM).conf $(DESTDIR)$(SYSCONFDIR)/$(PROGRAM).conf
 endif
-	install -m 644 i3blocks.1 $(DESTDIR)$(PREFIX)/share/man/man1
-	install -m 755 scripts/* $(DESTDIR)$(PREFIX)/libexec/i3blocks/
+	install -m 644 $(PROGRAM).1 $(DESTDIR)$(PREFIX)/share/man/man1
+	install -m 755 scripts/* $(DESTDIR)$(PREFIX)/libexec/$(PROGRAM)/
 
 uninstall:
-	rm -f $(DESTDIR)$(PREFIX)/bin/i3blocks
-	rm -f $(DESTDIR)$(SYSCONFDIR)/i3blocks.conf
-	rm -f $(DESTDIR)$(SYSCONFDIR)/share/man/man1/i3blocks.1
-	rm -rf $(DESTDIR)$(PREFIX)/libexec/i3blocks
+	rm -f $(DESTDIR)$(PREFIX)/bin/$(PROGRAM)
+	rm -f $(DESTDIR)$(SYSCONFDIR)/$(PROGRAM).conf
+	rm -f $(DESTDIR)$(SYSCONFDIR)/share/man/man1/$(PROGRAM).1
+	rm -rf $(DESTDIR)$(PREFIX)/libexec/$(PROGRAM)
 
 .PHONY: all clean install uninstall
