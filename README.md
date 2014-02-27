@@ -1,14 +1,17 @@
 # i3blocks
 
-i3blocks is a highly flexible *status line* for the [i3](http://i3wm.org) 
+i3blocks is a highly flexible **status line** for the [i3](http://i3wm.org) 
 window manager. It handles *clicks*, *signals* and *language-agnostic* user 
-*scripts*. It aims to respect the
-[i3bar protocol](http://i3wm.org/docs/i3bar-protocol.html).
+*scripts*.
 
 The content of each *block* (e.g. time, battery status, network state, ...) is 
 the output of a *command* provided by the user. Blocks are updated on *click*, 
 at a given *interval* of time or on a given *signal*, also specified by the 
 user.
+
+It aims to respect the
+[i3bar protocol](http://i3wm.org/docs/i3bar-protocol.html), providing 
+customization such as width, text alignment, separator, urgence, color, etc.
 
 - - -
 
@@ -50,5 +53,5 @@ To install i3blocks, run `make install` within the source directory.
 
 ## Copying
 
-i3blocks is Copyright (C) 2014 Vivien Didelot
+i3blocks is Copyright (C) 2014 Vivien Didelot<br />
 See the file COPYING for information of licensing and distribution.
