@@ -75,6 +75,8 @@ block_to_json(struct block *block)
 	fprintf(stdout, "{");
 	PROTOCOL_KEYS(JSON);
 	fprintf(stdout, "}");
+
+#undef JSON
 }
 
 void

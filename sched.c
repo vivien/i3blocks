@@ -134,12 +134,6 @@ parse_click(char *json, const char **name, const char **instance, struct click *
 #define ATOI(_key) \
 	click->_key = atoi(strstr(json, "\"" #_key "\":") + strlen("\"" #_key "\":"))
 
-	ATOI(button);
-	ATOI(x);
-	ATOI(y);
-
-#undef ATOI
-
 #define STR(_key) \
 	*_key = strstr(json, "\"" #_key "\":\""); \
 	if (*_key) { \
@@ -147,10 +141,15 @@ parse_click(char *json, const char **name, const char **instance, struct click *
 		*strchr(*_key, '"') = '\0'; \
 	}
 
+	ATOI(button);
+	ATOI(x);
+	ATOI(y);
+
 	STR(instance);
 	STR(name);
 
 #undef STR
+#undef ATOI
 }
 
 static void

@@ -100,6 +100,9 @@ parse_property(const char *line, struct block *block)
 	PARSE_NUM(signal);
 	/* TODO some better check for numbers and boolean */
 
+#undef PARSE_NUM
+#undef PARSE
+
 	printf("unknown property: \"%s\"\n", property);
 	return 1;
 }

@@ -48,6 +48,8 @@ struct block {
 	unsigned signal;
 	unsigned long last_update;
 	struct click click;
+
+#undef MEMBER
 };
 
 struct status_line {
