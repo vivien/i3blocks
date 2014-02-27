@@ -44,8 +44,8 @@ install: all
 	install -m 755 -d $(DESTDIR)$(PREFIX)/share/man/man1
 	install -m 755 -d $(DESTDIR)$(PREFIX)/libexec/i3blocks
 	install -m 755 i3blocks $(DESTDIR)$(PREFIX)/bin/i3blocks
-ifneq ($(DESTDIR)$(PREFIX), /usr)
-	sed "s,/usr/,$(DESTDIR)$(PREFIX)/," i3blocks.conf > $(DESTDIR)$(SYSCONFDIR)/i3blocks.conf
+ifneq ($(PREFIX),/usr)
+	sed 's,/usr/,$(PREFIX)/,' i3blocks.conf > $(DESTDIR)$(SYSCONFDIR)/i3blocks.conf
 	chmod 644 $(DESTDIR)$(SYSCONFDIR)/i3blocks.conf
 else
 	install -m 644 i3blocks.conf $(DESTDIR)$(SYSCONFDIR)/i3blocks.conf
