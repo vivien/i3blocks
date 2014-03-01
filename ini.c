@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include "block.h"
+#include "log.h"
 
 #ifndef SYSCONFDIR
 #define SYSCONFDIR "/etc"
@@ -52,12 +53,12 @@ parse_section(const char *line, char *name, unsigned int size)
 
 	/* stop if the last char is not a closing bracket */
 	if (!closing || line + len - 1 != closing) {
-		fprintf(stderr, "malformated section \"%s\"\n", line);
+		error("malformated section \"%s\"", line);
 		return 1;
 	}
 
 	if (size - 1 < len - 2) {
-		fprintf(stderr, "section name too long \"%s\"\n", line);
+		error("section name too long \"%s\"", line);
 		return 1;
 	}
 
@@ -73,7 +74,7 @@ parse_property(const char *line, struct block *block)
 	const char *property, *value;
 
 	if (!equal) {
-		fprintf(stderr, "malformated property, should be of the form 'key=value'\n");
+		error("malformated property, should be of the form 'key=value'");
 		return 1;
 	}
 
@@ -103,7 +104,7 @@ parse_property(const char *line, struct block *block)
 #undef PARSE_NUM
 #undef PARSE
 
-	printf("unknown property: \"%s\"\n", property);
+	error("unknown property: \"%s\"", property);
 	return 1;
 }
 
@@ -133,10 +134,11 @@ parse_status_line(FILE *fp, struct status_line *status)
 		int len = strlen(line);
 
 		if (line[len - 1] != '\n') {
-			fprintf(stderr, "line \"%s\" is not terminated by a newline\n", line);
+			error("line \"%s\" is not terminated by a newline", line);
 			return 1;
 		}
 		line[len - 1] = '\0';
+		debug("parsing line: %s", line);
 
 		switch (*line) {
 		/* Comment or empty line? */
@@ -156,13 +158,13 @@ parse_status_line(FILE *fp, struct status_line *status)
 			if (parse_section(line, block->name, sizeof(block->name)))
 				return 1;
 
-			/* fprintf(stderr, "new block named: \"%s\"\n", block->name); */
+			/* debug("new block named: \"%s\"", block->name); */
 			break;
 
 		/* Property? */
 		case 'a' ... 'z':
 			if (!block) {
-				fprintf(stderr, "no section yet, parsing global properties\n");
+				debug("no section yet, parsing global properties");
 				block = &global;
 			}
 
@@ -173,7 +175,7 @@ parse_status_line(FILE *fp, struct status_line *status)
 
 		/* Syntax error */
 		default:
-			fprintf(stderr, "malformated line \"%s\"\n", line);
+			error("malformated line: %s", line);
 			return 1;
 		}
 	}
@@ -198,16 +200,17 @@ ini_load_status_line(const char *inifile)
 		}
 
 		if (fclose(fp))
-			perror("fclose");
+			errorx("fclose");
 
 		return status;
 	}
 
 	/* command line config file? */
 	if (inifile) {
+		debug("try custom config %s", inifile);
 		fp = fopen(inifile, "r");
 		if (!fp) {
-			perror("fopen");
+			errorx("fopen");
 			return NULL;
 		}
 
@@ -217,21 +220,25 @@ ini_load_status_line(const char *inifile)
 	/* user config file? */
 	if (home) {
 		snprintf(buf, PATH_MAX, "%s/.i3blocks.conf", home);
+		debug("try $HOME config %s", buf);
 		fp = fopen(buf, "r");
 		if (fp)
 			return parse();
 
 		/* if the file doesn't exist, fall through... */
 		if (errno != ENOENT) {
-			perror("fopen");
+			errorx("fopen");
 			return NULL;
 		}
+
+		debug("no config found in $HOME");
 	}
 
 	/* system config file? */
+	debug("try system config %s", system);
 	fp = fopen(system, "r");
 	if (!fp) {
-		perror("fopen");
+		errorx("fopen");
 		return NULL;
 	}
 

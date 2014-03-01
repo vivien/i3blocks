@@ -27,6 +27,7 @@
 
 #include "block.h"
 #include "json.h"
+#include "log.h"
 
 static volatile sig_atomic_t caughtsig;
 
@@ -85,6 +86,12 @@ need_update(struct block *block)
 		clicked = block->click.button > 0;
 	}
 
+	debug("CHECK [%s] first_time: %s, outdated: %s, signaled: %s, clicked: %s", block->name,
+			first_time ? "YES" : "no",
+			outdated ? "YES" : "no",
+			signaled ? "YES" : "no",
+			clicked ? "YES" : "no");
+
 	return first_time || outdated || signaled || clicked;
 }
 
@@ -98,8 +105,10 @@ update_status_line(struct status_line *status)
 		struct block *updated_block = status->updated_blocks + i;
 
 		/* Skip static block */
-		if (!*config_block->command)
+		if (!*config_block->command) {
+			debug("[%s] no command, skipping", config_block->name);
 			continue;
+		}
 
 		/* If a block needs an update, reset and execute it */
 		if (need_update(updated_block)) {
@@ -170,7 +179,7 @@ handle_click(struct status_line *status)
 	if (!instance)
 		instance = "\0";
 
-	fprintf(stderr, "got a click: name=%s instance=%s button=%d x=%d y=%d\n",
+	debug("got a click: name=%s instance=%s button=%d x=%d y=%d",
 			name, instance, click.button, click.x, click.y);
 
 	/* find the corresponding block */
@@ -184,6 +193,7 @@ handle_click(struct status_line *status)
 				memcpy(&block->click, &click, sizeof(struct click));
 
 				/* It shouldn't be likely to have several blocks with the same name/instance, so stop here */
+				debug("match clicked block [%s]", block->name);
 				break;
 			}
 		}
@@ -200,7 +210,7 @@ sched_use_signal(const int sig)
 	sa.sa_flags = SA_RESTART; /* Restart functions if interrupted by handler */
 
 	if (sigaction(sig, &sa, NULL) == -1) {
-		perror("sigaction");
+		errorx("sigaction");
 		return 1;
 	}
 
@@ -214,20 +224,20 @@ sched_event_stdin(void)
 
 	/* Setup signal handler for stdin */
 	if (sched_use_signal(SIGIO)) {
-		fprintf(stderr, "failed to set SIGIO\n");
+		error("failed to set SIGIO");
 		return 1;
 	}
 
 	/* Set owner process that is to receive "I/O possible" signal */
 	if (fcntl(STDIN_FILENO, F_SETOWN, getpid()) == -1) {
-		fprintf(stderr, "failed to set process as owner for stdin\n");
+		error("failed to set process as owner for stdin");
 		return 1;
 	}
 
 	/* Enable "I/O possible" signaling and make I/O nonblocking for file descriptor */
 	flags = fcntl(STDIN_FILENO, F_GETFL);
 	if (fcntl(STDIN_FILENO, F_SETFL, flags | O_ASYNC | O_NONBLOCK) == -1) {
-		fprintf(stderr, "failed to enable I/O signaling for stdin\n");
+		error("failed to enable I/O signaling for stdin");
 		return 1;
 	}
 
@@ -239,18 +249,18 @@ sched_init(void)
 {
 	/* Setup signal handler for blocks */
 	if (sched_use_signal(SIGUSR1)) {
-		fprintf(stderr, "failed to set SIGUSR1\n");
+		error("failed to set SIGUSR1");
 		return 1;
 	}
 
 	if (sched_use_signal(SIGUSR2)) {
-		fprintf(stderr, "failed to set SIGUSR2\n");
+		error("failed to set SIGUSR2");
 		return 1;
 	}
 
 	/* Setup event I/O for stdin (clicks) */
 	if (sched_event_stdin()) {
-		fprintf(stderr, "failed to setup event I/O for stdin\n");
+		error("failed to setup event I/O for stdin");
 		return 1;
 	}
 
@@ -262,14 +272,19 @@ sched_start(struct status_line *status)
 {
 	const unsigned sleeptime = longest_sleep(status);
 
+	debug("starting scheduler with sleep time %d", sleeptime);
 
 	while (1) {
 		update_status_line(status);
 		json_print_status_line(status);
 
 		/* Sleep or force check on interruption */
-		if (sleep(sleeptime))
-			if (caughtsig == SIGIO)
+		if (sleep(sleeptime)) {
+			debug("woken up by signal %d", caughtsig);
+			if (caughtsig == SIGIO) {
+				debug("stdin readable");
 				handle_click(status);
+			}
+		}
 	}
 }

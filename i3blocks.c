@@ -25,6 +25,7 @@
 #include "block.h"
 #include "ini.h"
 #include "json.h"
+#include "log.h"
 #include "sched.h"
 
 #ifndef VERSION
@@ -57,14 +58,14 @@ main(int argc, char *argv[])
 			printf("i3blocks " VERSION " © 2014 Vivien Didelot and contributors\n");
 			return 0;
 		default:
-			fprintf(stderr, "Try '%s -h' for more information.\n", argv[0]);
+			error("Try '%s -h' for more information.", argv[0]);
 			return 1;
 		}
 	}
 
 	status = ini_load_status_line(inifile);
 	if (!status) {
-		fprintf(stderr, "Try '%s -h' for more information.\n", argv[0]);
+		error("Try '%s -h' for more information.", argv[0]);
 		return 1;
 	}
 

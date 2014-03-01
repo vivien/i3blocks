@@ -22,6 +22,7 @@
 #include <string.h>
 
 #include "block.h"
+#include "log.h"
 
 static inline int
 is_number(const char *str)
@@ -91,12 +92,15 @@ json_print_status_line(struct status_line *status)
 		struct block *block = status->updated_blocks + i;
 
 		/* full_text is the only mandatory key, skip if empty */
-		if (!*block->full_text)
+		if (!*block->full_text) {
+			debug("block [%s] has no text to display, skipping", block->name);
 			continue;
+		}
 
 		if (!first) fprintf(stdout, ",");
 		else first = false;
 
+		debug("printing block [%s]", block->name);
 		block_to_json(block);
 	}
 

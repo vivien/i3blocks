@@ -16,7 +16,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <errno.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -26,6 +25,7 @@
 #include <time.h>
 
 #include "block.h"
+#include "log.h"
 
 extern volatile sig_atomic_t caughtsig;
 
@@ -33,12 +33,12 @@ static int
 setup_env(struct block *block)
 {
 	if (setenv("BLOCK_NAME", block->name, 1) == -1) {
-		perror("setenv(name)");
+		errorx("setenv BLOCK_NAME");
 		return 1;
 	}
 
 	if (setenv("BLOCK_INSTANCE", block->instance, 1) == -1) {
-		perror("setenv(instance)");
+		errorx("setenv BLOCK_INSTANCE");
 		return 1;
 	}
 
@@ -48,19 +48,19 @@ setup_env(struct block *block)
 
 		snprintf(s, sizeof(s), "%d", block->click.button);
 		if (setenv("BLOCK_BUTTON", s, 1) == -1) {
-			perror("setenv(button)");
+			errorx("setenv BLOCK_BUTTON");
 			return 1;
 		}
 
 		snprintf(s, sizeof(s), "%d", block->click.x);
 		if (setenv("BLOCK_X", s, 1) == -1) {
-			perror("setenv(x)");
+			errorx("setenv BLOCK_X");
 			return 1;
 		}
 
 		snprintf(s, sizeof(s), "%d", block->click.y);
 		if (setenv("BLOCK_Y", s, 1) == -1) {
-			perror("setenv(y)");
+			errorx("setenv BLOCK_Y");
 			return 1;
 		}
 	}
@@ -117,7 +117,7 @@ block_update(struct block *block)
 	/* Pipe, fork and exec a shell for the block command line */
 	child_stdout = popen(block->command, "r");
 	if (!child_stdout) {
-		perror("popen");
+		errorx("popen `%s`", block->command);
 		sprintf(reason, "failed to fork");
 		goto fail;
 	}
@@ -129,20 +129,20 @@ block_update(struct block *block)
 	/* Wait for the child process to terminate */
 	child_status = pclose(child_stdout);
 	if (child_status == -1) {
-		perror("pclose");
+		errorx("pclose");
 		sprintf(reason, "failed to wait");
 		goto fail;
 	}
 
 	if (!WIFEXITED(child_status)) {
-		fprintf(stderr, "child did not exit correctly\n");
+		error("child did not exit correctly");
 		sprintf(reason, "command did not exit");
 		goto fail;
 	}
 
 	code = WEXITSTATUS(child_status);
 	if (code != 0 && code != 127) {
-		fprintf(stderr, "bad return code %d, skipping %s\n", code, block->name);
+		error("bad return code %d, skipping %s", code, block->name);
 		sprintf(reason, "bad return code %d", code);
 		goto fail;
 	}
@@ -154,7 +154,7 @@ block_update(struct block *block)
 	linecpy(&text, block->color, sizeof(block->color) - 1);
 	block->last_update = time(NULL);
 
-	fprintf(stderr, "[%s] updated successfully\n", block->name);
+	debug("[%s] updated successfully", block->name);
 	return;
 
 fail:

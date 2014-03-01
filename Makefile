@@ -11,10 +11,9 @@ endif
 
 PROGRAM = i3blocks
 
-CFLAGS += -Wall
-CFLAGS += -g
 CPPFLAGS += -DSYSCONFDIR=\"$(SYSCONFDIR)\"
 CPPFLAGS += -DVERSION=\"${GIT_VERSION}\"
+CFLAGS += -Wall
 
 VERSION = $(shell git describe --tags --abbrev=0)
 GIT_VERSION = "$(shell git describe --tags --always) ($(shell git log --pretty=format:%cd --date=short -n1))"
@@ -27,6 +26,10 @@ OBJS := $(OBJS:.c=.o)
 	@echo " CC $<"
 
 all: $(PROGRAM) man
+
+debug: CPPFLAGS += -DDEBUG
+debug: CFLAGS += -g
+debug: $(PROGRAM)
 
 $(PROGRAM): ${OBJS}
 	$(CC) $(LDFLAGS) -o $@ $^
