@@ -53,7 +53,10 @@ possibilities it offers you.
 
 ## Installation
 
+
   * Download i3blocks and run `make install` within the source directory
+    * *Note that there's a [AUR](https://aur.archlinux.org/packages/i3blocks/) 
+    package for Archlinux.*
   * set your `status_command` in a bar block of your ~/.i3/config file:
 
         bar {
