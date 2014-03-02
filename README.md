@@ -38,6 +38,10 @@ You can use your own scripts, or the
 [ones](https://github.com/vivien/i3blocks/tree/master/scripts) provided with 
 i3blocks. Feel free to contribute and improve them!
 
+The default config will look like this:
+
+![](http://i.imgur.com/p3d6MeK.png)
+
 ## Documentation
 
 For more information about how it works, please refer to the 
