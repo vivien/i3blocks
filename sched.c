@@ -86,7 +86,7 @@ need_update(struct block *block)
 		clicked = block->click.button > 0;
 	}
 
-	debug("CHECK [%s] first_time: %s, outdated: %s, signaled: %s, clicked: %s", block->name,
+	debug("[%s] CHECK first_time: %s, outdated: %s, signaled: %s, clicked: %s", block->name,
 			first_time ? "YES" : "no",
 			outdated ? "YES" : "no",
 			signaled ? "YES" : "no",
@@ -193,7 +193,7 @@ handle_click(struct status_line *status)
 				memcpy(&block->click, &click, sizeof(struct click));
 
 				/* It shouldn't be likely to have several blocks with the same name/instance, so stop here */
-				debug("match clicked block [%s]", block->name);
+				debug("[%s] clicked", block->name);
 				break;
 			}
 		}

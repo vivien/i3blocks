@@ -86,13 +86,13 @@ parse_property(const char *line, struct block *block)
 #define PARSE(_name, _size, _type) \
 	if (strcmp(property, #_name) == 0) { \
 		strncpy(block->_name, value, _size - 1); \
-		return 0; \
+		goto parsed; \
 	} \
 
 #define PARSE_NUM(_name) \
 	if (strcmp(property, #_name) == 0) { \
 		block->_name = atoi(value); \
-		return 0; \
+		goto parsed; \
 	} \
 
 	PROTOCOL_KEYS(PARSE);
@@ -106,6 +106,10 @@ parse_property(const char *line, struct block *block)
 
 	error("unknown property: \"%s\"", property);
 	return 1;
+
+parsed:
+	debug("[%s] set property %s to \"%s\"", block->name, property, value);
+	return 0;
 }
 
 static int
@@ -158,13 +162,13 @@ parse_status_line(FILE *fp, struct status_line *status)
 			if (parse_section(line, block->name, sizeof(block->name)))
 				return 1;
 
-			/* debug("new block named: \"%s\"", block->name); */
+			debug("[%s] new block", block->name);
 			break;
 
 		/* Property? */
 		case 'a' ... 'z':
 			if (!block) {
-				debug("no section yet, parsing global properties");
+				debug("no section yet, consider global properties");
 				block = &global;
 			}
 

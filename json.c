@@ -93,14 +93,14 @@ json_print_status_line(struct status_line *status)
 
 		/* full_text is the only mandatory key, skip if empty */
 		if (!*block->full_text) {
-			debug("block [%s] has no text to display, skipping", block->name);
+			debug("[%s] no text to display, skipping", block->name);
 			continue;
 		}
 
 		if (!first) fprintf(stdout, ",");
 		else first = false;
 
-		debug("printing block [%s]", block->name);
+		debug("[%s] print json", block->name);
 		block_to_json(block);
 	}
 
