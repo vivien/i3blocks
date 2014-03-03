@@ -259,9 +259,11 @@ sched_init(void)
 	}
 
 	/* Setup event I/O for stdin (clicks) */
-	if (sched_event_stdin()) {
-		error("failed to setup event I/O for stdin");
-		return 1;
+	if (!isatty(STDIN_FILENO)) {
+		if (sched_event_stdin()) {
+			error("failed to setup event I/O for stdin");
+			return 1;
+		}
 	}
 
 	return 0;
