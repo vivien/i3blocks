@@ -141,14 +141,14 @@ block_update(struct block *block)
 	}
 
 	code = WEXITSTATUS(child_status);
-	if (code != 0 && code != 127) {
+	if (code != 0 && code != '!') {
 		error("bad return code %d, skipping %s", code, block->name);
 		sprintf(reason, "bad return code %d", code);
 		goto fail;
 	}
 
 	/* From here, the update went ok so merge the output */
-	strncpy(block->urgent, code == 127 ? "true" : "false", sizeof(block->urgent) - 1);
+	strncpy(block->urgent, code == '!' ? "true" : "false", sizeof(block->urgent) - 1);
 	linecpy(&text, block->full_text, sizeof(block->full_text) - 1);
 	linecpy(&text, block->short_text, sizeof(block->short_text) - 1);
 	linecpy(&text, block->color, sizeof(block->color) - 1);
