@@ -51,8 +51,10 @@ You can also take a look at the
 [i3bar protocol](http://i3wm.org/docs/i3bar-protocol.html) to see what 
 possibilities it offers you.
 
-## Installation
+If you want to share your config and a screenshot, feel free to edit the 
+[wiki](https://github.com/vivien/i3blocks/wiki)!
 
+## Installation
 
   * Download i3blocks and run `make install` within the source directory
     * *Note that there's a [AUR](https://aur.archlinux.org/packages/i3blocks/) 
