@@ -119,7 +119,8 @@ if it is below 10%:
     test ${BAT%?} -le 10 && exit 33 || exit 0
 
 When forking a block command, **i3blocks** will set the environment with some 
-`BLOCK_*` variables. Actually the following variables are provided:
+`BLOCK_*` variables. The following variables are always provided, with
+eventually an empty string as the value.
 
   * `BLOCK_NAME`:
     The name of the block (usually the section name).

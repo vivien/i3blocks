@@ -19,6 +19,7 @@
 #ifndef _JSON_H
 #define _JSON_H
 
+void json_parse(const char *json, const char *name, int *start, int *len);
 void json_print_status_line(struct status_line *);
 
 #endif /* _JSON_H */

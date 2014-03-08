@@ -34,9 +34,9 @@
 
 /* click event */
 struct click {
-	unsigned button;
-	unsigned x;
-	unsigned y;
+	char button[2];
+	char x[5];
+	char y[5];
 };
 
 struct block {

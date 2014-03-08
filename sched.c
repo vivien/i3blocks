@@ -29,6 +29,8 @@
 #include "json.h"
 #include "log.h"
 
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+
 static volatile sig_atomic_t caughtsig;
 
 static void
@@ -133,53 +135,52 @@ update_status_line(struct status_line *status)
 /*
  * Parse a click, previous read from stdin.
  *
- * A click looks like this (note that "name" and "instance" are optional):
+ * A click looks like this ("name" and "instance" can be absent):
  *
  *     ',{"name":"foo","instance":"bar","button":1,"x":1186,"y":13}\n'
+ *
+ * Note that this function is non-idempotent. We need to parse from right to
+ * left. It's ok since the JSON layout is known and fixed.
  */
 static void
-parse_click(char *json, const char **name, const char **instance, struct click *click)
+parse_click(char *json, char **name, char **instance, struct click *click)
 {
-#define ATOI(_key) \
-	click->_key = atoi(strstr(json, "\"" #_key "\":") + strlen("\"" #_key "\":"))
+	int nst, nlen;
+	int ist, ilen;
+	int bst, blen;
+	int xst, xlen;
+	int yst, ylen;
 
-#define STR(_key) \
-	*_key = strstr(json, "\"" #_key "\":\""); \
-	if (*_key) { \
-		*_key += strlen("\"" #_key "\":\""); \
-		*strchr(*_key, '"') = '\0'; \
-	}
+	json_parse(json, "y", &yst, &ylen);
+	json_parse(json, "x", &xst, &xlen);
+	json_parse(json, "button", &bst, &blen);
+	json_parse(json, "instance", &ist, &ilen);
+	json_parse(json, "name", &nst, &nlen);
 
-	ATOI(button);
-	ATOI(x);
-	ATOI(y);
+	/* set name, otherwise "" */
+	*name = (json + nst);
+	*(*name + nlen) = '\0';
 
-	STR(instance);
-	STR(name);
+	/* set instance, otherwise "" */
+	*instance = (json + ist);
+	*(*instance + ilen) = '\0';
 
-#undef STR
-#undef ATOI
+	memcpy(click->button, json + bst, MIN(blen, sizeof(click->button) - 1));
+	memcpy(click->x, json + xst, MIN(xlen, sizeof(click->x) - 1));
+	memcpy(click->y, json + yst, MIN(ylen, sizeof(click->y) - 1));
 }
 
 static void
 handle_click(struct status_line *status)
 {
-	char json[1024];
+	char json[1024] = { 0 };
+	struct click click = { "" };
+	char *name, *instance;
 
-	const char *name, *instance;
-	struct click click;
-
-	memset(json, 0, sizeof(json));
 	fread(json, 1, sizeof(json) - 1, stdin);
 
 	parse_click(json, &name, &instance, &click);
-
-	if (!name)
-		name = "\0";
-	if (!instance)
-		instance = "\0";
-
-	debug("got a click: name=%s instance=%s button=%d x=%d y=%d",
+	debug("got a click: name=%s instance=%s button=%s x=%s y=%s",
 			name, instance, click.button, click.x, click.y);
 
 	/* find the corresponding block */

@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <ctype.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -78,6 +79,36 @@ block_to_json(struct block *block)
 	fprintf(stdout, "}");
 
 #undef JSON
+}
+
+/*
+ * Parse the <json> input for the key <name> and store the start of its value
+ * into <start> and its size into <len>.
+ *
+ * <start> set to 0 means that the key was not present.
+ */
+void
+json_parse(const char *json, const char *name, int *start, int *len)
+{
+	char *here = strstr(json, name);
+
+	*start = *len = 0;
+
+	if (here) {
+		here += strlen(name) + 2;
+		if (*here == '"') {
+			/* string */
+			here++;
+			*start = here - json;
+			while (*here++ != '"')
+				*len += 1;
+		} else {
+			/* number */
+			*start = here - json;
+			while (isdigit(*here++))
+				*len += 1;
+		}
+	}
 }
 
 void
