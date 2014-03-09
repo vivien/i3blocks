@@ -10,13 +10,11 @@ ifndef SYSCONFDIR
 endif
 
 PROGRAM = i3blocks
+VERSION = "$(shell git describe --tags --always)"
 
 CPPFLAGS += -DSYSCONFDIR=\"$(SYSCONFDIR)\"
-CPPFLAGS += -DVERSION=\"${GIT_VERSION}\"
+CPPFLAGS += -DVERSION=\"${VERSION}\"
 CFLAGS += -Wall
-
-VERSION = $(shell git describe --tags --abbrev=0)
-GIT_VERSION = "$(shell git describe --tags --always) ($(shell git log --pretty=format:%cd --date=short -n1))"
 
 OBJS := $(wildcard src/*.c *.c)
 OBJS := $(OBJS:.c=.o)
