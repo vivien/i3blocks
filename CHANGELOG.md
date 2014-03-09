@@ -2,6 +2,8 @@
 
 ## master
 
+## 1.2
+
   * Always define env variables related to clicks. Thus, set them to an empty 
   string when no click happened (GH #9).
 
