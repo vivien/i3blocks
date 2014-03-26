@@ -27,8 +27,6 @@
 #include "block.h"
 #include "log.h"
 
-extern volatile sig_atomic_t caughtsig;
-
 static int
 setup_env(struct block *block)
 {
