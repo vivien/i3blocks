@@ -200,6 +200,8 @@ scripts under `~/bin/blocks/` with the same name as the blocks:
 ## SEE ALSO
 
 The development of i3blocks takes place on [Github](https://github.com/vivien/i3blocks).
+The [wiki](https://github.com/vivien/i3blocks/wiki) is a good
+source of examples for blocks and screenshots.
 
 i3(1), i3bar(1), i3status(1)
 

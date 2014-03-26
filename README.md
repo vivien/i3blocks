@@ -51,8 +51,9 @@ You can also take a look at the
 [i3bar protocol](http://i3wm.org/docs/i3bar-protocol.html) to see what 
 possibilities it offers you.
 
-If you want to share your config and a screenshot, feel free to edit the 
-[wiki](https://github.com/vivien/i3blocks/wiki)!
+Take a look at the [wiki](https://github.com/vivien/i3blocks/wiki) for examples 
+of blocks and screenshots. If you want to share your ideas and status line, 
+feel free to edit it!
 
 ## Installation
 
