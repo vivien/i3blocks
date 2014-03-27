@@ -150,14 +150,3 @@ block_update(struct block *block)
 fail:
 	failed(reason, block);
 }
-
-void
-block_free_status_line(struct status_line *status)
-{
-	int i;
-
-	for (i = 0; i < status->num; ++i)
-		free(status->blocks + i);
-
-	free(status);
-}

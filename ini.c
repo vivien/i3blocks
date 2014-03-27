@@ -199,7 +199,9 @@ ini_load_status_line(const char *inifile)
 	struct status_line *parse(void) {
 		status = calloc(1, sizeof(struct status_line));
 		if (status && parse_status_line(fp, status)) {
-			block_free_status_line(status);
+			free(status->blocks);
+			free(status->updated_blocks);
+			free(status);
 			status = NULL;
 		}
 
