@@ -1,5 +1,5 @@
 /*
- * i3blocks - define blocks for your i3bar status line
+ * ini.c - parsing of the INI configuration file
  * Copyright (C) 2014  Vivien Didelot
  *
  * This program is free software: you can redistribute it and/or modify

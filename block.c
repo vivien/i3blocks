@@ -1,5 +1,5 @@
 /*
- * i3blocks - define blocks for your i3bar status line
+ * block.c - update of a single status line block
  * Copyright (C) 2014  Vivien Didelot
  *
  * This program is free software: you can redistribute it and/or modify

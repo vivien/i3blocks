@@ -1,5 +1,5 @@
 /*
- * i3blocks - define blocks for your i3bar status line
+ * sched.c - scheduling of block updates (timeout, signal or click)
  * Copyright (C) 2014  Vivien Didelot
  *
  * This program is free software: you can redistribute it and/or modify

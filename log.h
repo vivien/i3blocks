@@ -1,5 +1,5 @@
 /*
- * i3blocks - define blocks for your i3bar status line
+ * log.h - debug and error printing macros
  * Copyright (C) 2014  Vivien Didelot
  *
  * This program is free software: you can redistribute it and/or modify
