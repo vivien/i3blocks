@@ -85,7 +85,7 @@ need_update(struct block *block)
 
 	if (caughtsig) {
 		signaled = caughtsig == block->signal;
-		clicked = block->click.button > 0;
+		clicked = *block->click.button != '\0';
 	}
 
 	debug("[%s] CHECK first_time: %s, outdated: %s, signaled: %s, clicked: %s", block->name,

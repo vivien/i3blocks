@@ -2,6 +2,8 @@
 
 ## master
 
+  * Fix click checking.
+
 ## 1.2
 
   * Always define env variables related to clicks. Thus, set them to an empty 
