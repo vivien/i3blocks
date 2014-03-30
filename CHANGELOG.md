@@ -2,6 +2,7 @@
 
 ## master
 
+  * Add a cpu usage script (GH #11).
   * Fix click checking.
 
 ## 1.2

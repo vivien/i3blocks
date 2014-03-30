@@ -42,6 +42,10 @@ The default config will look like this:
 
 ![](http://i.imgur.com/p3d6MeK.png)
 
+The scripts provided by default may use external tools:
+
+  * `mpstat` (often provided by the *sysstat* package) used by cpu_usage.
+
 ## Documentation
 
 For more information about how it works, please refer to the 
