@@ -1,0 +1,61 @@
+#!/usr/bin/perl
+# Made by Pierre Mavro <pierre@mavro.fr>
+
+use strict;
+use warnings;
+use utf8;
+use Getopt::Long;
+
+# Get CPU usage
+sub get_cpu_usage {
+    my $cpu_usage=0;
+    # Parse mpstat command output
+    open (MPSTAT, 'mpstat 1 1 |') or die "Can't open mpstat: $?";
+    while (<MPSTAT>) {
+        next if ($_ !~ /^Average/);
+        if ($_ =~ /all\s*(\d+\.\d+)\s*\d+\.\d+\s*(\d+\.\d+)/) {
+            # Return %usr+%sys
+            return $1+$2;
+        }
+    }
+    close(MPSTAT);
+    die 'Can\'t find CPU informations';
+}
+
+# Print output
+sub print_output {
+    my $cpu_usage = shift;
+    my $t_warn = shift;
+    my $t_crit = shift;
+
+    print "CPU: $cpu_usage%\n"x2;
+    exit(0) if (($t_warn == 0) and ($t_crit == 0));
+
+    # Print color if needed
+    if ($cpu_usage >= $t_crit) {
+        print "#FF0000\n";
+    } elsif ($cpu_usage >= $t_warn) {
+        print "#FFFC00\n";
+    }
+}
+
+sub check_opts {
+    # Vars
+    my ($t_crit,$t_warn)=qw/0 0/;
+
+    # Set options
+    GetOptions( "help|h" => \&help,
+                "w=i"    => \$t_warn,
+                "c=i"    => \$t_crit);
+
+    print_output(get_cpu_usage(),$t_warn,$t_crit);
+}
+
+sub help {
+    print "Usage : cpu_usage [-w warning] [-c critical]\n";
+    print "-w : warning threshold to become yellow\n";
+    print "-c : critical threshold to become red\n";
+    exit(1);
+}
+
+&check_opts;
