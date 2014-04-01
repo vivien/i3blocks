@@ -107,13 +107,13 @@ For example, this script sets the `full_text` in blue but no `short_text`:
     echo \#0000FF
 
 If the command line returns 0 or 33, the block is updated. Otherwise, it is
-considered a failure and the block will be skipped. A return code of 33 will
-set the `urgent` flag to true.
+considered a failure and the error is displayed. A return code of 33 will set
+the `urgent` flag to true.
 
 For example, this script prints the battery percentage and sets the urgent flag 
 if it is below 10%:
 
-    BAT=`upower --show-info /org/freedesktop/UPower/devices/battery_BAT0 | grep percentage | grep -E -o '[0-9][0-9]?%'` 
+    BAT=`acpi -b | grep -E -o '[0-9][0-9]?%'`
 
     echo "BAT: $BAT"
     test ${BAT%?} -le 10 && exit 33 || exit 0

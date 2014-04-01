@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "I3BLOCKS" "1" "March 2014" "" ""
+.TH "I3BLOCKS" "1" "April 2014" "" ""
 .
 .SH "NAME"
 \fBi3blocks\fR \- define blocks for your i3bar status line
@@ -164,7 +164,7 @@ echo \e#0000FF
 .IP "" 0
 .
 .P
-If the command line returns 0 or 33, the block is updated\. Otherwise, it is considered a failure and the block will be skipped\. A return code of 33 will set the \fBurgent\fR flag to true\.
+If the command line returns 0 or 33, the block is updated\. Otherwise, it is considered a failure and the error is displayed\. A return code of 33 will set the \fBurgent\fR flag to true\.
 .
 .P
 For example, this script prints the battery percentage and sets the urgent flag if it is below 10%:
@@ -173,7 +173,7 @@ For example, this script prints the battery percentage and sets the urgent flag 
 .
 .nf
 
-BAT=`upower \-\-show\-info /org/freedesktop/UPower/devices/battery_BAT0 | grep percentage | grep \-E \-o \'[0\-9][0\-9]?%\'`
+BAT=`acpi \-b | grep \-E \-o \'[0\-9][0\-9]?%\'`
 
 echo "BAT: $BAT"
 test ${BAT%?} \-le 10 && exit 33 || exit 0
