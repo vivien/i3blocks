@@ -19,6 +19,8 @@
 #ifndef _BLOCK_H
 #define _BLOCK_H
 
+#include "log.h"
+
 /* Keys part of the i3bar protocol */
 #define PROTOCOL_KEYS(_) \
 	_(full_text,             1024, string) \
@@ -57,6 +59,15 @@ struct status_line {
 	struct block *updated_blocks;
 	unsigned int num;
 };
+
+#define bdebug(block, msg, ...) \
+	debug("[%s] " msg, block->name, ##__VA_ARGS__)
+
+#define berror(block, msg, ...) \
+	error("[%s] " msg, block->name, ##__VA_ARGS__)
+
+#define berrorx(block, msg, ...) \
+	errorx("[%s] " msg, block->name, ##__VA_ARGS__)
 
 void block_update(struct block *);
 

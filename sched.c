@@ -88,7 +88,7 @@ need_update(struct block *block)
 		clicked = *block->click.button != '\0';
 	}
 
-	debug("[%s] CHECK first_time: %s, outdated: %s, signaled: %s, clicked: %s", block->name,
+	bdebug(block, "CHECK first_time: %s, outdated: %s, signaled: %s, clicked: %s",
 			first_time ? "YES" : "no",
 			outdated ? "YES" : "no",
 			signaled ? "YES" : "no",
@@ -108,7 +108,7 @@ update_status_line(struct status_line *status)
 
 		/* Skip static block */
 		if (!*config_block->command) {
-			debug("[%s] no command, skipping", config_block->name);
+			bdebug(config_block, "no command, skipping");
 			continue;
 		}
 
@@ -194,7 +194,7 @@ handle_click(struct status_line *status)
 				memcpy(&block->click, &click, sizeof(struct click));
 
 				/* It shouldn't be likely to have several blocks with the same name/instance, so stop here */
-				debug("[%s] clicked", block->name);
+				bdebug(block, "clicked");
 				break;
 			}
 		}

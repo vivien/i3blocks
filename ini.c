@@ -74,7 +74,7 @@ parse_property(const char *line, struct block *block)
 	const char *property, *value;
 
 	if (!equal) {
-		error("malformated property, should be of the form 'key=value'");
+		berror(block, "malformated property, should be of the form 'key=value'");
 		return 1;
 	}
 
@@ -104,11 +104,11 @@ parse_property(const char *line, struct block *block)
 #undef PARSE_NUM
 #undef PARSE
 
-	error("unknown property: \"%s\"", property);
+	berror(block, "unknown property: \"%s\"", property);
 	return 1;
 
 parsed:
-	debug("[%s] set property %s to \"%s\"", block->name, property, value);
+	bdebug(block, "set property %s to \"%s\"", property, value);
 	return 0;
 }
 
@@ -142,7 +142,6 @@ parse_status_line(FILE *fp, struct status_line *status)
 			return 1;
 		}
 		line[len - 1] = '\0';
-		debug("parsing line: %s", line);
 
 		switch (*line) {
 		/* Comment or empty line? */
@@ -162,7 +161,7 @@ parse_status_line(FILE *fp, struct status_line *status)
 			if (parse_section(line, block->name, sizeof(block->name)))
 				return 1;
 
-			debug("[%s] new block", block->name);
+			bdebug(block, "new block");
 			break;
 
 		/* Property? */

@@ -31,27 +31,27 @@ static int
 setup_env(struct block *block)
 {
 	if (setenv("BLOCK_NAME", block->name, 1) == -1) {
-		errorx("setenv BLOCK_NAME");
+		berrorx(block, "setenv BLOCK_NAME");
 		return 1;
 	}
 
 	if (setenv("BLOCK_INSTANCE", block->instance, 1) == -1) {
-		errorx("setenv BLOCK_INSTANCE");
+		berrorx(block, "setenv BLOCK_INSTANCE");
 		return 1;
 	}
 
 	if (setenv("BLOCK_BUTTON", block->click.button, 1) == -1) {
-		errorx("setenv BLOCK_BUTTON");
+		berrorx(block, "setenv BLOCK_BUTTON");
 		return 1;
 	}
 
 	if (setenv("BLOCK_X", block->click.x, 1) == -1) {
-		errorx("setenv BLOCK_X");
+		berrorx(block, "setenv BLOCK_X");
 		return 1;
 	}
 
 	if (setenv("BLOCK_Y", block->click.y, 1) == -1) {
-		errorx("setenv BLOCK_Y");
+		berrorx(block, "setenv BLOCK_Y");
 		return 1;
 	}
 
@@ -107,7 +107,7 @@ block_update(struct block *block)
 	/* Pipe, fork and exec a shell for the block command line */
 	child_stdout = popen(block->command, "r");
 	if (!child_stdout) {
-		errorx("popen `%s`", block->command);
+		berrorx(block, "popen(%s)", block->command);
 		sprintf(reason, "failed to fork");
 		goto fail;
 	}
@@ -119,20 +119,20 @@ block_update(struct block *block)
 	/* Wait for the child process to terminate */
 	child_status = pclose(child_stdout);
 	if (child_status == -1) {
-		errorx("pclose");
+		berrorx(block, "pclose");
 		sprintf(reason, "failed to wait");
 		goto fail;
 	}
 
 	if (!WIFEXITED(child_status)) {
-		error("child did not exit correctly");
+		berror(block, "child did not exit correctly");
 		sprintf(reason, "command did not exit");
 		goto fail;
 	}
 
 	code = WEXITSTATUS(child_status);
 	if (code != 0 && code != '!') {
-		error("bad return code %d, skipping %s", code, block->name);
+		berror(block, "bad exit code %d", code);
 		sprintf(reason, "bad return code %d", code);
 		goto fail;
 	}
@@ -144,7 +144,7 @@ block_update(struct block *block)
 	linecpy(&text, block->color, sizeof(block->color) - 1);
 	block->last_update = time(NULL);
 
-	debug("[%s] updated successfully", block->name);
+	bdebug(block, "updated successfully");
 	return;
 
 fail:
