@@ -164,7 +164,7 @@ echo \e#0000FF
 .IP "" 0
 .
 .P
-If the command line returns 0 or 33, the block is updated\. Otherwise, it is considered a failure and the error is displayed\. A return code of 33 will set the \fBurgent\fR flag to true\.
+If the command line returns 0 or 33, the block is updated\. Otherwise, it is considered a failure and the first line (if any) is still displayed\. Note that stderr is ignored\. A return code of 33 will set the \fBurgent\fR flag to true\.
 .
 .P
 For example, this script prints the battery percentage and sets the urgent flag if it is below 10%:

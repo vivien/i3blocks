@@ -79,14 +79,26 @@ linecpy(char **lines, char *dest, unsigned int size)
 }
 
 static void
-failed(const char *reason, struct block *block)
+mark_as_failed(struct block *block, const char *reason, int status)
 {
-	char text[1024];
+	static const size_t short_size = sizeof(block->short_text);
+	static const size_t full_size = sizeof(block->full_text);
+	char short_text[short_size];
+	char full_text[full_size];
 
-	snprintf(text, sizeof(text), "[%s] ERROR: %s", block->name, reason);
-	strncpy(block->full_text, text, sizeof(block->full_text) - 1);
-	strncpy(block->min_width, text, sizeof(block->min_width) - 1);
-	strcpy(block->short_text, "FAILED");
+	if (status < 0)
+		snprintf(short_text, short_size, "[%s] ERROR", block->name);
+	else
+		snprintf(short_text, short_size, "[%s] ERROR (exit:%d)", block->name, status);
+
+	if (*reason)
+		snprintf(full_text, full_size, "%s %s", short_text, reason);
+	else
+		snprintf(full_text, full_size, "%s", short_text);
+
+	strncpy(block->full_text, full_text, full_size);
+	strncpy(block->min_width, full_text, sizeof(block->min_width) - 1);
+	strncpy(block->short_text, short_text, short_size);
 	strcpy(block->color, "#FF0000");
 	strcpy(block->urgent, "true");
 }
@@ -97,19 +109,15 @@ block_update(struct block *block)
 	FILE *child_stdout;
 	int child_status, code;
 	char output[2048], *text = output;
-	char reason[1024]; /* in case of failure */
 
-	if (setup_env(block)) {
-		sprintf(reason, "failed to setup env");
-		goto fail;
-	}
+	if (setup_env(block))
+		return mark_as_failed(block, "failed to setup env", -1);
 
 	/* Pipe, fork and exec a shell for the block command line */
 	child_stdout = popen(block->command, "r");
 	if (!child_stdout) {
 		berrorx(block, "popen(%s)", block->command);
-		sprintf(reason, "failed to fork");
-		goto fail;
+		return mark_as_failed(block, "failed to fork", -1);
 	}
 
 	/* Do not distinguish EOF or error, just read child's output */
@@ -120,21 +128,21 @@ block_update(struct block *block)
 	child_status = pclose(child_stdout);
 	if (child_status == -1) {
 		berrorx(block, "pclose");
-		sprintf(reason, "failed to wait");
-		goto fail;
+		return mark_as_failed(block, "failed to wait", -1);
 	}
 
 	if (!WIFEXITED(child_status)) {
 		berror(block, "child did not exit correctly");
-		sprintf(reason, "command did not exit");
-		goto fail;
+		return mark_as_failed(block, "command did not exit", -1);
 	}
 
 	code = WEXITSTATUS(child_status);
 	if (code != 0 && code != '!') {
+		char reason[1024] = { 0 };
+
 		berror(block, "bad exit code %d", code);
-		sprintf(reason, "bad return code %d", code);
-		goto fail;
+		linecpy(&text, reason, sizeof(reason) - 1);
+		return mark_as_failed(block, reason, code);
 	}
 
 	/* From here, the update went ok so merge the output */
@@ -145,8 +153,4 @@ block_update(struct block *block)
 	block->last_update = time(NULL);
 
 	bdebug(block, "updated successfully");
-	return;
-
-fail:
-	failed(reason, block);
 }
