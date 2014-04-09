@@ -44,7 +44,8 @@ The default config will look like this:
 
 The scripts provided by default may use external tools:
 
-  * `mpstat` (often provided by the *sysstat* package) used by cpu_usage.
+  * `mpstat` (often provided by the *sysstat* package) used by `cpu_usage`.
+  * `acpi` (often provided by a package of the same name) used by `battery`.
 
 ## Documentation
 

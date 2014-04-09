@@ -1,60 +1,71 @@
-#!/bin/sh
-# Copyright (C) 2014 Julien Bonjean <julien@bonjean.info>
+#!/usr/bin/perl
+#
+# Copyright 2014 Pierre Mavro <deimos@deimos.fr>
+# Copyright 2014 Vivien Didelot <vivien@didelot.org>
+#
+# Licensed under the terms of the GNU GPL v3, or any later version.
+#
+# This script is meant to use with i3blocks. It parses the output of the "acpi"
+# command (often provided by a package of the same name) to read the status of
+# the battery, and eventually its remaining time (to full charge or discharge).
+#
+# The color will gradually change for a percentage below 85%, and the urgency
+# (exit code 33) is set if there is less that 5% remaining.
 
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+use strict;
+use warnings;
+use utf8;
 
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+my $acpi;
+my $status;
+my $percent;
+my $full_text;
+my $short_text;
 
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# print utf-8 chars directly and redirect stderr to stdout
+binmode STDOUT, ':encoding(UTF-8)';
+*STDERR = *STDOUT;
 
-INSTANCE="${1:-BAT0}"
-ALERT_LOW="${2:-10}" # color will turn red under this value (default: 10%)
-UPOWER="/usr/bin/upower"
+# read the first line of the "acpi" command output
+open (ACPI, 'acpi -b |') or die "Can't exec acpi: $!\n";
+$acpi = <ACPI>;
+close(ACPI);
 
-if [ ! -x "$UPOWER" ]; then
-	echo "upower not found"
-	exit 1
-fi
-
-$UPOWER -i /org/freedesktop/UPower/devices/battery_$INSTANCE |
-	awk -v alert_low=$ALERT_LOW '
-/state:/ {
-	state = $2
+# fail on unexpected output
+if ($acpi !~ /: (\w+), (\d+)%/) {
+	die "$acpi\n";
 }
-/time to full:/ {
-	remaining_time = $4 " " substr ($5, 0, 1)
-}
-/time to empty:/ {
-	remaining_time = $4 " " substr ($5, 0, 1)
-}
-/percentage:/ {
-	percentage = $2;
-}
-END {
-	if (state == "charging")
-		label = "CHR"
-	else if (state == "fully-charged")
-		label = "FULL"
-	else
-		label = "BAT"
 
-	# full text
-	print label " " percentage \
-		(state == "fully-charged" ? "" : " " remaining_time)
+$status = $1;
+$percent = $2;
+$full_text = "⚡ $percent%";
 
-	# short text
-	print label " " percentage
-
-	# color
-	gsub(/%$/,"",percentage)
-	if (+ percentage < + alert_low)
-		print "#FF0000"
+if ($status eq 'Discharging') {
+	$full_text .= ' ↘';
+} elsif ($status eq 'Charging') {
+	$full_text .= ' ↗';
 }
-'
+
+$short_text = $full_text;
+
+if ($acpi =~ /(\d\d:\d\d):/) {
+	$full_text .= " ($1)";
+}
+
+# print text
+print "$full_text\n";
+print "$short_text\n";
+
+# and color, eventually
+if ($percent < 20) {
+	print "#FF0000\n";
+} elsif ($percent < 40) {
+	print "#FFAE00\n";
+} elsif ($percent < 60) {
+	print "#FFF600\n";
+} elsif ($percent < 85) {
+	print "#A8FF00\n";
+}
+
+# set urgent flag if below 5% and discharging
+exit($percent < 5 && $status eq 'Discharging' ? 33 : 0);
