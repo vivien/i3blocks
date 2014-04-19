@@ -46,6 +46,7 @@ The scripts provided by default may use external tools:
 
   * `mpstat` (often provided by the *sysstat* package) used by `cpu_usage`.
   * `acpi` (often provided by a package of the same name) used by `battery`.
+  * `playerctl` (available [here](https://github.com/acrisci/playerctl)) used by `mediaplayer`.
 
 ## Documentation
 
