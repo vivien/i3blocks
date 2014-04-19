@@ -1,0 +1,40 @@
+#!/bin/perl
+# Copyright (C) 2014 Tony Crisci <tony@dubstepdish.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# Requires playerctl binary to be in your path
+# See: https://github.com/acrisci/playerctl
+
+# pass [--player=NAME] to specify a music player (playerctl will attempt to
+# connect to org.mpris.MediaPlayer2.[NAME] on your DBus session).
+
+my @metadata = ();
+my $player_arg = "";
+
+if ($ARGV[0] =~ "--player=") {
+    $player_arg = $ARGV[0];
+    $player_arg =~ s/\s+//g;
+}
+
+my $artist = qx(playerctl $player_arg metadata artist);
+# exit status will be nonzero when playerctl cannot find your player
+exit(0) if $?;
+push(@metadata, $artist) if $artist;
+
+my $title = qx(playerctl $player_arg metadata title);
+exit(0) if $?;
+push(@metadata, $title) if $title;
+
+print(join(" - ", @metadata)) if @metadata;
