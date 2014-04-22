@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# Requires playerctl binary to be in your path
+# Requires playerctl binary to be in your path (except cmus)
 # See: https://github.com/acrisci/playerctl
 
 # pass [--player=NAME] to specify a music player (playerctl will attempt to
@@ -26,6 +26,32 @@ my $player_arg = "";
 if ($ARGV[0] =~ "--player=") {
     $player_arg = $ARGV[0];
     $player_arg =~ s/\s+//g;
+}
+
+if ($player_arg eq '' or $player_arg =~ /cmus$/) {
+    # try cmus first
+    my @cmus = split /^/, qx(cmus-remote -Q);
+    if ($? == 0) {
+        foreach my $line (@cmus) {
+            my @data = split /\s/, $line;
+            if (shift @data eq 'tag') {
+                my $key = shift @data;
+                my $value = join ' ', @data;
+
+                @metadata[0] = $value if $key eq 'artist';
+                @metadata[1] = $value if $key eq 'title';
+            }
+        }
+
+        if (@metadata) {
+            # metadata found so we are done
+            print(join ' - ', @metadata);
+            exit 0;
+        }
+    }
+
+    # if cmus was given, we are done
+    exit 0 unless $player_arg eq '';
 }
 
 my $artist = qx(playerctl $player_arg metadata artist);
