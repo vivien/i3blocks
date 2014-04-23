@@ -3,7 +3,7 @@ i3blocks(1) -- define blocks for your i3bar status line
 
 ## SYNOPSIS
 
-`i3blocks` [-c <configfile>] [-h] [-v]
+`i3blocks` [-c <configfile>] [-d <scriptsdir>] [-h] [-v]
 
 ## DESCRIPTION
 
@@ -18,6 +18,14 @@ It handles clicks, signals and user scripts.
 
         1. ~/.i3blocks.conf
         2. /etc/i3blocks.conf or /usr/local/etc/i3blocks.conf
+
+  * `-d` <scriptsdir>:
+    Specifies an alternate directory to set the $BLOCK_LIBEXEC variable to.
+    By default, i3blocks set this variable to its compile-time value.
+    The priorities are (higher first):
+
+        1. The value of this <scriptsdir> argument
+        2. Compile-time value: /usr/libexec/i3blocks or /usr/local/libexec/i3blocks
 
   * `-v`:
     Print the version and exit.
@@ -133,6 +141,9 @@ eventually an empty string as the value.
 
   * `BLOCK_X` and `BLOCK_Y`:
 	Coordinates where the click occured, if the block was clicked.
+
+  * `BLOCK_LIBEXEC`:
+    A variable optionally used to locate a scripts directory.
 
 Here is an example using the environment:
 
