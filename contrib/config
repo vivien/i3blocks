@@ -10,3 +10,9 @@ command=$BLOCK_LIBEXEC/$BLOCK_NAME
 #command=$BLOCK_LIBEXEC/mediaplayer --player="spotify"
 interval=5
 signal=10
+
+# OpenVPN support
+#
+# Support multiple VPN, with colors.
+[openvpn]
+interval=20
