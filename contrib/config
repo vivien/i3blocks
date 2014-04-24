@@ -1,0 +1,12 @@
+# Each block command defaults to the script name
+command=$BLOCK_LIBEXEC/$BLOCK_NAME
+
+# Generic media player support
+#
+# This displays "ARTIST - SONG" if a music is playing.
+# Supported players are: clementine, spotify, vlc, audacious,
+# xmms2, mplayer, and others.
+[mediaplayer]
+#command=$BLOCK_LIBEXEC/mediaplayer --player="spotify"
+interval=5
+signal=10
