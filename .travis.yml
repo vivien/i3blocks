@@ -1,0 +1,11 @@
+language: c
+
+env:
+  - TARGET=all
+  - TARGET=debug
+
+compiler:
+  - gcc
+
+script:
+  - make $TARGET
