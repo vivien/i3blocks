@@ -17,15 +17,17 @@
 # Requires playerctl binary to be in your path (except cmus)
 # See: https://github.com/acrisci/playerctl
 
-# pass [--player=NAME] to specify a music player (playerctl will attempt to
-# connect to org.mpris.MediaPlayer2.[NAME] on your DBus session).
+# Set instance=NAME in the i3blocks configuration to specify a music player
+# (playerctl will attempt to connect to org.mpris.MediaPlayer2.[NAME] on your
+# DBus session).
+
+use Env qw(BLOCK_INSTANCE);
 
 my @metadata = ();
 my $player_arg = "";
 
-if ($ARGV[0] =~ "--player=") {
-    $player_arg = $ARGV[0];
-    $player_arg =~ s/\s+//g;
+if ($BLOCK_INSTANCE) {
+    $player_arg = "--player='$BLOCK_INSTANCE'";
 }
 
 if ($player_arg eq '' or $player_arg =~ /cmus$/) {

@@ -7,7 +7,7 @@ command=$BLOCK_LIBEXEC/$BLOCK_NAME
 # Supported players are: clementine, spotify, vlc, audacious,
 # xmms2, mplayer, and others.
 [mediaplayer]
-#command=$BLOCK_LIBEXEC/mediaplayer --player="spotify"
+#instance=spotify
 interval=5
 signal=10
 
