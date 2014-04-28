@@ -20,10 +20,15 @@
 # pass [--player=NAME] to specify a music player (playerctl will attempt to
 # connect to org.mpris.MediaPlayer2.[NAME] on your DBus session).
 
+use Env qw(BLOCK_INSTANCE);
+
 my @metadata = ();
 my $player_arg = "";
 
-if ($ARGV[0] =~ "--player=") {
+if ($BLOCK_INSTANCE) {
+    $player_arg = "--player='$BLOCK_INSTANCE'";
+} elsif ($ARGV[0] =~ "--player=") {
+    # XXX: deprecated
     $player_arg = $ARGV[0];
     $player_arg =~ s/\s+//g;
 }
