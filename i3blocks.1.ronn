@@ -13,7 +13,7 @@ It handles clicks, signals and user scripts.
 ## OPTIONS
 
   * `-c` <configfile>:
-    Specifies an alternate configuration file path. By default, i3blocks looks 
+    Specifies an alternate configuration file path. By default, i3blocks looks
     for configuration files in the following order:
 
         1. ~/.i3blocks.conf
@@ -88,6 +88,12 @@ The following keys are specific to **i3blocks**.
 	The command executed by a shell, used to update the block. The expected
     behavior is described below, in the [COMMAND][] section.
 
+  * `wait_command`:
+	An optional command that will sleep until an event. The command output
+	will be displayed only when the process is released. If a normal `command`
+	is also provided, it will also be called the first time to displayed
+	instantly the output. The format is the same as `command`.
+
   * `interval`:
 	The time in second to wait before updating the block. If 0, the block won't
     be updated again.
@@ -118,7 +124,7 @@ If the command line returns 0 or 33, the block is updated. Otherwise, it is
 considered a failure and the first line (if any) is still displayed. Note that
 stderr is ignored. A return code of 33 will set the `urgent` flag to true.
 
-For example, this script prints the battery percentage and sets the urgent flag 
+For example, this script prints the battery percentage and sets the urgent flag
 if it is below 10%:
 
     BAT=`acpi -b | grep -E -o '[0-9][0-9]?%'`
@@ -126,7 +132,7 @@ if it is below 10%:
     echo "BAT: $BAT"
     test ${BAT%?} -le 10 && exit 33 || exit 0
 
-When forking a block command, **i3blocks** will set the environment with some 
+When forking a block command, **i3blocks** will set the environment with some
 `BLOCK_*` variables. The following variables are always provided, with
 eventually an empty string as the value.
 
@@ -168,7 +174,7 @@ As an example, here is a close configuration to i3status(1) default settings:
     interval=5
     signal=10
 
-	[ipv6]
+    [ipv6]
 
     [free]
 
@@ -194,6 +200,16 @@ which adjust the volume, before issuing a `killall -USR1 i3blocks`:
     command=echo -n 'Volume: '; amixer get Master | grep -E -o '[0-9][0-9]?%'
     signal=10
     # no interval, only check on SIGUSR1
+
+This is an example of a wait command, allowing to update the current track
+played mpd(1) at the very time it is changed. The `command` will be called
+at the first start to display the current music directly, and the
+`wait_command` is then called in loop, updating the current track each
+time it is released.
+
+    [track]
+	command=mpc current
+	wait_command=mpc --wait current
 
 Here is an example of a very minimalist config, assuming you have a bunch of
 scripts under `~/bin/blocks/` with the same name as the blocks:
@@ -230,5 +246,5 @@ Written by Vivien Didelot <vivien.didelot@gmail.com>.
 Copyright (C) 2014 Vivien Didelot <vivien.didelot@gmail.com>
 License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
 
-This is free software: you are free to change and redistribute it. There is NO 
+This is free software: you are free to change and redistribute it. There is NO
 WARRANTY, to the extent permitted by law.

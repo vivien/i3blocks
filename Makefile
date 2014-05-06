@@ -17,6 +17,7 @@ CPPFLAGS += -DSYSCONFDIR=\"$(SYSCONFDIR)\"
 CPPFLAGS += -DVERSION=\"${VERSION}\"
 CPPFLAGS += -DBLOCK_LIBEXEC=\"${BLOCK_LIBEXEC}\"
 CFLAGS += -Wall
+LDFLAGS += -lpthread
 
 OBJS := $(wildcard src/*.c *.c)
 OBJS := $(OBJS:.c=.o)

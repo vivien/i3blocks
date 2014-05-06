@@ -19,6 +19,8 @@
 #ifndef _SCHED_H
 #define _SCHED_H
 
+#include "block.h"
+
 int sched_init(void);
 void sched_start(struct status_line *);
 

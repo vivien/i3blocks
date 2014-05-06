@@ -17,20 +17,26 @@
  */
 
 #include <fcntl.h>
+#include <limits.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
 
 #include "block.h"
 #include "json.h"
 #include "log.h"
+#include "sched.h"
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define SIGNAL() pthread_cond_signal(&cond)
 
+static pthread_cond_t cond;
 static volatile sig_atomic_t caughtsig;
 
 static void
@@ -69,9 +75,9 @@ longest_sleep(struct status_line *status)
 static inline bool
 need_update(struct block *block)
 {
-	bool first_time, outdated, signaled, clicked;
+	bool first_time, outdated, signaled, clicked, wait_ended;
 
-	first_time = outdated = signaled = clicked = false;
+	first_time = outdated = signaled = clicked = wait_ended = false;
 
 	if (block->last_update == 0)
 		first_time = true;
@@ -88,48 +94,71 @@ need_update(struct block *block)
 		clicked = *block->click.button != '\0';
 	}
 
-	bdebug(block, "CHECK first_time: %s, outdated: %s, signaled: %s, clicked: %s",
+	wait_ended = *block->wait_command && !block->waiting;
+
+	bdebug(block, "CHECK first_time: %s, outdated: %s, signaled: %s, clicked: %s, wait_ended: %s",
 			first_time ? "YES" : "no",
 			outdated ? "YES" : "no",
 			signaled ? "YES" : "no",
+			wait_ended ? "YES" : "no",
 			clicked ? "YES" : "no");
 
-	return first_time || outdated || signaled || clicked;
+	return first_time || outdated || signaled || clicked || wait_ended;
+}
+
+static void *
+wait_thread(void *arg)
+{
+	struct block *block = (struct block *) arg;
+	block_update_wait(block);
+	block->waiting = false;
+	SIGNAL();
+	return NULL;
 }
 
 static void
+update_block(struct block *block)
+{
+	if (!*block->wait_command)
+		return block_update(block);
+
+	/* Exec the simple command the first time */
+	if (!block->last_update)
+		block_update(block);
+
+	/* Start the thread of a wait command */
+	pthread_t thread;
+	block->waiting = true;
+	pthread_create(&thread, NULL, wait_thread, (void *) block);
+}
+
+static bool
 update_status_line(struct status_line *status)
 {
 	int i;
+	bool changed = false;
 
 	for (i = 0; i < status->num; ++i) {
 		const struct block *config_block = status->blocks + i;
 		struct block *updated_block = status->updated_blocks + i;
 
 		/* Skip static block */
-		if (!*config_block->command) {
+		if (!*config_block->command && !*config_block->wait_command) {
 			bdebug(config_block, "no command, skipping");
 			continue;
 		}
 
-		/* If a block needs an update, reset and execute it */
+		/* If a block needs an update, execute it */
 		if (need_update(updated_block)) {
-			struct click click;
-
-			/* save click info and restore config values */
-			memcpy(&click, &updated_block->click, sizeof(struct click));
-			memcpy(updated_block, config_block, sizeof(struct block));
-			memcpy(&updated_block->click, &click, sizeof(struct click));
-
-			block_update(updated_block);
-
-			/* clear click info */
-			memset(&updated_block->click, 0, sizeof(struct click));
+			update_block(updated_block);
+			changed = true;
 		}
 	}
 
 	if (caughtsig > 0)
 		caughtsig = 0;
+
+	return changed;
 }
 
 /*
@@ -245,6 +274,39 @@ sched_event_stdin(void)
 	return 0;
 }
 
+static void *
+update_thread(void *arg)
+{
+	pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER;
+
+	struct status_line *status = (struct status_line *) arg;
+	const unsigned sleeptime = longest_sleep(status);
+
+	struct timeval now;
+	struct timespec timeout;
+
+	debug("starting scheduler with sleep time %d", sleeptime);
+
+	pthread_mutex_lock(&mut);
+
+	while (1) {
+		/* If at least a block has changed */
+		if (update_status_line(status))
+			json_print_status_line(status);
+
+		gettimeofday(&now, NULL);
+
+		timeout.tv_sec = now.tv_sec + sleeptime;
+		timeout.tv_nsec = now.tv_usec * 1000;
+
+		pthread_cond_timedwait(&cond, &mut, &timeout);
+	}
+
+	pthread_mutex_unlock(&mut);
+
+	return NULL;
+}
+
 int
 sched_init(void)
 {
@@ -273,21 +335,23 @@ sched_init(void)
 void
 sched_start(struct status_line *status)
 {
-	const unsigned sleeptime = longest_sleep(status);
+	pthread_cond_t new_cond = PTHREAD_COND_INITIALIZER;
+	cond = new_cond;
+	pthread_t thread;
 
-	debug("starting scheduler with sleep time %d", sleeptime);
+	pthread_create(&thread, NULL, update_thread, (void *) status);
 
 	while (1) {
-		update_status_line(status);
-		json_print_status_line(status);
-
-		/* Sleep or force check on interruption */
-		if (sleep(sleeptime)) {
+		/* Sleep and force check on interruption */
+		if (sleep(UINT_MAX)) {
 			debug("woken up by signal %d", caughtsig);
 			if (caughtsig == SIGIO) {
 				debug("stdin readable");
 				handle_click(status);
 			}
+
+			/* Force thread refresh */
+			SIGNAL();
 		}
 	}
 }
