@@ -39,7 +39,22 @@ is_number(const char *str)
 static inline void
 print_string(const char *str)
 {
-	fprintf(stdout, "\"%s\"", str); /* TODO JSON-escape */
+	fprintf(stdout, "\"");
+
+	while (*str) {
+		switch (*str) {
+		case '"':
+		case '\\':
+			fprintf(stdout, "\\%c", *str);
+			break;
+		default:
+			fprintf(stdout, "%c", *str);
+		}
+
+		str++;
+	}
+
+	fprintf(stdout, "\"");
 }
 
 static inline void
