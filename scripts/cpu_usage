@@ -2,6 +2,7 @@
 #
 # Copyright 2014 Pierre Mavro <deimos@deimos.fr>
 # Copyright 2014 Vivien Didelot <vivien@didelot.org>
+# Copyright 2014 Andreas Guldstrand <andreas.guldstrand@gmail.com>
 #
 # Licensed under the terms of the GNU GPL v3, or any later version.
 
@@ -29,6 +30,7 @@ GetOptions("help|h" => \&help,
            "c=i"    => \$t_crit);
 
 # Get CPU usage
+$ENV{LC_ALL}="en_US"; # if mpstat is not run under en_US locale, things may break, so make sure it is
 open (MPSTAT, 'mpstat 1 1 |') or die "Can't exec mpstat: $!";
 while (<MPSTAT>) {
     if (/^Average:\s+all\s+(\d+\.\d+)\s+\d+\.\d+\s+(\d+\.\d+)/) {
