@@ -21,6 +21,7 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <string.h>
 
 #ifdef DEBUG
 #define debug(msg, ...) \
