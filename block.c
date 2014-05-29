@@ -17,7 +17,6 @@
  */
 
 #include <signal.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -103,8 +102,21 @@ mark_as_failed(struct block *block, const char *reason, int status)
 	strcpy(block->urgent, "true");
 }
 
+static void
+block_reset(struct block *block)
+{
+	struct click click;
+	const struct block *config_block = block->config_block;
+
+	memcpy(&click, &block->click, sizeof(struct click));
+	memcpy(block, config_block, sizeof(struct block));
+	memcpy(&block->click, &click, sizeof(struct click));
+
+	block->config_block = config_block;
+}
+
 void
-block_update(struct block *block)
+block_update_command(struct block *block, char *command)
 {
 	FILE *child_stdout;
 	int child_status, code;
@@ -114,9 +126,9 @@ block_update(struct block *block)
 		return mark_as_failed(block, "failed to setup env", -1);
 
 	/* Pipe, fork and exec a shell for the block command line */
-	child_stdout = popen(block->command, "r");
+	child_stdout = popen(command, "r");
 	if (!child_stdout) {
-		berrorx(block, "popen(%s)", block->command);
+		berrorx(block, "popen(%s)", command);
 		return mark_as_failed(block, "failed to fork", -1);
 	}
 
@@ -126,6 +138,10 @@ block_update(struct block *block)
 
 	/* Wait for the child process to terminate */
 	child_status = pclose(child_stdout);
+
+	/* Reset the block before update */
+	block_reset(block);
+
 	if (child_status == -1) {
 		berrorx(block, "pclose");
 		return mark_as_failed(block, "failed to wait", -1);
@@ -152,5 +168,20 @@ block_update(struct block *block)
 	linecpy(&text, block->color, sizeof(block->color) - 1);
 	block->last_update = time(NULL);
 
+	// Reset click
+	memset(&block->click, 0, sizeof(struct click));
+
 	bdebug(block, "updated successfully");
+}
+
+void
+block_update(struct block *block)
+{
+	block_update_command(block, block->command);
+}
+
+void
+block_update_wait(struct block *block)
+{
+	block_update_command(block, block->wait_command);
 }

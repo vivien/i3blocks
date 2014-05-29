@@ -19,6 +19,7 @@
 #ifndef _BLOCK_H
 #define _BLOCK_H
 
+#include <stdbool.h>
 #include "log.h"
 
 /* Keys part of the i3bar protocol */
@@ -46,10 +47,13 @@ struct block {
 
 	PROTOCOL_KEYS(MEMBER);
 	MEMBER(command, 1024, string);
+	MEMBER(wait_command, 1024, string);
 	unsigned interval;
 	unsigned signal;
+	bool waiting;
 	unsigned long last_update;
 	struct click click;
+	const struct block *config_block;
 
 #undef MEMBER
 };
@@ -70,5 +74,6 @@ struct status_line {
 	errorx("[%s] " msg, block->name, ##__VA_ARGS__)
 
 void block_update(struct block *);
+void block_update_wait(struct block *);
 
 #endif /* _BLOCK_H */

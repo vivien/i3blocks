@@ -97,6 +97,7 @@ parse_property(const char *line, struct block *block)
 
 	PROTOCOL_KEYS(PARSE);
 	PARSE(command, sizeof(block->command), _);
+	PARSE(wait_command, sizeof(block->wait_command), _);
 	PARSE_NUM(interval);
 	PARSE_NUM(signal);
 	/* TODO some better check for numbers and boolean */
@@ -157,6 +158,8 @@ parse_status_line(FILE *fp, struct status_line *status)
 
 			/* Init the block with default settings (if any) */
 			memcpy(block, &global, sizeof(struct block));
+
+			block->config_block = block;
 
 			if (parse_section(line, block->name, sizeof(block->name)))
 				return 1;
