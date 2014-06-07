@@ -218,8 +218,13 @@ i3(1), i3bar(1), i3status(1)
 
 ## BUGS
 
-Currently the output is not JSON-escaped. This means that a script echoing
-chars such as `"` will break the status line.
+### Reporting Bugs
+
+Please report bugs on the [issue tracker](https://github.com/vivien/i3blocks/issues).
+
+### Known Bugs
+
+None.
 
 ## AUTHOR
 
