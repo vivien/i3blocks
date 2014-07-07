@@ -191,6 +191,7 @@ ini_load_status_line(const char *inifile)
 {
 	static const char * const system = SYSCONFDIR "/i3blocks.conf";
 	const char * const home = getenv("HOME");
+	const char * const xdg_home = getenv("XDG_CONFIG_HOME");
 	char buf[PATH_MAX];
 	FILE *fp;
 	struct status_line *status;
@@ -224,13 +225,23 @@ ini_load_status_line(const char *inifile)
 
 	/* user config file? */
 	if (home) {
+		if (xdg_home)
+			snprintf(buf, PATH_MAX, "%s/i3blocks/config", xdg_home);
+		else
+			snprintf(buf, PATH_MAX, "%s/.config/i3blocks/config", home);
+
+		debug("try .config dir config %s", buf);
+		fp = fopen(buf, "r");
+		if (fp)
+			return parse();
+
 		snprintf(buf, PATH_MAX, "%s/.i3blocks.conf", home);
 		debug("try $HOME config %s", buf);
 		fp = fopen(buf, "r");
 		if (fp)
 			return parse();
 
-		/* if the file doesn't exist, fall through... */
+		/* if user files don't exist, fall through... */
 		if (errno != ENOENT) {
 			errorx("fopen");
 			return NULL;

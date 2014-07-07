@@ -2,6 +2,8 @@
 
 ## master
 
+  * Now check for config file ~/.config/i3blocks/config (or
+  $XDG_CONFIG_HOME/i3blocks/config if set) before ~/.i3blocks.conf (GH #32).
   * Add a cpu usage script (GH #11).
   * Fix click checking.
 
