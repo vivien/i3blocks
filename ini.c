@@ -191,7 +191,7 @@ ini_load_status_line(const char *inifile)
 {
 	static const char * const system = SYSCONFDIR "/i3blocks.conf";
 	const char * const home = getenv("HOME");
-	char buf[PATH_MAX];
+	char buf[PATH_MAX], buf2[PATH_MAX];
 	FILE *fp;
 	struct status_line *status;
 
@@ -227,6 +227,12 @@ ini_load_status_line(const char *inifile)
 		snprintf(buf, PATH_MAX, "%s/.i3blocks.conf", home);
 		debug("try $HOME config %s", buf);
 		fp = fopen(buf, "r");
+		if (fp)
+			return parse();
+			
+		snprintf(buf2, PATH_MAX, "%s/.config/i3blocks/config", home);
+		debug("try $HOME config %s", buf2);
+		fp = fopen(buf2, "r");
 		if (fp)
 			return parse();
 
