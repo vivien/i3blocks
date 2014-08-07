@@ -63,7 +63,7 @@ parse_section(const char *line, char *name, unsigned int size)
 	}
 
 	memcpy(name, line + 1, len - 2);
-	name[len - 1] = '\0';
+	name[len - 2] = '\0';
 	return 0;
 }
 
