@@ -235,6 +235,16 @@ ini_load_status_line(const char *inifile)
 		if (fp)
 			return parse();
 
+		if (xdg_home)
+			snprintf(buf, PATH_MAX, "%s/i3/i3blocks", xdg_home);
+		else
+			snprintf(buf, PATH_MAX, "%s/.config/i3/i3blocks", home);
+
+		debug("try .config dir config %s", buf);
+		fp = fopen(buf, "r");
+		if (fp)
+			return parse();
+
 		snprintf(buf, PATH_MAX, "%s/.i3blocks.conf", home);
 		debug("try $HOME config %s", buf);
 		fp = fopen(buf, "r");
