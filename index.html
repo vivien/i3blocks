@@ -176,9 +176,11 @@ All the supported properties are described below.</p>
 behavior is described below, in the <a href="#COMMAND" title="COMMAND" data-bare-link="true">COMMAND</a> section.</p></dd>
 <dt><code>interval</code></dt><dd><p>The time in second to wait before updating the block. If 0, the block won't
 be updated again.</p></dd>
-<dt class="flush"><code>signal</code></dt><dd><p>The signal number used to update the block. For instance, <code>signal=10</code> means
-that this block will be updated when <strong>i3blocks</strong> receives a SIGUSR1.
-Currently, SIGUSR1 and SIGUSR2 are supported.</p></dd>
+<dt class="flush"><code>signal</code></dt><dd><p>The signal number used to update the block. All the real-time (think
+prioritized and queueable) signals are available to the user. The number is
+valid between 1 and N, where SIGRTMIN+N = SIGRTMAX. (Note: there are 31
+real-time signals in Linux.) For instance, <code>signal=10</code> means that this
+block will be updated when <strong>i3blocks</strong> receives SIGRTMIN+10.</p></dd>
 </dl>
 
 
@@ -274,12 +276,12 @@ min_width=E: 255.255.255.255 (1000 Mbit/s)
 </code></pre>
 
 <p>The following block shows the usage of <code>signal</code> with some <span class="man-ref">i3<span class="s">(1)</span></span> bindings
-which adjust the volume, before issuing a <code>killall -USR1 i3blocks</code>:</p>
+which adjust the volume, before issuing a <code>pkill -RTMIN+1 i3blocks</code>:</p>
 
 <pre><code>[volume]
 command=echo -n 'Volume: '; amixer get Master | grep -E -o '[0-9][0-9]?%'
-signal=10
-# no interval, only check on SIGUSR1
+signal=1
+# no interval, only check on SIGRTMIN+1
 </code></pre>
 
 <p>Here is an example of a very minimalist config, assuming you have a bunch of
@@ -316,11 +318,11 @@ source of examples for blocks and screenshots.</p>
 
 <h2 id="AUTHOR">AUTHOR</h2>
 
-<p>Written by Vivien Didelot <a href="&#x6d;&#97;&#x69;&#108;&#116;&#x6f;&#x3a;&#x76;&#105;&#x76;&#x69;&#x65;&#x6e;&#x2e;&#x64;&#x69;&#100;&#x65;&#x6c;&#111;&#116;&#x40;&#x67;&#x6d;&#97;&#105;&#108;&#46;&#x63;&#111;&#x6d;" data-bare-link="true">&#118;&#105;&#x76;&#105;&#x65;&#110;&#46;&#100;&#105;&#x64;&#x65;&#108;&#x6f;&#116;&#x40;&#103;&#109;&#97;&#x69;&#x6c;&#x2e;&#x63;&#111;&#109;</a>.</p>
+<p>Written by Vivien Didelot <a href="&#x6d;&#97;&#105;&#x6c;&#116;&#111;&#x3a;&#x76;&#105;&#x76;&#105;&#x65;&#x6e;&#x2e;&#100;&#x69;&#100;&#101;&#x6c;&#111;&#116;&#x40;&#x67;&#109;&#x61;&#105;&#x6c;&#46;&#x63;&#x6f;&#109;" data-bare-link="true">&#118;&#x69;&#118;&#105;&#x65;&#110;&#x2e;&#x64;&#x69;&#x64;&#x65;&#108;&#111;&#116;&#64;&#x67;&#109;&#x61;&#105;&#108;&#x2e;&#99;&#x6f;&#109;</a>.</p>
 
 <h2 id="COPYRIGHT">COPYRIGHT</h2>
 
-<p>Copyright (C) 2014 Vivien Didelot <a href="&#x6d;&#97;&#105;&#x6c;&#116;&#x6f;&#58;&#118;&#x69;&#x76;&#x69;&#101;&#110;&#x2e;&#100;&#105;&#100;&#x65;&#108;&#x6f;&#116;&#x40;&#x67;&#109;&#97;&#x69;&#x6c;&#x2e;&#99;&#x6f;&#x6d;" data-bare-link="true">&#x76;&#105;&#118;&#105;&#101;&#x6e;&#46;&#100;&#105;&#100;&#x65;&#x6c;&#111;&#116;&#x40;&#103;&#x6d;&#x61;&#x69;&#108;&#x2e;&#99;&#111;&#x6d;</a>
+<p>Copyright (C) 2014 Vivien Didelot <a href="&#x6d;&#97;&#x69;&#x6c;&#x74;&#111;&#x3a;&#x76;&#x69;&#x76;&#x69;&#101;&#x6e;&#x2e;&#x64;&#105;&#100;&#101;&#x6c;&#111;&#116;&#x40;&#x67;&#109;&#97;&#x69;&#108;&#46;&#x63;&#111;&#109;" data-bare-link="true">&#118;&#105;&#x76;&#x69;&#x65;&#x6e;&#46;&#100;&#105;&#x64;&#101;&#108;&#x6f;&#x74;&#64;&#x67;&#x6d;&#97;&#105;&#x6c;&#x2e;&#99;&#111;&#x6d;</a>
 License GPLv3+: GNU GPL version 3 or later <a href="http://gnu.org/licenses/gpl.html" data-bare-link="true">http://gnu.org/licenses/gpl.html</a>.</p>
 
 <p>This is free software: you are free to change and redistribute it. There is NO
@@ -329,7 +331,7 @@ WARRANTY, to the extent permitted by law.</p>
 
   <ol class='man-decor man-foot man foot'>
     <li class='tl'></li>
-    <li class='tc'>July 2014</li>
+    <li class='tc'>August 2014</li>
     <li class='tr'>i3blocks(1)</li>
   </ol>
 
