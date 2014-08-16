@@ -23,39 +23,59 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "block.h"
+#include "click.h"
 #include "log.h"
 
-static int
-setup_env(struct block *block)
+static void
+child_setup_env(struct block *block, struct click *click)
 {
-	if (setenv("BLOCK_NAME", block->name, 1) == -1) {
-		berrorx(block, "setenv BLOCK_NAME");
-		return 1;
-	}
+	if (setenv("BLOCK_NAME", NAME(block), 1) == -1)
+		_exit(1);
 
-	if (setenv("BLOCK_INSTANCE", block->instance, 1) == -1) {
-		berrorx(block, "setenv BLOCK_INSTANCE");
-		return 1;
-	}
+	if (setenv("BLOCK_INSTANCE", INSTANCE(block), 1) == -1)
+		_exit(1);
 
-	if (setenv("BLOCK_BUTTON", block->click.button, 1) == -1) {
-		berrorx(block, "setenv BLOCK_BUTTON");
-		return 1;
-	}
+	if (setenv("BLOCK_BUTTON", click ? click->button : "", 1) == -1)
+		_exit(1);
 
-	if (setenv("BLOCK_X", block->click.x, 1) == -1) {
-		berrorx(block, "setenv BLOCK_X");
-		return 1;
-	}
+	if (setenv("BLOCK_X", click ? click->x : "", 1) == -1)
+		_exit(1);
 
-	if (setenv("BLOCK_Y", block->click.y, 1) == -1) {
-		berrorx(block, "setenv BLOCK_Y");
-		return 1;
-	}
+	if (setenv("BLOCK_Y", click ? click->y : "", 1) == -1)
+		_exit(1);
+}
 
-	return 0;
+static void
+child_reset_signals(void)
+{
+	sigset_t set;
+
+	if (sigfillset(&set) == -1)
+		_exit(1);
+
+	/* It should be safe to assume that all signals are unblocked by default */
+	if (sigprocmask(SIG_UNBLOCK, &set, NULL) == -1)
+		_exit(1);
+}
+
+static void
+child_redirect_write(int pipe[2], int fd)
+{
+	if (close(pipe[0]) == -1)
+		_exit(1);
+
+	/* Defensive check */
+	if (pipe[1] == fd)
+		return;
+
+	if (dup2(pipe[1], fd) == -1)
+		_exit(1);
+
+	if (close(pipe[1]) == -1)
+		_exit(1);
 }
 
 static void
@@ -81,62 +101,116 @@ linecpy(char **lines, char *dest, unsigned int size)
 static void
 mark_as_failed(struct block *block, const char *reason, int status)
 {
-	static const size_t short_size = sizeof(block->short_text);
-	static const size_t full_size = sizeof(block->full_text);
+	struct properties *props = &block->updated_props;
+
+	static const size_t short_size = sizeof(props->short_text);
+	static const size_t full_size = sizeof(props->full_text);
+
 	char short_text[short_size];
 	char full_text[full_size];
 
-	if (status < 0)
-		snprintf(short_text, short_size, "[%s] ERROR", block->name);
+	memset(props, 0, sizeof(struct properties));
+
+	if (status)
+		snprintf(short_text, short_size, "[%s] ERROR (exit:%d)", props->name, status);
 	else
-		snprintf(short_text, short_size, "[%s] ERROR (exit:%d)", block->name, status);
+		snprintf(short_text, short_size, "[%s] ERROR", props->name);
 
 	if (*reason)
 		snprintf(full_text, full_size, "%s %s", short_text, reason);
 	else
 		snprintf(full_text, full_size, "%s", short_text);
 
-	strncpy(block->full_text, full_text, full_size);
-	strncpy(block->min_width, full_text, sizeof(block->min_width) - 1);
-	strncpy(block->short_text, short_text, short_size);
-	strcpy(block->color, "#FF0000");
-	strcpy(block->urgent, "true");
+	strncpy(props->full_text, full_text, full_size);
+	strncpy(props->min_width, full_text, sizeof(props->min_width) - 1);
+	strncpy(props->short_text, short_text, short_size);
+	strcpy(props->color, "#FF0000");
+	strcpy(props->urgent, "true");
 }
 
 void
-block_update(struct block *block)
+block_spawn(struct block *block, struct click *click)
 {
-	FILE *child_stdout;
-	int child_status, code;
-	char output[2048], *text = output;
+	int out[2];
 
-	if (setup_env(block))
-		return mark_as_failed(block, "failed to setup env", -1);
-
-	/* Pipe, fork and exec a shell for the block command line */
-	child_stdout = popen(block->command, "r");
-	if (!child_stdout) {
-		berrorx(block, "popen(%s)", block->command);
-		return mark_as_failed(block, "failed to fork", -1);
+	if (!*COMMAND(block)) {
+		bdebug(block, "no command, skipping");
+		return;
 	}
 
-	/* Do not distinguish EOF or error, just read child's output */
-	memset(output, 0, sizeof(output));
-	fread(output, 1, sizeof(output) - 1, child_stdout);
-
-	/* Wait for the child process to terminate */
-	child_status = pclose(child_stdout);
-	if (child_status == -1) {
-		berrorx(block, "pclose");
-		return mark_as_failed(block, "failed to wait", -1);
+	if (block->pid > 0) {
+		bdebug(block, "process already spawned");
+		return;
 	}
 
-	if (!WIFEXITED(child_status)) {
-		berror(block, "child did not exit correctly");
-		return mark_as_failed(block, "command did not exit", -1);
+	if (pipe(out) == -1) {
+		berrorx(block, "pipe");
+		return mark_as_failed(block, "failed to pipe", 0);
 	}
 
-	code = WEXITSTATUS(child_status);
+	block->pid = fork();
+	if (block->pid == -1) {
+		berrorx(block, "fork");
+		return mark_as_failed(block, "failed to fork", 0);
+	}
+
+	/* Child? */
+	if (block->pid == 0) {
+		child_setup_env(block, click);
+		child_reset_signals();
+		child_redirect_write(out, STDOUT_FILENO);
+		execl("/bin/sh", "/bin/sh", "-c", COMMAND(block), (char *) NULL);
+		_exit(1); /* Unlikely */
+	}
+
+	/*
+	 * Note: no need to set the pipe read end as non-blocking, since it is
+	 * meant to be read once the child has exited (and thus the write end is
+	 * closed and read is available).
+	 */
+
+	/* Parent */
+	if (close(out[1]) == -1)
+		berrorx(block, "close stdout write end");
+	block->pipe = out[0];
+	block->timestamp = time(NULL);
+	bdebug(block, "forked child %d at %ld", block->pid, block->timestamp);
+}
+
+void
+block_reap(struct block *block)
+{
+	struct properties *props = &block->updated_props;
+
+	char output[2048] = { 0 };
+	char *text = output;
+	int status, code;
+
+	if (block->pid <= 0) {
+		bdebug(block, "not spawned yet");
+		return;
+	}
+
+	if (waitpid(block->pid, &status, 0) == -1) {
+		berrorx(block, "waitpid(%d)", block->pid);
+		return;
+	}
+
+	code = WEXITSTATUS(status);
+	bdebug(block, "process %d exited with %d", block->pid, code);
+	block->pid = 0;
+
+	/* Note read(2) returns 0 for end-of-pipe */
+	if (read(block->pipe, output, sizeof(output)) == -1) {
+		berrorx(block, "read");
+		return mark_as_failed(block, "failed to read pipe", 0);
+	}
+
+	if (close(block->pipe) == -1) {
+		berror(block, "failed to close");
+		return mark_as_failed(block, "failed to close read pipe", 0);
+	}
+
 	if (code != 0 && code != '!') {
 		char reason[1024] = { 0 };
 
@@ -145,12 +219,32 @@ block_update(struct block *block)
 		return mark_as_failed(block, reason, code);
 	}
 
-	/* From here, the update went ok so merge the output */
-	strncpy(block->urgent, code == '!' ? "true" : "false", sizeof(block->urgent) - 1);
-	linecpy(&text, block->full_text, sizeof(block->full_text) - 1);
-	linecpy(&text, block->short_text, sizeof(block->short_text) - 1);
-	linecpy(&text, block->color, sizeof(block->color) - 1);
-	block->last_update = time(NULL);
-
+	/* The update went ok, so reset the defaults and merge the output */
+	memcpy(props, &block->default_props, sizeof(struct properties));
+	strncpy(props->urgent, code == '!' ? "true" : "false", sizeof(props->urgent) - 1);
+	linecpy(&text, props->full_text, sizeof(props->full_text) - 1);
+	linecpy(&text, props->short_text, sizeof(props->short_text) - 1);
+	linecpy(&text, props->color, sizeof(props->color) - 1);
 	bdebug(block, "updated successfully");
+}
+
+void block_setup(struct block *block)
+{
+	struct properties *defaults = &block->default_props;
+	struct properties *updated = &block->updated_props;
+
+	/* Convenient shortcuts */
+	block->interval = atoi(defaults->interval);
+	block->signal = atoi(defaults->signal);
+
+	/* First update (for static blocks and loading labels) */
+	memcpy(updated, defaults, sizeof(struct properties));
+
+#define PLACEHOLDERS(_name, _size, _flags) "    %s: \"%s\"\n"
+#define ARGS(_name, _size, _flags) #_name, updated->_name,
+
+	debug("\n{\n" PROPERTIES(PLACEHOLDERS) "%s", PROPERTIES(ARGS) "}");
+
+#undef ARGS
+#undef PLACEHOLDERS
 }

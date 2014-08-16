@@ -94,9 +94,11 @@ The following keys are specific to **i3blocks**.
     be updated again.
 
   * `signal`:
-	The signal number used to update the block. For instance, `signal=10` means
-	that this block will be updated when **i3blocks** receives a SIGUSR1.
-    Currently, SIGUSR1 and SIGUSR2 are supported.
+	The signal number used to update the block. All the real-time (think
+    prioritized and queueable) signals are available to the user. The number is
+    valid between 1 and N, where SIGRTMIN+N = SIGRTMAX. (Note: there are 31
+    real-time signals in Linux.) For instance, `signal=10` means that this
+    block will be updated when **i3blocks** receives SIGRTMIN+10.
 
 ## COMMAND
 
@@ -189,12 +191,12 @@ As an example, here is a close configuration to i3status(1) default settings:
     [datetime]
 
 The following block shows the usage of `signal` with some i3(1) bindings
-which adjust the volume, before issuing a `killall -USR1 i3blocks`:
+which adjust the volume, before issuing a `pkill -RTMIN+1 i3blocks`:
 
     [volume]
     command=echo -n 'Volume: '; amixer get Master | grep -E -o '[0-9][0-9]?%'
-    signal=10
-    # no interval, only check on SIGUSR1
+    signal=1
+    # no interval, only check on SIGRTMIN+1
 
 Here is an example of a very minimalist config, assuming you have a bunch of
 scripts under `~/bin/blocks/` with the same name as the blocks:

@@ -18,13 +18,13 @@ customization such as text alignment, urgency, color, and more.
 - - -
 
 Here is an example of status line, showing the time updated every 5 seconds, 
-the volume updated only when i3blocks receives a SIGUSR1, and click events.
+the volume updated only when i3blocks receives a SIGRTMIN+1, and click events.
 
 ```` ini
 [volume]
 command=echo -n 'Volume: '; amixer get Master | grep -E -o '[0-9][0-9]?%'
 signal=10
-# use 'killall -USR1 i3blocks' after changing the volume
+# use 'pkill -RTMIN+1 i3blocks' after changing the volume
 
 [time]
 command=date '+%D %T'

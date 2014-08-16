@@ -22,10 +22,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "bar.h"
 #include "block.h"
 #include "log.h"
 
-static inline int
+static inline bool
 is_number(const char *str)
 {
 	char *end;
@@ -37,7 +38,7 @@ is_number(const char *str)
 }
 
 static inline void
-print_string(const char *str)
+escape(const char *str)
 {
 	fprintf(stdout, "\"");
 
@@ -57,40 +58,35 @@ print_string(const char *str)
 	fprintf(stdout, "\"");
 }
 
-static inline void
-print_number(const char *str)
+static void
+print_prop(const char *key, const char *value, const int flags)
 {
-	fprintf(stdout, "%s", str);
-}
+	/* Only print i3bar-specific properties */
+	if (!(flags & PROP_I3BAR))
+		return;
 
-static inline void
-print_boolean(const char *str)
-{
-	/* FIXME useful? May have been checked during ini parsing */
-	fprintf(stdout, strcmp(str, "true") == 0 ? "true" : "false");
-}
+	if (!*value)
+		return;
 
-static inline void
-print_string_or_number(const char *str)
-{
-	is_number(str) ? print_number(str) : print_string(str);
+	fprintf(stdout, ",\"%s\":", key);
+
+	/* Print as-is (except strings which must be escaped) */
+	if (flags & PROP_STRING && flags & PROP_NUMBER && is_number(value))
+		fprintf(stdout, value);
+	else if (flags & PROP_STRING)
+		escape(value);
+	else
+		fprintf(stdout, value);
 }
 
 static void
-block_to_json(struct block *block)
+print_block(struct block *block)
 {
-	int first = true;
+#define PRINT(_name, _size, _flags) \
+	print_prop(#_name, block->updated_props._name, _flags); \
 
-#define JSON(_name, _size, _type) \
-	if (*block->_name) { \
-		if (!first) fprintf(stdout, ","); \
-		else first = false; \
-		fprintf(stdout, "\"" #_name "\":"); \
-		print_##_type(block->_name); \
-	}
-
-	fprintf(stdout, "{");
-	PROTOCOL_KEYS(JSON);
+	fprintf(stdout, ",{\"\":\"\"");
+	PROPERTIES(PRINT);
 	fprintf(stdout, "}");
 
 #undef JSON
@@ -127,27 +123,22 @@ json_parse(const char *json, const char *name, int *start, int *len)
 }
 
 void
-json_print_status_line(struct status_line *status)
+json_print_bar(struct bar *bar)
 {
-	bool first = true;
 	int i = 0;
 
-	fprintf(stdout, ",[");
+	fprintf(stdout, ",[{\"full_text\":\"\"}");
 
-	for (i = 0; i < status->num; ++i) {
-		struct block *block = status->updated_blocks + i;
+	for (i = 0; i < bar->num; ++i) {
+		struct block *block = bar->blocks + i;
 
 		/* full_text is the only mandatory key, skip if empty */
-		if (!*block->full_text) {
+		if (!*FULL_TEXT(block)) {
 			bdebug(block, "no text to display, skipping");
 			continue;
 		}
 
-		if (!first) fprintf(stdout, ",");
-		else first = false;
-
-		bdebug(block, "print json");
-		block_to_json(block);
+		print_block(block);
 	}
 
 	fprintf(stdout, "]\n");

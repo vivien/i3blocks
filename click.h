@@ -1,5 +1,5 @@
 /*
- * json.h - JSON manipulation header
+ * click.h - definition of click parsing functions
  * Copyright (C) 2014  Vivien Didelot
  *
  * This program is free software: you can redistribute it and/or modify
@@ -16,14 +16,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _JSON_H
-#define _JSON_H
+#ifndef _CLICK_H
+#define _CLICK_H
 
-#include "bar.h"
-#include "block.h"
+struct click {
+	char *name;
+	char *instance;
+	char *button;
+	char *x;
+	char *y;
+};
 
-void json_parse(const char *json, const char *name, int *start, int *len);
-void json_print_bar(struct bar *);
+void click_parse(char *, struct click *);
 
-#endif /* _JSON_H */
-
+#endif /* _CLICK_H */

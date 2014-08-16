@@ -2,10 +2,14 @@
 
 ## master
 
+  * Fix click checking (GH #34).
+  * Use an alarm (if needed), which is more accurate.
+  * Use real-time signals (SIGRTMIN+1 to SIGRTMAX) for blocks, deprecate 
+  SIGUSR1 and SIGUSR2.
+  * Implement asynchronous block updates (GH #23).
   * Now check for config file ~/.config/i3blocks/config (or
   $XDG_CONFIG_HOME/i3blocks/config if set) before ~/.i3blocks.conf (GH #32).
   * Add a cpu usage script (GH #11).
-  * Fix click checking.
 
 ## 1.2
 

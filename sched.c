@@ -22,25 +22,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
+#include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
 
+#include "bar.h"
 #include "block.h"
+#include "click.h"
 #include "json.h"
 #include "log.h"
 
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-
-static volatile sig_atomic_t caughtsig;
-
-static void
-handler(int signum)
-{
-	caughtsig = signum;
-}
+static sigset_t sigset;
 
 static unsigned int
-longest_sleep(struct status_line *status)
+longest_sleep(struct bar *bar)
 {
 	int time = 0;
 
@@ -52,166 +48,85 @@ longest_sleep(struct status_line *status)
 		return a;
 	}
 
-	if (status->num > 0) {
-		time = status->blocks->interval; /* first block's interval */
+	if (bar->num > 0) {
+		time = bar->blocks->interval; /* first block's interval */
 
-		if (status->num >= 2) {
+		if (bar->num >= 2) {
 			int i;
 
-			for (i = 1; i < status->num; ++i)
-				time = gcd(time, (status->blocks + i)->interval);
+			for (i = 1; i < bar->num; ++i)
+				time = gcd(time, (bar->blocks + i)->interval);
 		}
 	}
 
-	return time > 0 ? time : 5; /* default */
-}
-
-static inline bool
-need_update(struct block *block)
-{
-	bool first_time, outdated, signaled, clicked;
-
-	first_time = outdated = signaled = clicked = false;
-
-	if (block->last_update == 0)
-		first_time = true;
-
-	if (block->interval) {
-		const unsigned long now = time(NULL);
-		const unsigned long next_update = block->last_update + block->interval;
-
-		outdated = ((long) (next_update - now)) <= 0;
-	}
-
-	if (caughtsig) {
-		signaled = caughtsig == block->signal;
-		clicked = *block->click.button != '\0';
-	}
-
-	bdebug(block, "CHECK first_time: %s, outdated: %s, signaled: %s, clicked: %s",
-			first_time ? "YES" : "no",
-			outdated ? "YES" : "no",
-			signaled ? "YES" : "no",
-			clicked ? "YES" : "no");
-
-	return first_time || outdated || signaled || clicked;
-}
-
-static void
-update_status_line(struct status_line *status)
-{
-	int i;
-
-	for (i = 0; i < status->num; ++i) {
-		const struct block *config_block = status->blocks + i;
-		struct block *updated_block = status->updated_blocks + i;
-
-		/* Skip static block */
-		if (!*config_block->command) {
-			bdebug(config_block, "no command, skipping");
-			continue;
-		}
-
-		/* If a block needs an update, reset and execute it */
-		if (need_update(updated_block)) {
-			struct click click;
-
-			/* save click info and restore config values */
-			memcpy(&click, &updated_block->click, sizeof(struct click));
-			memcpy(updated_block, config_block, sizeof(struct block));
-			memcpy(&updated_block->click, &click, sizeof(struct click));
-
-			block_update(updated_block);
-
-			/* clear click info */
-			memset(&updated_block->click, 0, sizeof(struct click));
-		}
-	}
-
-	if (caughtsig > 0)
-		caughtsig = 0;
-}
-
-/*
- * Parse a click, previous read from stdin.
- *
- * A click looks like this ("name" and "instance" can be absent):
- *
- *     ',{"name":"foo","instance":"bar","button":1,"x":1186,"y":13}\n'
- *
- * Note that this function is non-idempotent. We need to parse from right to
- * left. It's ok since the JSON layout is known and fixed.
- */
-static void
-parse_click(char *json, char **name, char **instance, struct click *click)
-{
-	int nst, nlen;
-	int ist, ilen;
-	int bst, blen;
-	int xst, xlen;
-	int yst, ylen;
-
-	json_parse(json, "y", &yst, &ylen);
-	json_parse(json, "x", &xst, &xlen);
-	json_parse(json, "button", &bst, &blen);
-	json_parse(json, "instance", &ist, &ilen);
-	json_parse(json, "name", &nst, &nlen);
-
-	/* set name, otherwise "" */
-	*name = (json + nst);
-	*(*name + nlen) = '\0';
-
-	/* set instance, otherwise "" */
-	*instance = (json + ist);
-	*(*instance + ilen) = '\0';
-
-	memcpy(click->button, json + bst, MIN(blen, sizeof(click->button) - 1));
-	memcpy(click->x, json + xst, MIN(xlen, sizeof(click->x) - 1));
-	memcpy(click->y, json + yst, MIN(ylen, sizeof(click->y) - 1));
-}
-
-static void
-handle_click(struct status_line *status)
-{
-	char json[1024] = { 0 };
-	struct click click = { "" };
-	char *name, *instance;
-
-	fread(json, 1, sizeof(json) - 1, stdin);
-
-	parse_click(json, &name, &instance, &click);
-	debug("got a click: name=%s instance=%s button=%s x=%s y=%s",
-			name, instance, click.button, click.x, click.y);
-
-	/* find the corresponding block */
-	if (*name || *instance) {
-		int i;
-
-		for (i = 0; i < status->num; ++i) {
-			struct block *block = status->updated_blocks + i;
-
-			if (strcmp(block->name, name) == 0 && strcmp(block->instance, instance) == 0) {
-				memcpy(&block->click, &click, sizeof(struct click));
-
-				/* It shouldn't be likely to have several blocks with the same name/instance, so stop here */
-				bdebug(block, "clicked");
-				break;
-			}
-		}
-	}
+	return time;
 }
 
 static int
-sched_use_signal(const int sig)
+setup_timer(struct bar *bar)
 {
-	struct sigaction sa;
+	const unsigned sleeptime = longest_sleep(bar);
 
-	sa.sa_handler = handler;
-	sigemptyset(&sa.sa_mask);
-	sa.sa_flags = SA_RESTART; /* Restart functions if interrupted by handler */
+	if (!sleeptime) {
+		debug("no timer needed");
+		return 0;
+	}
 
-	if (sigaction(sig, &sa, NULL) == -1) {
-		errorx("sigaction");
+	struct itimerval itv = {
+		.it_value.tv_sec = sleeptime,
+		.it_interval.tv_sec = sleeptime,
+	};
+
+	if (setitimer(ITIMER_REAL, &itv, NULL) == -1) {
+		errorx("setitimer");
+		return 1;
+	}
+
+	debug("starting timer with interval of %d seconds", sleeptime);
+	return 0;
+}
+
+static int
+setup_signals(void)
+{
+	int sig;
+
+	if (sigemptyset(&sigset) == -1) {
+		errorx("sigemptyset");
+		return 1;
+	}
+
+#define ADD_SIG(_sig) \
+	if (sigaddset(&sigset, _sig) == -1) { errorx("sigaddset(%d)", _sig); return 1; }
+
+	/* Control signals */
+	ADD_SIG(SIGTERM);
+	ADD_SIG(SIGINT);
+
+	/* Timer signal */
+	ADD_SIG(SIGALRM);
+
+	/* Block updates (forks) */
+	ADD_SIG(SIGCHLD);
+
+	/* Deprecated signals */
+	ADD_SIG(SIGUSR1);
+	ADD_SIG(SIGUSR2);
+
+	/* Click signal */
+	ADD_SIG(SIGIO);
+
+	/* Real-time signals for blocks */
+	for (sig = SIGRTMIN + 1; sig <= SIGRTMAX; ++sig) {
+		debug("provide signal %d (%s)", sig, strsignal(sig));
+		ADD_SIG(sig);
+	}
+
+#undef ADD_SIG
+
+	/* Block signals for which we are interested in waiting */
+	if (sigprocmask(SIG_SETMASK, &sigset, NULL) == -1) {
+		errorx("sigprocmask");
 		return 1;
 	}
 
@@ -219,15 +134,9 @@ sched_use_signal(const int sig)
 }
 
 static int
-sched_event_stdin(void)
+eventio_stdin(void)
 {
 	int flags;
-
-	/* Setup signal handler for stdin */
-	if (sched_use_signal(SIGIO)) {
-		error("failed to set SIGIO");
-		return 1;
-	}
 
 	/* Set owner process that is to receive "I/O possible" signal */
 	if (fcntl(STDIN_FILENO, F_SETOWN, getpid()) == -1) {
@@ -246,48 +155,79 @@ sched_event_stdin(void)
 }
 
 int
-sched_init(void)
+sched_init(struct bar *bar)
 {
-	/* Setup signal handler for blocks */
-	if (sched_use_signal(SIGUSR1)) {
-		error("failed to set SIGUSR1");
+	if (setup_signals())
 		return 1;
-	}
 
-	if (sched_use_signal(SIGUSR2)) {
-		error("failed to set SIGUSR2");
+	if (setup_timer(bar))
 		return 1;
-	}
 
 	/* Setup event I/O for stdin (clicks) */
-	if (!isatty(STDIN_FILENO)) {
-		if (sched_event_stdin()) {
-			error("failed to setup event I/O for stdin");
+	if (!isatty(STDIN_FILENO))
+		if (eventio_stdin())
 			return 1;
-		}
-	}
 
 	return 0;
 }
 
 void
-sched_start(struct status_line *status)
+sched_start(struct bar *bar)
 {
-	const unsigned sleeptime = longest_sleep(status);
+	int sig;
+	int i;
 
-	debug("starting scheduler with sleep time %d", sleeptime);
+	/* Initial display, in case the user sets loading labels */
+	json_print_bar(bar);
+
+	/* First spawn, for one-shot commands */
+	for (i = 0; i < bar->num; ++i)
+		block_spawn(bar->blocks + i, NULL);
 
 	while (1) {
-		update_status_line(status);
-		json_print_status_line(status);
-
-		/* Sleep or force check on interruption */
-		if (sleep(sleeptime)) {
-			debug("woken up by signal %d", caughtsig);
-			if (caughtsig == SIGIO) {
-				debug("stdin readable");
-				handle_click(status);
-			}
+		sig = sigwaitinfo(&sigset, NULL);
+		if (sig == -1) {
+			error("sigwaitinfo");
+			break;
 		}
+
+		debug("received signal %d (%s)", sig, strsignal(sig));
+
+		if (sig == SIGTERM || sig == SIGINT)
+			break;
+
+		/* Interval tick? */
+		if (sig == SIGALRM) {
+			bar_poll_outdated(bar);
+
+		/* Child(ren) dead? */
+		} else if (sig == SIGCHLD) {
+			bar_poll_exited(bar);
+			json_print_bar(bar);
+
+		/* Block clicked? */
+		} else if (sig == SIGIO) {
+			bar_poll_clicked(bar);
+
+		/* Blocks signaled? */
+		} else if (sig > SIGRTMIN && sig <= SIGRTMAX) {
+			bar_poll_signaled(bar, sig - SIGRTMIN);
+
+		/* Deprecated signals? */
+		} else if (sig == SIGUSR1 || sig == SIGUSR2) {
+			error("SIGUSR{1,2} are deprecated, ignoring.");
+
+		} else debug("unhandled signal %d", sig);
 	}
+
+	/*
+	 * Unblock signals (so subsequent syscall can be interrupted)
+	 * and wait for child processes termination.
+	 */
+	if (sigprocmask(SIG_UNBLOCK, &sigset, NULL) == -1)
+		errorx("sigprocmask");
+	while (waitpid(-1, NULL, 0) > 0)
+		continue;
+
+	debug("quit scheduling");
 }

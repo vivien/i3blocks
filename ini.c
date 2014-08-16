@@ -18,10 +18,12 @@
 
 #include <errno.h>
 #include <limits.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "bar.h"
 #include "block.h"
 #include "log.h"
 
@@ -30,16 +32,16 @@
 #endif
 
 static struct block *
-add_block(struct status_line *status)
+add_block(struct bar *bar)
 {
 	struct block *block = NULL;
 	void *reloc;
 
-	reloc = realloc(status->blocks, sizeof(struct block) * (status->num + 1));
+	reloc = realloc(bar->blocks, sizeof(struct block) * (bar->num + 1));
 	if (reloc) {
-		status->blocks = reloc;
-		block = status->blocks + status->num;
-		status->num++;
+		bar->blocks = reloc;
+		block = bar->blocks + bar->num;
+		bar->num++;
 	}
 
 	return block;
@@ -68,71 +70,44 @@ parse_section(const char *line, char *name, unsigned int size)
 }
 
 static int
-parse_property(const char *line, struct block *block)
+parse_property(const char *line, struct properties *props, bool strict)
 {
 	char *equal = strchr(line, '=');
-	const char *property, *value;
+	const char *key, *value;
 
 	if (!equal) {
-		berror(block, "malformated property, should be of the form 'key=value'");
+		error("malformated property, should be a key=value pair");
 		return 1;
 	}
 
-	/* split property and value */
+	/* split key and value */
 	*equal = '\0';
-	property = line;
+	key = line;
 	value = equal + 1;
 
-#define PARSE(_name, _size, _type) \
-	if (strcmp(property, #_name) == 0) { \
-		strncpy(block->_name, value, _size - 1); \
+#define PARSE(_name, _size, _flags) \
+	if ((!strict || (_flags) & PROP_I3BAR) && strcmp(key, #_name) == 0) { \
+		strncpy(props->_name, value, _size - 1); \
 		goto parsed; \
-	} \
+	}
 
-#define PARSE_NUM(_name) \
-	if (strcmp(property, #_name) == 0) { \
-		block->_name = atoi(value); \
-		goto parsed; \
-	} \
+	PROPERTIES(PARSE);
 
-	PROTOCOL_KEYS(PARSE);
-	PARSE(command, sizeof(block->command), _);
-	PARSE_NUM(interval);
-	PARSE_NUM(signal);
-	/* TODO some better check for numbers and boolean */
-
-#undef PARSE_NUM
 #undef PARSE
 
-	berror(block, "unknown property: \"%s\"", property);
+	error("unknown key: \"%s\"", key);
 	return 1;
 
 parsed:
-	bdebug(block, "set property %s to \"%s\"", property, value);
 	return 0;
 }
 
 static int
-duplicate_blocks(struct status_line *status)
+parse_bar(FILE *fp, struct bar *bar)
 {
-	const size_t size = status->num * sizeof(struct block);
-
-	status->updated_blocks = malloc(size);
-	if (!status->updated_blocks)
-		return 1;
-
-	memcpy(status->updated_blocks, status->blocks, size);
-	return 0;
-}
-
-static int
-parse_status_line(FILE *fp, struct status_line *status)
-{
-	struct block *block = NULL;
-	struct block global;
 	char line[2048];
-
-	memset(&global, 0, sizeof(struct block));
+	struct block *block = NULL;
+	struct block global = {};
 
 	while (fgets(line, sizeof(line), fp) != NULL) {
 		int len = strlen(line);
@@ -151,14 +126,18 @@ parse_status_line(FILE *fp, struct status_line *status)
 
 		/* Section? */
 		case '[':
-			block = add_block(status);
+			/* Finalize previous block */
+			if (block)
+				block_setup(block);
+
+			block = add_block(bar);
 			if (!block)
 				return 1;
 
 			/* Init the block with default settings (if any) */
 			memcpy(block, &global, sizeof(struct block));
 
-			if (parse_section(line, block->name, sizeof(block->name)))
+			if (parse_section(line, block->default_props.name, sizeof(block->default_props.name)))
 				return 1;
 
 			bdebug(block, "new block");
@@ -167,11 +146,11 @@ parse_status_line(FILE *fp, struct status_line *status)
 		/* Property? */
 		case 'a' ... 'z':
 			if (!block) {
-				debug("no section yet, consider global properties");
+				debug("parsing global properties");
 				block = &global;
 			}
 
-			if (parse_property(line, block))
+			if (parse_property(line, &block->default_props, false))
 				return 1;
 
 			break;
@@ -183,32 +162,35 @@ parse_status_line(FILE *fp, struct status_line *status)
 		}
 	}
 
-	return duplicate_blocks(status);
+	/* Finalize the last block */
+	if (block)
+		block_setup(block);
+
+	return 0;
 }
 
-struct status_line *
-ini_load_status_line(const char *inifile)
+struct bar *
+ini_load(const char *inifile)
 {
 	static const char * const system = SYSCONFDIR "/i3blocks.conf";
 	const char * const home = getenv("HOME");
 	const char * const xdg_home = getenv("XDG_CONFIG_HOME");
 	char buf[PATH_MAX];
 	FILE *fp;
-	struct status_line *status;
+	struct bar *bar;
 
-	struct status_line *parse(void) {
-		status = calloc(1, sizeof(struct status_line));
-		if (status && parse_status_line(fp, status)) {
-			free(status->blocks);
-			free(status->updated_blocks);
-			free(status);
-			status = NULL;
+	struct bar *parse(void) {
+		bar = calloc(1, sizeof(struct bar));
+		if (bar && parse_bar(fp, bar)) {
+			free(bar->blocks);
+			free(bar);
+			bar = NULL;
 		}
 
 		if (fclose(fp))
 			errorx("fclose");
 
-		return status;
+		return bar;
 	}
 
 	/* command line config file? */

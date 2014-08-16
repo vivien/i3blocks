@@ -1,5 +1,5 @@
 /*
- * json.h - JSON manipulation header
+ * bar.h - definition of a status line handling functions
  * Copyright (C) 2014  Vivien Didelot
  *
  * This program is free software: you can redistribute it and/or modify
@@ -16,14 +16,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _JSON_H
-#define _JSON_H
+#ifndef _BAR_H
+#define _BAR_H
 
-#include "bar.h"
-#include "block.h"
+struct bar {
+	struct block *blocks;
+	unsigned int num;
+};
 
-void json_parse(const char *json, const char *name, int *start, int *len);
-void json_print_bar(struct bar *);
+void bar_poll_clicked(struct bar *);
+void bar_poll_outdated(struct bar *);
+void bar_poll_signaled(struct bar *, const int);
+void bar_poll_exited(struct bar *);
 
-#endif /* _JSON_H */
-
+#endif /* _BAR_H */

@@ -48,7 +48,7 @@ main(int argc, char *argv[])
 {
 	char *inifile = NULL;
 	char *libexec = BLOCK_LIBEXEC;
-	struct status_line *status;
+	struct bar *bar;
 	int c;
 
 	while (c = getopt(argc, argv, "c:d:hv"), c != -1) {
@@ -77,17 +77,17 @@ main(int argc, char *argv[])
 	}
 	debug("$BLOCK_LIBEXEC set to '%s'", libexec);
 
-	status = ini_load_status_line(inifile);
-	if (!status) {
+	bar = ini_load(inifile);
+	if (!bar) {
 		error("Try '%s -h' for more information.", argv[0]);
 		return 1;
 	}
 
-	if (sched_init())
+	if (sched_init(bar))
 		return 1;
 
 	start();
-	sched_start(status);
+	sched_start(bar);
 
 	//stop();
 	return 0;
