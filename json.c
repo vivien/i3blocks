@@ -125,11 +125,9 @@ json_parse(const char *json, const char *name, int *start, int *len)
 void
 json_print_bar(struct bar *bar)
 {
-	int i = 0;
-
 	fprintf(stdout, ",[{\"full_text\":\"\"}");
 
-	for (i = 0; i < bar->num; ++i) {
+	for (int i = 0; i < bar->num; ++i) {
 		struct block *block = bar->blocks + i;
 
 		/* full_text is the only mandatory key, skip if empty */

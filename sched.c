@@ -51,12 +51,9 @@ longest_sleep(struct bar *bar)
 	if (bar->num > 0) {
 		time = bar->blocks->interval; /* first block's interval */
 
-		if (bar->num >= 2) {
-			int i;
-
-			for (i = 1; i < bar->num; ++i)
+		if (bar->num >= 2)
+			for (int i = 1; i < bar->num; ++i)
 				time = gcd(time, (bar->blocks + i)->interval);
-		}
 	}
 
 	return time;
@@ -89,8 +86,6 @@ setup_timer(struct bar *bar)
 static int
 setup_signals(void)
 {
-	int sig;
-
 	if (sigemptyset(&sigset) == -1) {
 		errorx("sigemptyset");
 		return 1;
@@ -117,7 +112,7 @@ setup_signals(void)
 	ADD_SIG(SIGIO);
 
 	/* Real-time signals for blocks */
-	for (sig = SIGRTMIN + 1; sig <= SIGRTMAX; ++sig) {
+	for (int sig = SIGRTMIN + 1; sig <= SIGRTMAX; ++sig) {
 		debug("provide signal %d (%s)", sig, strsignal(sig));
 		ADD_SIG(sig);
 	}
@@ -175,13 +170,12 @@ void
 sched_start(struct bar *bar)
 {
 	int sig;
-	int i;
 
 	/* Initial display, in case the user sets loading labels */
 	json_print_bar(bar);
 
 	/* First spawn, for one-shot commands */
-	for (i = 0; i < bar->num; ++i)
+	for (int i = 0; i < bar->num; ++i)
 		block_spawn(bar->blocks + i, NULL);
 
 	while (1) {

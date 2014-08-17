@@ -44,14 +44,13 @@ bar_poll_clicked(struct bar *bar)
 
 	while (readline(json, sizeof(json)) > 0) {
 		struct click click;
-		int i;
 
 		/* find the corresponding block */
 		click_parse(json, &click);
 		if (!*click.name && !*click.instance)
 			continue;
 
-		for (i = 0; i < bar->num; ++i) {
+		for (int i = 0; i < bar->num; ++i) {
 			struct block *block = bar->blocks + i;
 
 			if (strcmp(NAME(block), click.name) == 0 && strcmp(INSTANCE(block), click.instance) == 0) {
@@ -66,9 +65,7 @@ bar_poll_clicked(struct bar *bar)
 void
 bar_poll_outdated(struct bar *bar)
 {
-	int i;
-
-	for (i = 0; i < bar->num; ++i) {
+	for (int i = 0; i < bar->num; ++i) {
 		struct block *block = bar->blocks + i;
 
 		if (block->interval) {
@@ -86,9 +83,7 @@ bar_poll_outdated(struct bar *bar)
 void
 bar_poll_signaled(struct bar *bar, const int sig)
 {
-	int i;
-
-	for (i = 0; i < bar->num; ++i) {
+	for (int i = 0; i < bar->num; ++i) {
 		struct block *block = bar->blocks + i;
 
 		if (block->signal == sig) {
@@ -102,7 +97,6 @@ void
 bar_poll_exited(struct bar *bar)
 {
 	for (;;) {
-		int i;
 		siginfo_t infop = { 0 };
 
 		/* Non-blocking check for dead child(ren) */
@@ -115,7 +109,7 @@ bar_poll_exited(struct bar *bar)
 			break;
 
 		/* Find the dead process */
-		for (i = 0; i < bar->num; ++i) {
+		for (int i = 0; i < bar->num; ++i) {
 			struct block *block = bar->blocks + i;
 
 			if (block->pid == infop.si_pid) {
