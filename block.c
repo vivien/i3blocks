@@ -131,6 +131,7 @@ mark_as_failed(struct block *block, const char *reason, int status)
 void
 block_spawn(struct block *block, struct click *click)
 {
+	const unsigned long now = time(NULL);
 	int out[2];
 
 	if (!*COMMAND(block)) {
@@ -173,8 +174,9 @@ block_spawn(struct block *block, struct click *click)
 	if (close(out[1]) == -1)
 		berrorx(block, "close stdout write end");
 	block->pipe = out[0];
-	block->timestamp = time(NULL);
-	bdebug(block, "forked child %d at %ld", block->pid, block->timestamp);
+	if (!click)
+		block->timestamp = now;
+	bdebug(block, "forked child %d at %ld", block->pid, now);
 }
 
 void
