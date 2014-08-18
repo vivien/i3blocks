@@ -61,7 +61,7 @@ struct block {
 	/* Runtime info */
 	unsigned long timestamp;
 	pid_t pid;
-	int pipe;
+	int out, err;
 };
 
 /* Shortcuts to config */

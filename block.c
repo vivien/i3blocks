@@ -114,7 +114,7 @@ void
 block_spawn(struct block *block, struct click *click)
 {
 	const unsigned long now = time(NULL);
-	int out[2];
+	int out[2], err[2];
 
 	if (!*COMMAND(block)) {
 		bdebug(block, "no command, skipping");
@@ -126,7 +126,7 @@ block_spawn(struct block *block, struct click *click)
 		return;
 	}
 
-	if (pipe(out) == -1) {
+	if (pipe(out) == -1 || pipe(err) == -1) {
 		berrorx(block, "pipe");
 		return mark_as_failed(block, strerror(errno));
 	}
@@ -142,6 +142,7 @@ block_spawn(struct block *block, struct click *click)
 		child_setup_env(block, click);
 		child_reset_signals();
 		child_redirect_write(out, STDOUT_FILENO);
+		child_redirect_write(err, STDERR_FILENO);
 		execl("/bin/sh", "/bin/sh", "-c", COMMAND(block), (char *) NULL);
 		_exit(1); /* Unlikely */
 	}
@@ -154,10 +155,16 @@ block_spawn(struct block *block, struct click *click)
 
 	/* Parent */
 	if (close(out[1]) == -1)
-		berrorx(block, "close stdout write end");
-	block->pipe = out[0];
+		berrorx(block, "close stdout");
+	if (close(err[1]) == -1)
+		berrorx(block, "close stderr");
+
+	block->out = out[0];
+	block->err = err[0];
+
 	if (!click)
 		block->timestamp = now;
+
 	bdebug(block, "forked child %d at %ld", block->pid, now);
 }
 
@@ -166,8 +173,8 @@ block_reap(struct block *block)
 {
 	struct properties *props = &block->updated_props;
 
-	char output[2048] = { 0 };
-	char *text = output;
+	char buf[2048] = { 0 };
+	char *lines = buf;
 	int status, code;
 
 	if (block->pid <= 0) {
@@ -184,6 +191,18 @@ block_reap(struct block *block)
 	code = WEXITSTATUS(status);
 	bdebug(block, "process %d exited with %d", block->pid, code);
 
+	/* Note read(2) returns 0 for end-of-pipe */
+	if (read(block->err, buf, sizeof(buf)) == -1) {
+		berrorx(block, "read stderr");
+		mark_as_failed(block, strerror(errno));
+		goto close;
+	}
+
+	if (*buf) {
+		bdebug(block, "stderr:\n{\n%s\n}", buf);
+		memset(buf, 0, sizeof(buf));
+	}
+
 	if (code != 0 && code != '!') {
 		char reason[32];
 
@@ -194,8 +213,8 @@ block_reap(struct block *block)
 	}
 
 	/* Note read(2) returns 0 for end-of-pipe */
-	if (read(block->pipe, output, sizeof(output)) == -1) {
-		berrorx(block, "read(%d)", block->pipe);
+	if (read(block->out, buf, sizeof(buf)) == -1) {
+		berrorx(block, "read stdout");
 		mark_as_failed(block, strerror(errno));
 		goto close;
 	}
@@ -203,14 +222,16 @@ block_reap(struct block *block)
 	/* The update went ok, so reset the defaults and merge the output */
 	memcpy(props, &block->default_props, sizeof(struct properties));
 	strncpy(props->urgent, code == '!' ? "true" : "false", sizeof(props->urgent) - 1);
-	linecpy(&text, props->full_text, sizeof(props->full_text) - 1);
-	linecpy(&text, props->short_text, sizeof(props->short_text) - 1);
-	linecpy(&text, props->color, sizeof(props->color) - 1);
+	linecpy(&lines, props->full_text, sizeof(props->full_text) - 1);
+	linecpy(&lines, props->short_text, sizeof(props->short_text) - 1);
+	linecpy(&lines, props->color, sizeof(props->color) - 1);
 
 	bdebug(block, "updated successfully");
 close:
-	if (close(block->pipe) == -1)
-		berrorx(block, "close(%d)", block->pipe);
+	if (close(block->out) == -1)
+		berrorx(block, "close stdout");
+	if (close(block->err) == -1)
+		berrorx(block, "close stderr");
 
 	block->pid = 0;
 }
