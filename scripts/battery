@@ -22,9 +22,7 @@ my $percent;
 my $full_text;
 my $short_text;
 
-# print utf-8 chars directly and redirect stderr to stdout
 binmode STDOUT, ':encoding(UTF-8)';
-*STDERR = *STDOUT;
 
 # read the first line of the "acpi" command output
 open (ACPI, 'acpi -b |') or die "Can't exec acpi: $!\n";

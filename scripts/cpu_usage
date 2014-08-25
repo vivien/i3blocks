@@ -11,8 +11,6 @@ use warnings;
 use utf8;
 use Getopt::Long;
 
-*STDERR = *STDOUT; # 2>&1
-
 # default values
 my $t_warn = 50;
 my $t_crit = 80;
