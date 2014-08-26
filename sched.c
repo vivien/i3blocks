@@ -38,7 +38,7 @@ static sigset_t sigset;
 static unsigned int
 longest_sleep(struct bar *bar)
 {
-	int time = 0;
+	unsigned int time = 0;
 
 	/* The maximum sleep time is actually the GCD between all block intervals */
 	int gcd(int a, int b) {
@@ -48,13 +48,15 @@ longest_sleep(struct bar *bar)
 		return a;
 	}
 
-	if (bar->num > 0) {
+	if (bar->num > 0 && bar->blocks->interval > 0)
 		time = bar->blocks->interval; /* first block's interval */
 
-		if (bar->num >= 2)
-			for (int i = 1; i < bar->num; ++i)
-				time = gcd(time, (bar->blocks + i)->interval);
-	}
+	if (bar->num < 2)
+		return time;
+
+	for (int i = 1; i < bar->num; ++i)
+		if ((bar->blocks + i)->interval > 0)
+			time = gcd(time, (bar->blocks + i)->interval);
 
 	return time;
 }

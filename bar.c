@@ -68,7 +68,7 @@ bar_poll_outdated(struct bar *bar)
 	for (int i = 0; i < bar->num; ++i) {
 		struct block *block = bar->blocks + i;
 
-		if (block->interval) {
+		if (block->interval > 0) {
 			const unsigned long now = time(NULL);
 			const unsigned long next_update = block->timestamp + block->interval;
 
