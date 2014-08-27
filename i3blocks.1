@@ -142,7 +142,7 @@ The command executed by a shell, used to update the block\. The expected behavio
 .
 .TP
 \fBinterval\fR
-If it is a positive integer, then the block is spawned on startup and the value is used as a time interval in seconds to schedule future updates\. If unspecified or 0, the block won\'t be executed on startup (which is useful to simulate buttons)\. If "once" (or \-1), the block will be executed only on startup (note that a click or signal will still trigger an update)\.
+If it is a positive integer, then the block is spawned on startup and the value is used as a time interval in seconds to schedule future updates\. If unspecified or 0, the block won\'t be executed on startup (which is useful to simulate buttons)\. If "once" (or \-1), the block will be executed only on startup (note that a click or signal will still trigger an update)\. If "repeat" (or \-2), the block will be spawned on startup, and as soon as it terminates (useful to repeat blocking commands)\. Use with caution!
 .
 .TP
 \fBsignal\fR

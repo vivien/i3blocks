@@ -96,6 +96,8 @@ The following keys are specific to **i3blocks**.
     useful to simulate buttons).
     If "once" (or -1), the block will be executed only on startup (note that a
     click or signal will still trigger an update).
+    If "repeat" (or -2), the block will be spawned on startup, and as soon as
+    it terminates (useful to repeat blocking commands). Use with caution!
 
   * `signal`:
 	The signal number used to update the block. All the real-time (think

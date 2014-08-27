@@ -127,6 +127,8 @@ bar_poll_exited(struct bar *bar)
 			if (block->pid == infop.si_pid) {
 				bdebug(block, "exited");
 				block_reap(block);
+				if (block->interval == INTER_REPEAT)
+					block_spawn(block, NULL);
 				break;
 			}
 		}

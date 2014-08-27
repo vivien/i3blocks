@@ -30,6 +30,7 @@
 #define PROP_BOOLEAN	8
 
 #define INTER_ONCE	-1
+#define INTER_REPEAT	-2
 
 #define PROPERTIES(_) \
 	_(full_text,             1024, PROP_I3BAR | PROP_STRING) \

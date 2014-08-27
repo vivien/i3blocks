@@ -244,6 +244,8 @@ void block_setup(struct block *block)
 	/* Convenient shortcuts */
 	if (strcmp(defaults->interval, "once") == 0)
 		block->interval = INTER_ONCE;
+	else if (strcmp(defaults->interval, "repeat") == 0)
+		block->interval = INTER_REPEAT;
 	else
 		block->interval = atoi(defaults->interval);
 	block->signal = atoi(defaults->signal);
