@@ -101,12 +101,15 @@ print_block(struct block *block)
 void
 json_parse(const char *json, const char *name, int *start, int *len)
 {
-	char *here = strstr(json, name);
+	const size_t keylen = strlen(name) + 2;
+	char key[keylen + 1];
+	snprintf(key, sizeof(key), "\"%s\"", name);
 
 	*start = *len = 0;
 
+	char *here = strstr(json, key);
 	if (here) {
-		here += strlen(name) + 2;
+		here += keylen + 1;
 		if (*here == '"') {
 			/* string */
 			here++;
