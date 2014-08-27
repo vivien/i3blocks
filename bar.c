@@ -38,6 +38,18 @@ readline(char *buffer, const size_t size)
 }
 
 void
+bar_poll_timed(struct bar *bar)
+{
+	for (int i = 0; i < bar->num; ++i) {
+		struct block *block = bar->blocks + i;
+
+		/* spawn unless it is only meant for click or signal */
+		if (block->interval != 0)
+			block_spawn(block, NULL);
+	}
+}
+
+void
 bar_poll_clicked(struct bar *bar)
 {
 	char json[1024] = { 0 };

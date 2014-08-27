@@ -173,12 +173,12 @@ sched_start(struct bar *bar)
 {
 	int sig;
 
-	/* Initial display, in case the user sets loading labels */
+	/*
+	 * Initial display (for static blocks and loading labels),
+	 * and first forks (for commands with an interval).
+	 */
 	json_print_bar(bar);
-
-	/* First spawn, for one-shot commands */
-	for (int i = 0; i < bar->num; ++i)
-		block_spawn(bar->blocks + i, NULL);
+	bar_poll_timed(bar);
 
 	while (1) {
 		sig = sigwaitinfo(&sigset, NULL);

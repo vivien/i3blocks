@@ -142,7 +142,7 @@ The command executed by a shell, used to update the block\. The expected behavio
 .
 .TP
 \fBinterval\fR
-The time in second to wait before updating the block\. If 0, the block won\'t be updated again\.
+If it is a positive integer, then the block is spawned on startup and the value is used as a time interval in seconds to schedule future updates\. If unspecified or 0, the block won\'t be executed on startup (which is useful to simulate buttons)\.
 .
 .TP
 \fBsignal\fR
@@ -234,6 +234,7 @@ command=echo name=$BLOCK_NAME instance=$BLOCK_INSTANCE
 interval=1
 
 [clickme]
+full_text=Click me!
 command=echo button=$BLOCK_BUTTON x=$BLOCK_X y=$BLOCK_Y
 min_width=button=1 x=1366 y=768
 align=left

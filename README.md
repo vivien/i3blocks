@@ -31,6 +31,7 @@ command=date '+%D %T'
 interval=5
 
 [clickme]
+full_text=Click me!
 command=echo button=$BLOCK_BUTTON x=$BLOCK_X y=$BLOCK_Y
 min_width=button=1 x=1366 y=768
 align=left
