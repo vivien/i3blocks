@@ -94,6 +94,8 @@ The following keys are specific to **i3blocks**.
     value is used as a time interval in seconds to schedule future updates.
     If unspecified or 0, the block won't be executed on startup (which is
     useful to simulate buttons).
+    If "once" (or -1), the block will be executed only on startup (note that a
+    click or signal will still trigger an update).
 
   * `signal`:
 	The signal number used to update the block. All the real-time (think
@@ -198,6 +200,7 @@ which adjust the volume, before issuing a `pkill -RTMIN+1 i3blocks`:
 
     [volume]
     command=echo -n 'Volume: '; amixer get Master | grep -E -o '[0-9][0-9]?%'
+    interval=once
     signal=1
     # no interval, only check on SIGRTMIN+1
 
