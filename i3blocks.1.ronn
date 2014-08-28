@@ -106,6 +106,10 @@ The following keys are specific to **i3blocks**.
     real-time signals in Linux.) For instance, `signal=10` means that this
     block will be updated when **i3blocks** receives SIGRTMIN+10.
 
+  * `label`:
+	An optional label to preprend to the `full_text` after an update.
+
+
 ## COMMAND
 
 The value of the `command` key will be passed and executed as is by a shell.

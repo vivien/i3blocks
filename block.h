@@ -46,6 +46,7 @@
 	_(command,               1024,              PROP_STRING) \
 	_(interval,              8,                 PROP_STRING | PROP_NUMBER) \
 	_(signal,                8,                 PROP_NUMBER) \
+	_(label,                 32,                PROP_STRING) \
 
 struct properties {
 #define DEFINE(_name, _size, _flags) char _name[_size];
@@ -71,6 +72,7 @@ struct block {
 #define NAME(_block)		(_block->default_props.name)
 #define INSTANCE(_block)	(_block->default_props.instance)
 #define COMMAND(_block)		(_block->default_props.command)
+#define LABEL(_block)		(_block->default_props.label)
 
 /* Shortcuts to update */
 #define FULL_TEXT(_block)	(_block->updated_props.full_text)

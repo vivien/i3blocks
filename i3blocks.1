@@ -148,6 +148,10 @@ If it is a positive integer, then the block is spawned on startup and the value 
 \fBsignal\fR
 The signal number used to update the block\. All the real\-time (think prioritized and queueable) signals are available to the user\. The number is valid between 1 and N, where SIGRTMIN+N = SIGRTMAX\. (Note: there are 31 real\-time signals in Linux\.) For instance, \fBsignal=10\fR means that this block will be updated when \fBi3blocks\fR receives SIGRTMIN+10\.
 .
+.TP
+\fBlabel\fR
+An optional label to preprend to the \fBfull_text\fR after an update\.
+.
 .SH "COMMAND"
 The value of the \fBcommand\fR key will be passed and executed as is by a shell\.
 .

@@ -226,6 +226,13 @@ block_reap(struct block *block)
 	linecpy(&lines, props->short_text, sizeof(props->short_text) - 1);
 	linecpy(&lines, props->color, sizeof(props->color) - 1);
 
+	if (*FULL_TEXT(block) && *LABEL(block)) {
+		static const size_t size = sizeof(props->full_text);
+		char concat[size];
+		snprintf(concat, size, "%s %s", LABEL(block), FULL_TEXT(block));
+		strcpy(props->full_text, concat);
+	}
+
 	bdebug(block, "updated successfully");
 close:
 	if (close(block->out) == -1)
