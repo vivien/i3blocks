@@ -22,8 +22,6 @@ my $percent;
 my $full_text;
 my $short_text;
 
-binmode STDOUT, ':encoding(UTF-8)';
-
 # read the first line of the "acpi" command output
 open (ACPI, 'acpi -b |') or die "Can't exec acpi: $!\n";
 $acpi = <ACPI>;
@@ -39,9 +37,9 @@ $percent = $2;
 $full_text = "$percent%";
 
 if ($status eq 'Discharging') {
-	$full_text .= ' ↘';
+	$full_text .= ' DIS';
 } elsif ($status eq 'Charging') {
-	$full_text .= ' ↗';
+	$full_text .= ' CHR';
 }
 
 $short_text = $full_text;
