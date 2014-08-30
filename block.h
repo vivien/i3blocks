@@ -29,6 +29,9 @@
 #define PROP_NUMBER	4
 #define PROP_BOOLEAN	8
 
+#define INTER_ONCE	-1
+#define INTER_REPEAT	-2
+
 #define PROPERTIES(_) \
 	_(full_text,             1024, PROP_I3BAR | PROP_STRING) \
 	_(short_text,            512,  PROP_I3BAR | PROP_STRING) \
@@ -41,7 +44,7 @@
 	_(separator,             8,    PROP_I3BAR | PROP_BOOLEAN) \
 	_(separator_block_width, 8,    PROP_I3BAR | PROP_NUMBER) \
 	_(command,               1024,              PROP_STRING) \
-	_(interval,              8,                 PROP_NUMBER) \
+	_(interval,              8,                 PROP_STRING | PROP_NUMBER) \
 	_(signal,                8,                 PROP_NUMBER) \
 
 struct properties {
@@ -55,7 +58,7 @@ struct block {
 	struct properties updated_props;
 
 	/* Shortcuts */
-	unsigned interval;
+	int interval;
 	unsigned signal;
 
 	/* Runtime info */

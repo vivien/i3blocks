@@ -38,6 +38,18 @@ readline(char *buffer, const size_t size)
 }
 
 void
+bar_poll_timed(struct bar *bar)
+{
+	for (int i = 0; i < bar->num; ++i) {
+		struct block *block = bar->blocks + i;
+
+		/* spawn unless it is only meant for click or signal */
+		if (block->interval != 0)
+			block_spawn(block, NULL);
+	}
+}
+
+void
 bar_poll_clicked(struct bar *bar)
 {
 	char json[1024] = { 0 };
@@ -68,7 +80,7 @@ bar_poll_outdated(struct bar *bar)
 	for (int i = 0; i < bar->num; ++i) {
 		struct block *block = bar->blocks + i;
 
-		if (block->interval) {
+		if (block->interval > 0) {
 			const unsigned long now = time(NULL);
 			const unsigned long next_update = block->timestamp + block->interval;
 
@@ -115,6 +127,8 @@ bar_poll_exited(struct bar *bar)
 			if (block->pid == infop.si_pid) {
 				bdebug(block, "exited");
 				block_reap(block);
+				if (block->interval == INTER_REPEAT)
+					block_spawn(block, NULL);
 				break;
 			}
 		}
