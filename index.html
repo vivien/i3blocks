@@ -174,13 +174,20 @@ All the supported properties are described below.</p>
 <dl>
 <dt class="flush"><code>command</code></dt><dd><p>The command executed by a shell, used to update the block. The expected
 behavior is described below, in the <a href="#COMMAND" title="COMMAND" data-bare-link="true">COMMAND</a> section.</p></dd>
-<dt><code>interval</code></dt><dd><p>The time in second to wait before updating the block. If 0, the block won't
-be updated again.</p></dd>
+<dt><code>interval</code></dt><dd><p>If it is a positive integer, then the block is spawned on startup and the
+value is used as a time interval in seconds to schedule future updates.
+If unspecified or 0, the block won't be executed on startup (which is
+useful to simulate buttons).
+If "once" (or -1), the block will be executed only on startup (note that a
+click or signal will still trigger an update).
+If "repeat" (or -2), the block will be spawned on startup, and as soon as
+it terminates (useful to repeat blocking commands). Use with caution!</p></dd>
 <dt class="flush"><code>signal</code></dt><dd><p>The signal number used to update the block. All the real-time (think
 prioritized and queueable) signals are available to the user. The number is
 valid between 1 and N, where SIGRTMIN+N = SIGRTMAX. (Note: there are 31
 real-time signals in Linux.) For instance, <code>signal=10</code> means that this
 block will be updated when <strong>i3blocks</strong> receives SIGRTMIN+10.</p></dd>
+<dt class="flush"><code>label</code></dt><dd><p>An optional label to preprend to the <code>full_text</code> after an update.</p></dd>
 </dl>
 
 
@@ -238,6 +245,7 @@ command=echo name=$BLOCK_NAME instance=$BLOCK_INSTANCE
 interval=1
 
 [clickme]
+full_text=Click me!
 command=echo button=$BLOCK_BUTTON x=$BLOCK_X y=$BLOCK_Y
 min_width=button=1 x=1366 y=768
 align=left
@@ -280,6 +288,7 @@ which adjust the volume, before issuing a <code>pkill -RTMIN+1 i3blocks</code>:<
 
 <pre><code>[volume]
 command=echo -n 'Volume: '; amixer get Master | grep -E -o '[0-9][0-9]?%'
+interval=once
 signal=1
 # no interval, only check on SIGRTMIN+1
 </code></pre>
@@ -318,11 +327,11 @@ source of examples for blocks and screenshots.</p>
 
 <h2 id="AUTHOR">AUTHOR</h2>
 
-<p>Written by Vivien Didelot <a href="&#x6d;&#97;&#105;&#x6c;&#116;&#111;&#x3a;&#x76;&#105;&#x76;&#105;&#x65;&#x6e;&#x2e;&#100;&#x69;&#100;&#101;&#x6c;&#111;&#116;&#x40;&#x67;&#109;&#x61;&#105;&#x6c;&#46;&#x63;&#x6f;&#109;" data-bare-link="true">&#118;&#x69;&#118;&#105;&#x65;&#110;&#x2e;&#x64;&#x69;&#x64;&#x65;&#108;&#111;&#116;&#64;&#x67;&#109;&#x61;&#105;&#108;&#x2e;&#99;&#x6f;&#109;</a>.</p>
+<p>Written by Vivien Didelot <a href="&#x6d;&#97;&#105;&#108;&#116;&#111;&#58;&#x76;&#105;&#118;&#x69;&#x65;&#x6e;&#46;&#100;&#x69;&#x64;&#x65;&#108;&#111;&#x74;&#64;&#x67;&#109;&#x61;&#x69;&#x6c;&#46;&#x63;&#111;&#x6d;" data-bare-link="true">&#x76;&#105;&#118;&#x69;&#101;&#110;&#x2e;&#x64;&#x69;&#x64;&#101;&#108;&#x6f;&#116;&#64;&#103;&#x6d;&#x61;&#105;&#x6c;&#46;&#x63;&#x6f;&#109;</a>.</p>
 
 <h2 id="COPYRIGHT">COPYRIGHT</h2>
 
-<p>Copyright (C) 2014 Vivien Didelot <a href="&#x6d;&#97;&#x69;&#x6c;&#x74;&#111;&#x3a;&#x76;&#x69;&#x76;&#x69;&#101;&#x6e;&#x2e;&#x64;&#105;&#100;&#101;&#x6c;&#111;&#116;&#x40;&#x67;&#109;&#97;&#x69;&#108;&#46;&#x63;&#111;&#109;" data-bare-link="true">&#118;&#105;&#x76;&#x69;&#x65;&#x6e;&#46;&#100;&#105;&#x64;&#101;&#108;&#x6f;&#x74;&#64;&#x67;&#x6d;&#97;&#105;&#x6c;&#x2e;&#99;&#111;&#x6d;</a>
+<p>Copyright (C) 2014 Vivien Didelot <a href="&#109;&#97;&#x69;&#108;&#x74;&#x6f;&#58;&#118;&#x69;&#118;&#x69;&#x65;&#110;&#x2e;&#100;&#x69;&#100;&#101;&#x6c;&#x6f;&#116;&#x40;&#103;&#x6d;&#97;&#105;&#x6c;&#46;&#x63;&#111;&#109;" data-bare-link="true">&#118;&#105;&#118;&#105;&#x65;&#x6e;&#46;&#100;&#x69;&#100;&#x65;&#108;&#x6f;&#116;&#x40;&#103;&#x6d;&#x61;&#105;&#108;&#46;&#x63;&#111;&#x6d;</a>
 License GPLv3+: GNU GPL version 3 or later <a href="http://gnu.org/licenses/gpl.html" data-bare-link="true">http://gnu.org/licenses/gpl.html</a>.</p>
 
 <p>This is free software: you are free to change and redistribute it. There is NO
