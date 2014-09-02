@@ -67,12 +67,22 @@ feel free to edit it!
 
 ## Installation
 
-  * Download i3blocks and run `make install` within the source directory
-    * *Note that there's a [AUR](https://aur.archlinux.org/packages/i3blocks/) 
-    package for Archlinux.*
-    * *Note that there's a [ebuild](https://github.com/Sabayon-Labs/spike-community-overlay/tree/master/x11-misc/i3blocks)
-    for Gentoo users.*
-  * set your `status_command` in a bar block of your ~/.i3/config file:
+i3blocks may already be packaged for your distribution:
+
+  * Archlinux: [i3blocks](https://aur.archlinux.org/packages/i3blocks) and 
+  [i3blocks-git](https://aur.archlinux.org/packages/i3blocks-git) AURs.
+  * Gentoo: [ebuild](https://github.com/Sabayon-Labs/spike-community-overlay/tree/master/x11-misc/i3blocks)
+
+Or you may install i3blocks from source:
+
+    $ git clone git://github.com/vivien/i3blocks
+    $ cd i3blocks
+    $ make clean debug # or make clean all
+    # make install
+
+### Usage
+
+  * Set your `status_command` in a bar block of your i3 config file:
 
         bar {
           status_command i3blocks
