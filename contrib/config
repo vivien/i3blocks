@@ -1,5 +1,5 @@
 # Each block command defaults to the script name
-command=$BLOCK_LIBEXEC/$BLOCK_NAME
+command=$SCRIPT_DIR/$BLOCK_NAME
 
 # Generic media player support
 #

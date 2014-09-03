@@ -11,11 +11,9 @@ endif
 
 PROGRAM = i3blocks
 VERSION = "$(shell git describe --tags --always)"
-BLOCK_LIBEXEC = "$(PREFIX)/libexec/$(PROGRAM)"
 
 CPPFLAGS += -DSYSCONFDIR=\"$(SYSCONFDIR)\"
 CPPFLAGS += -DVERSION=\"${VERSION}\"
-CPPFLAGS += -DBLOCK_LIBEXEC=\"${BLOCK_LIBEXEC}\"
 CFLAGS += -std=gnu99 -Wall
 
 OBJS := $(wildcard src/*.c *.c)
@@ -47,11 +45,12 @@ install: all
 	install -m 755 -d $(DESTDIR)$(PREFIX)/bin
 	install -m 755 -d $(DESTDIR)$(SYSCONFDIR)
 	install -m 755 -d $(DESTDIR)$(PREFIX)/share/man/man1
-	install -m 755 -d $(DESTDIR)$(BLOCK_LIBEXEC)
+	install -m 755 -d $(DESTDIR)$(PREFIX)/libexec/$(PROGRAM)
 	install -m 755 $(PROGRAM) $(DESTDIR)$(PREFIX)/bin/$(PROGRAM)
-	install -m 644 $(PROGRAM).conf $(DESTDIR)$(SYSCONFDIR)/$(PROGRAM).conf
+	sed 's,$$SCRIPT_DIR,$(PREFIX)/libexec/$(PROGRAM),' $(PROGRAM).conf > $(DESTDIR)$(SYSCONFDIR)/$(PROGRAM).conf
+	chmod 644 $(DESTDIR)$(SYSCONFDIR)/$(PROGRAM).conf
 	install -m 644 $(PROGRAM).1 $(DESTDIR)$(PREFIX)/share/man/man1
-	install -m 755 scripts/* $(DESTDIR)$(BLOCK_LIBEXEC)/
+	install -m 755 scripts/* $(DESTDIR)$(PREFIX)/libexec/$(PROGRAM)/
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/$(PROGRAM)

@@ -1,13 +1,13 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "I3BLOCKS" "1" "August 2014" "" ""
+.TH "I3BLOCKS" "1" "September 2014" "" ""
 .
 .SH "NAME"
 \fBi3blocks\fR \- define blocks for your i3bar status line
 .
 .SH "SYNOPSIS"
-\fBi3blocks\fR [\-c \fIconfigfile\fR] [\-d \fIscriptsdir\fR] [\-h] [\-v]
+\fBi3blocks\fR [\-c \fIconfigfile\fR] [\-h] [\-v]
 .
 .SH "DESCRIPTION"
 \fBi3blocks\fR generates a status line for i3bar(1)\. It handles clicks, signals and user scripts\.
@@ -25,22 +25,6 @@ Specifies an alternate configuration file path\. By default, i3blocks looks for 
 1\. ~/\.config/i3blocks/config (or $XDG_CONFIG_HOME/i3blocks/config if set)
 2\. ~/\.i3blocks\.conf
 3\. /etc/i3blocks\.conf or /usr/local/etc/i3blocks\.conf
-.
-.fi
-.
-.IP "" 0
-
-.
-.TP
-\fB\-d\fR \fIscriptsdir\fR
-Specifies an alternate directory to set the $BLOCK_LIBEXEC variable to\. By default, i3blocks set this variable to its compile\-time value\. The priorities are (higher first):
-.
-.IP "" 4
-.
-.nf
-
-1\. The value of this <scriptsdir> argument
-2\. Compile\-time value: /usr/libexec/i3blocks or /usr/local/libexec/i3blocks
 .
 .fi
 .
@@ -221,10 +205,6 @@ Mouse button (1, 2 or 3) if the block was clicked\.
 .TP
 \fBBLOCK_X\fR and \fBBLOCK_Y\fR
 Coordinates where the click occured, if the block was clicked\.
-.
-.TP
-\fBBLOCK_LIBEXEC\fR
-A variable optionally used to locate a scripts directory\.
 .
 .P
 Here is an example using the environment:
