@@ -30,52 +30,73 @@
 #include "log.h"
 
 static void
-child_setup_env(struct block *block, struct click *click)
+child_setenv(struct block *block, const char *name, const char *value)
 {
-	if (setenv("BLOCK_NAME", NAME(block), 1) == -1)
-		_exit(1);
-
-	if (setenv("BLOCK_INSTANCE", INSTANCE(block), 1) == -1)
-		_exit(1);
-
-	if (setenv("BLOCK_BUTTON", click ? click->button : "", 1) == -1)
-		_exit(1);
-
-	if (setenv("BLOCK_X", click ? click->x : "", 1) == -1)
-		_exit(1);
-
-	if (setenv("BLOCK_Y", click ? click->y : "", 1) == -1)
-		_exit(1);
+	if (setenv(name, value, 1) == -1) {
+		berrorx(block, "setenv(%s=%s)", name, value);
+		_exit(EXIT_ERR_INTERNAL);
+	}
 }
 
 static void
-child_reset_signals(void)
+child_setup_env(struct block *block, struct click *click)
+{
+	child_setenv(block, "BLOCK_NAME", NAME(block));
+	child_setenv(block, "BLOCK_INSTANCE", INSTANCE(block));
+	child_setenv(block, "BLOCK_BUTTON", click ? click->button : "");
+	child_setenv(block, "BLOCK_X", click ? click->x : "");
+	child_setenv(block, "BLOCK_Y", click ? click->y : "");
+}
+
+static void
+child_reset_signals(struct block *block)
 {
 	sigset_t set;
 
-	if (sigfillset(&set) == -1)
-		_exit(1);
+	if (sigfillset(&set) == -1) {
+		berrorx(block, "sigfillset");
+		_exit(EXIT_ERR_INTERNAL);
+	}
 
 	/* It should be safe to assume that all signals are unblocked by default */
-	if (sigprocmask(SIG_UNBLOCK, &set, NULL) == -1)
-		_exit(1);
+	if (sigprocmask(SIG_UNBLOCK, &set, NULL) == -1) {
+		berrorx(block, "sigprocmask");
+		_exit(EXIT_ERR_INTERNAL);
+	}
 }
 
 static void
-child_redirect_write(int pipe[2], int fd)
+child_redirect_write(struct block *block, int pipe[2], int fd)
 {
-	if (close(pipe[0]) == -1)
-		_exit(1);
+	if (close(pipe[0]) == -1) {
+		berrorx(block, "close pipe read end");
+		_exit(EXIT_ERR_INTERNAL);
+	}
 
 	/* Defensive check */
 	if (pipe[1] == fd)
 		return;
 
-	if (dup2(pipe[1], fd) == -1)
-		_exit(1);
+	if (dup2(pipe[1], fd) == -1) {
+		berrorx(block, "dup pipe write end");
+		_exit(EXIT_ERR_INTERNAL);
+	}
 
-	if (close(pipe[1]) == -1)
-		_exit(1);
+	if (close(pipe[1]) == -1) {
+		berrorx(block, "close pipe write end");
+		_exit(EXIT_ERR_INTERNAL);
+	}
+}
+
+static void
+child_exec(struct block *block)
+{
+	static const char * const shell = "/bin/sh";
+
+	execl(shell, shell, "-c", COMMAND(block), (char *) NULL);
+	/* Unlikely to reach this point */
+	berrorx(block, "exec(%s -c %s)", shell, COMMAND(block));
+	_exit(EXIT_ERR_INTERNAL);
 }
 
 static void
@@ -104,8 +125,8 @@ mark_as_failed(struct block *block, const char *reason)
 	struct properties *props = &block->updated_props;
 
 	memset(props, 0, sizeof(struct properties));
+	snprintf(props->full_text, sizeof(props->full_text), "[%s] %s", NAME(block), reason);
 	snprintf(props->short_text, sizeof(props->short_text), "[%s] ERROR", NAME(block));
-	snprintf(props->full_text, sizeof(props->full_text), "%s %s", props->short_text, reason);
 	strcpy(props->color, "#FF0000");
 	strcpy(props->urgent, "true");
 }
@@ -139,12 +160,13 @@ block_spawn(struct block *block, struct click *click)
 
 	/* Child? */
 	if (block->pid == 0) {
+		/* Error messages are merged into the parent's stderr... */
 		child_setup_env(block, click);
-		child_reset_signals();
-		child_redirect_write(out, STDOUT_FILENO);
-		child_redirect_write(err, STDERR_FILENO);
-		execl("/bin/sh", "/bin/sh", "-c", COMMAND(block), (char *) NULL);
-		_exit(1); /* Unlikely */
+		child_reset_signals(block);
+		child_redirect_write(block, out, STDOUT_FILENO);
+		child_redirect_write(block, err, STDERR_FILENO);
+		/* ... until here */
+		child_exec(block);
 	}
 
 	/*
@@ -203,10 +225,14 @@ block_reap(struct block *block)
 		memset(buf, 0, sizeof(buf));
 	}
 
-	if (code != 0 && code != '!') {
+	if (code != 0 && code != EXIT_URGENT) {
 		char reason[32];
 
-		sprintf(reason, "bad exit code %d", code);
+		if (code == EXIT_ERR_INTERNAL)
+			sprintf(reason, "internal error");
+		else
+			sprintf(reason, "bad exit code %d", code);
+
 		berror(block, "%s", reason);
 		mark_as_failed(block, reason);
 		goto close;
@@ -221,7 +247,7 @@ block_reap(struct block *block)
 
 	/* The update went ok, so reset the defaults and merge the output */
 	memcpy(props, &block->default_props, sizeof(struct properties));
-	strncpy(props->urgent, code == '!' ? "true" : "false", sizeof(props->urgent) - 1);
+	strncpy(props->urgent, code == EXIT_URGENT ? "true" : "false", sizeof(props->urgent) - 1);
 	linecpy(&lines, props->full_text, sizeof(props->full_text) - 1);
 	linecpy(&lines, props->short_text, sizeof(props->short_text) - 1);
 	linecpy(&lines, props->color, sizeof(props->color) - 1);

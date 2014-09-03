@@ -32,6 +32,10 @@
 #define INTER_ONCE	-1
 #define INTER_REPEAT	-2
 
+/* Block command exit codes */
+#define EXIT_URGENT	'!' /* 33 */
+#define EXIT_ERR_INTERNAL	66
+
 #define PROPERTIES(_) \
 	_(full_text,             1024, PROP_I3BAR | PROP_STRING) \
 	_(short_text,            512,  PROP_I3BAR | PROP_STRING) \
