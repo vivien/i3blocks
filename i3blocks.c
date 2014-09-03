@@ -46,15 +46,15 @@ main(int argc, char *argv[])
 	struct bar *bar;
 	int c;
 
-	while (c = getopt(argc, argv, "c:hv"), c != -1) {
+	while (c = getopt(argc, argv, "c:hV"), c != -1) {
 		switch (c) {
 		case 'c':
 			inifile = optarg;
 			break;
 		case 'h':
-			printf("Usage: %s [-c <configfile>] [-h] [-v]\n", argv[0]);
+			printf("Usage: %s [-c <configfile>] [-h] [-V]\n", argv[0]);
 			return 0;
-		case 'v':
+		case 'V':
 			printf("i3blocks " VERSION " © 2014 Vivien Didelot and contributors\n");
 			return 0;
 		default:

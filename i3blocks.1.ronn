@@ -3,7 +3,7 @@ i3blocks(1) -- A flexible scheduler for i3bar
 
 ## SYNOPSIS
 
-`i3blocks` [-c <configfile>] [-h] [-v]
+`i3blocks` [-c <configfile>] [-h] [-V]
 
 ## DESCRIPTION
 
@@ -21,7 +21,7 @@ interval for user scripts.
         2. ~/.i3blocks.conf
         3. /etc/i3blocks.conf or /usr/local/etc/i3blocks.conf
 
-  * `-v`:
+  * `-V`:
     Print the version and exit.
 
   * `-h`:
