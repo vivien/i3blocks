@@ -172,9 +172,9 @@ parse_bar(FILE *fp, struct bar *bar)
 struct bar *
 ini_load(const char *inifile)
 {
-	static const char * const system = SYSCONFDIR "/i3blocks.conf";
 	const char * const home = getenv("HOME");
 	const char * const xdg_home = getenv("XDG_CONFIG_HOME");
+	const char * const xdg_dirs = getenv("XDG_CONFIG_DIRS");
 	char buf[PATH_MAX];
 	FILE *fp;
 	struct bar *bar;
@@ -201,7 +201,6 @@ ini_load(const char *inifile)
 			errorx("fopen");
 			return NULL;
 		}
-
 		return parse();
 	}
 
@@ -211,14 +210,13 @@ ini_load(const char *inifile)
 			snprintf(buf, PATH_MAX, "%s/i3blocks/config", xdg_home);
 		else
 			snprintf(buf, PATH_MAX, "%s/.config/i3blocks/config", home);
-
-		debug("try .config dir config %s", buf);
+		debug("try XDG home config %s", buf);
 		fp = fopen(buf, "r");
 		if (fp)
 			return parse();
 
 		snprintf(buf, PATH_MAX, "%s/.i3blocks.conf", home);
-		debug("try $HOME config %s", buf);
+		debug("try default $HOME config %s", buf);
 		fp = fopen(buf, "r");
 		if (fp)
 			return parse();
@@ -233,8 +231,18 @@ ini_load(const char *inifile)
 	}
 
 	/* system config file? */
-	debug("try system config %s", system);
-	fp = fopen(system, "r");
+	if (xdg_dirs)
+		snprintf(buf, PATH_MAX, "%s/i3blocks/config", xdg_dirs);
+	else
+		snprintf(buf, PATH_MAX, "%s/xdg/i3blocks/config", SYSCONFDIR);
+	debug("try XDG dirs config %s", buf);
+	fp = fopen(buf, "r");
+	if (fp)
+		return parse();
+
+	snprintf(buf, PATH_MAX, "%s/i3blocks.conf", SYSCONFDIR);
+	debug("try default system config %s", buf);
+	fp = fopen(buf, "r");
 	if (!fp) {
 		errorx("fopen");
 		return NULL;

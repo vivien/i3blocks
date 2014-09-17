@@ -8,7 +8,8 @@
   SIGUSR1 and SIGUSR2.
   * Implement asynchronous block updates (GH #23).
   * Now check for config file ~/.config/i3blocks/config (or
-  $XDG_CONFIG_HOME/i3blocks/config if set) before ~/.i3blocks.conf (GH #32).
+  $XDG_CONFIG_HOME/i3blocks/config if set) before ~/.i3blocks.conf (GH #32), 
+  and similar with $XDG_CONFIG_DIRS.
   * Add a cpu usage script (GH #11).
 
 ## 1.2

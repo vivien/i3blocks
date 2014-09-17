@@ -15,11 +15,13 @@ interval for user scripts.
 
   * `-c` <configfile>:
     Specifies an alternate configuration file path. By default, i3blocks looks 
-    for configuration files in the following order:
+    for configuration files in the following order (note that /etc may be
+    prefixed with /usr/local depending on the compilation flags):
 
         1. ~/.config/i3blocks/config (or $XDG_CONFIG_HOME/i3blocks/config if set)
         2. ~/.i3blocks.conf
-        3. /etc/i3blocks.conf or /usr/local/etc/i3blocks.conf
+        3. /etc/xdg/i3blocks/config (or $XDG_CONFIG_DIRS/i3blocks/config if set)
+        4. /etc/i3blocks.conf
 
   * `-V`:
     Print the version and exit.

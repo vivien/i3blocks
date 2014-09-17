@@ -16,7 +16,7 @@
 .
 .TP
 \fB\-c\fR \fIconfigfile\fR
-Specifies an alternate configuration file path\. By default, i3blocks looks for configuration files in the following order:
+Specifies an alternate configuration file path\. By default, i3blocks looks for configuration files in the following order (note that /etc may be prefixed with /usr/local depending on the compilation flags):
 .
 .IP "" 4
 .
@@ -24,7 +24,8 @@ Specifies an alternate configuration file path\. By default, i3blocks looks for 
 
 1\. ~/\.config/i3blocks/config (or $XDG_CONFIG_HOME/i3blocks/config if set)
 2\. ~/\.i3blocks\.conf
-3\. /etc/i3blocks\.conf or /usr/local/etc/i3blocks\.conf
+3\. /etc/xdg/i3blocks/config (or $XDG_CONFIG_DIRS/i3blocks/config if set)
+4\. /etc/i3blocks\.conf
 .
 .fi
 .
