@@ -127,8 +127,11 @@ bar_poll_exited(struct bar *bar)
 			if (block->pid == infop.si_pid) {
 				bdebug(block, "exited");
 				block_reap(block);
-				if (block->interval == INTER_REPEAT)
+				if (block->interval == INTER_REPEAT) {
+					if (block->timestamp == time(NULL))
+						berror(block, "loop too fast");
 					block_spawn(block, NULL);
+				}
 				break;
 			}
 		}
