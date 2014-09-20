@@ -14,7 +14,7 @@ VERSION = "$(shell git describe --tags --always)"
 
 CPPFLAGS += -DSYSCONFDIR=\"$(SYSCONFDIR)\"
 CPPFLAGS += -DVERSION=\"${VERSION}\"
-CFLAGS += -std=gnu99 -Wall
+CFLAGS += -std=gnu99 -Wall -Werror=format-security
 
 OBJS := $(wildcard src/*.c *.c)
 OBJS := $(OBJS:.c=.o)

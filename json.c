@@ -72,11 +72,11 @@ print_prop(const char *key, const char *value, const int flags)
 
 	/* Print as-is (except strings which must be escaped) */
 	if (flags & PROP_STRING && flags & PROP_NUMBER && is_number(value))
-		fprintf(stdout, value);
+		fprintf(stdout, "%s", value);
 	else if (flags & PROP_STRING)
 		escape(value);
 	else
-		fprintf(stdout, value);
+		fprintf(stdout, "%s", value);
 }
 
 static void
