@@ -8,6 +8,9 @@ ifndef SYSCONFDIR
     SYSCONFDIR=$(PREFIX)/etc
   endif
 endif
+ifndef LIBEXECDIR
+  LIBEXECDIR=$(PREFIX)/libexec
+endif
 
 PROGRAM = i3blocks
 VERSION = "$(shell git describe --tags --always)"
@@ -45,17 +48,17 @@ install: all
 	install -m 755 -d $(DESTDIR)$(PREFIX)/bin
 	install -m 755 -d $(DESTDIR)$(SYSCONFDIR)
 	install -m 755 -d $(DESTDIR)$(PREFIX)/share/man/man1
-	install -m 755 -d $(DESTDIR)$(PREFIX)/libexec/$(PROGRAM)
+	install -m 755 -d $(DESTDIR)$(LIBEXECDIR)/$(PROGRAM)
 	install -m 755 $(PROGRAM) $(DESTDIR)$(PREFIX)/bin/$(PROGRAM)
-	sed 's,$$SCRIPT_DIR,$(PREFIX)/libexec/$(PROGRAM),' $(PROGRAM).conf > $(DESTDIR)$(SYSCONFDIR)/$(PROGRAM).conf
+	sed 's,$$SCRIPT_DIR,$(LIBEXECDIR)/$(PROGRAM),' $(PROGRAM).conf > $(DESTDIR)$(SYSCONFDIR)/$(PROGRAM).conf
 	chmod 644 $(DESTDIR)$(SYSCONFDIR)/$(PROGRAM).conf
 	install -m 644 $(PROGRAM).1 $(DESTDIR)$(PREFIX)/share/man/man1
-	install -m 755 scripts/* $(DESTDIR)$(PREFIX)/libexec/$(PROGRAM)/
+	install -m 755 scripts/* $(DESTDIR)$(LIBEXECDIR)/$(PROGRAM)/
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/$(PROGRAM)
 	rm -f $(DESTDIR)$(SYSCONFDIR)/$(PROGRAM).conf
 	rm -f $(DESTDIR)$(SYSCONFDIR)/share/man/man1/$(PROGRAM).1
-	rm -rf $(DESTDIR)$(PREFIX)/libexec/$(PROGRAM)
+	rm -rf $(DESTDIR)$(LIBEXECDIR)/$(PROGRAM)
 
 .PHONY: all clean install uninstall
