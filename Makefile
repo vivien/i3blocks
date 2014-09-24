@@ -55,8 +55,9 @@ install: all
 	chmod 644 $(DESTDIR)$(SYSCONFDIR)/$(PROGRAM).conf
 	install -m 644 $(PROGRAM).1 $(DESTDIR)$(PREFIX)/share/man/man1
 	install -m 755 scripts/* $(DESTDIR)$(PREFIX)/libexec/$(PROGRAM)/
-	install -m 644 -D contrib/config $(DESTDIR)$(DOCDIR)/examples/config
-	install -m 755 contrib/{mediaplayer,openvpn} $(DESTDIR)$(DOCDIR)/examples
+	install -m 755 -d  $(DESTDIR)$(DOCDIR)/contrib
+	install -m 755 contrib/* $(DESTDIR)$(DOCDIR)/contrib
+	chmod 644 $(DESTDIR)$(DOCDIR)/contrib/config
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/$(PROGRAM)
