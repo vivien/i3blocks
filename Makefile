@@ -58,7 +58,7 @@ install: all
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/$(PROGRAM)
 	rm -f $(DESTDIR)$(SYSCONFDIR)/$(PROGRAM).conf
-	rm -f $(DESTDIR)$(SYSCONFDIR)/share/man/man1/$(PROGRAM).1
+	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/$(PROGRAM).1
 	rm -rf $(DESTDIR)$(LIBEXECDIR)/$(PROGRAM)
 
 .PHONY: all clean install uninstall
