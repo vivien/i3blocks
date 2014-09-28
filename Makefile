@@ -52,7 +52,7 @@ $(PROGRAM).1: $(PROGRAM).1.ronn
 	ronn -w -r $<
 
 clean:
-	rm -f *.o $(PROGRAM)
+	rm -f *.o $(PROGRAM) $(PROGRAM).1
 
 install: all
 	install -m 755 -d $(DESTDIR)$(PREFIX)/bin
