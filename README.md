@@ -22,7 +22,8 @@ the volume updated only when i3blocks receives a SIGRTMIN+1, and click events.
 
 ```` ini
 [volume]
-command=echo -n 'Volume: '; amixer get Master | grep -E -o '[0-9][0-9]?%'
+label=Volume:
+command=amixer get Master | grep -E -o '[0-9][0-9]?%' | head -1
 interval=once
 signal=10
 # use 'pkill -RTMIN+1 i3blocks' after changing the volume
