@@ -1,3 +1,5 @@
+RELEASE_VERSION = 1.2
+
 ifndef PREFIX
   PREFIX=/usr/local
 endif
@@ -14,9 +16,14 @@ endif
 ifndef DOCDIR
   DOCDIR=$(PREFIX)/share/doc/$(PROGRAM)
 endif
+ifndef VERSION
+  VERSION = "$(shell git describe --tags --always 2> /dev/null)"
+  ifeq ($(strip $(VERSION)),"")
+    VERSION = $(RELEASE_VERSION)
+  endif
+endif
 
 PROGRAM = i3blocks
-VERSION = "$(shell git describe --tags --always)"
 
 CPPFLAGS += -DSYSCONFDIR=\"$(SYSCONFDIR)\"
 CPPFLAGS += -DVERSION=\"${VERSION}\"
