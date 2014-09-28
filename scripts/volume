@@ -17,6 +17,13 @@
 CARD="${1:-0}"
 MIXER="${2:-default}" # use pulse for pulseaudio, default is alsa
 
+case $BLOCK_BUTTON in
+    5) amixer -q sset Master 10%- ;; # scroll down
+    4) amixer -q sset Master 10%+ ;; # scroll up
+    1) amixer -q sset Master 0% ;;   # left button click
+    3) amixer -q sset Master 100% ;; # right button click
+esac
+
 amixer -c $CARD -M -D $MIXER get Master |
 	sed -n 's/^[^:]*: Playback [0-9]* \[\([0-9]*%\)\] .*/\1/p' |
 	head -n1
