@@ -29,7 +29,7 @@ volume () {
 }
  
 format () {
-   perl -ne 'if (/.*\[(\d+%)\].*?\[(on|off)\]/) {CORE::say $2 eq "off" ? "MUTE" : "$1"; exit}'
+   perl -ne 'if (/\[(\d+%)\].*?\[(on|off)\]/) {CORE::say $2 eq "off" ? "MUTE" : "$1"; exit}'
 }
  
 volume | format
