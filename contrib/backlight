@@ -19,4 +19,4 @@ case $BLOCK_BUTTON in
     5) xbacklight -dec 10 ;; # scroll down
 esac
 
-xbacklight | sed -n "s/\..*/%/p"
+xbacklight | sed "s/\..*/%/"
