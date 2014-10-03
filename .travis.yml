@@ -7,9 +7,5 @@ env:
 compiler:
   - gcc
 
-before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -y ruby-ronn
-
 script:
   - make $TARGET
