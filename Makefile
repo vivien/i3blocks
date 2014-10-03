@@ -36,7 +36,7 @@ OBJS := $(OBJS:.c=.o)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 	@echo " CC $<"
 
-all: $(PROGRAM) man
+all: $(PROGRAM)
 
 debug: CPPFLAGS += -DDEBUG
 debug: CFLAGS += -g
@@ -54,7 +54,7 @@ $(PROGRAM).1: $(PROGRAM).1.ronn
 clean:
 	rm -f *.o $(PROGRAM) $(PROGRAM).1
 
-install: all
+install: all man
 	install -m 755 -d $(DESTDIR)$(PREFIX)/bin
 	install -m 755 -d $(DESTDIR)$(SYSCONFDIR)
 	install -m 755 -d $(DESTDIR)$(PREFIX)/share/man/man1
