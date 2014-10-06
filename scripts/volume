@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-SCONTROL="${1:-$(amixer | sed -n "s/.*'\([A-Za-z]*\)'.*/\1/p" | head -n1)}"
+SCONTROL="${1:-$(amixer | sed -n "s/Simple mixer control '\([A-Za-z ]*\)',0/\1/p" | head -n1)}"
 CARD="${2:-0}"
 MIXER="${3:-default}" # use pulse for pulseaudio, default is alsa
 
