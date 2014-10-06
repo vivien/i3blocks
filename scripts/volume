@@ -14,9 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-CARD="${1:-0}"
-MIXER="${2:-default}" # use pulse for pulseaudio, default is alsa
-SCONTROL="${3:-$(amixer | sed -n "s/.*'\([A-Za-z]*\)'.*/\1/p" | head -n1)}"
+SCONTROL="${1:-$(amixer | sed -n "s/.*'\([A-Za-z]*\)'.*/\1/p" | head -n1)}"
+CARD="${2:-0}"
+MIXER="${3:-default}" # use pulse for pulseaudio, default is alsa
 
 case $BLOCK_BUTTON in
   3) amixer -q sset $SCONTROL toggle ;; # right click, mute/unmute
