@@ -183,7 +183,11 @@ sched_start(struct bar *bar)
 	while (1) {
 		sig = sigwaitinfo(&sigset, NULL);
 		if (sig == -1) {
-			error("sigwaitinfo");
+			/* Hiding the bar may interrupt this system call */
+			if (errno == EINTR)
+				continue;
+
+			errorx("sigwaitinfo");
 			break;
 		}
 
