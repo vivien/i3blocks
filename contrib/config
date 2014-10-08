@@ -16,3 +16,9 @@ signal=10
 # Support multiple VPN, with colors.
 [openvpn]
 interval=20
+
+#
+# Backlight
+#
+[backlight]
+interval=20
