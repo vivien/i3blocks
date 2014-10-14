@@ -27,7 +27,7 @@ MIXER="${1:-default}"
 # The second parameter sets the control to report and configure
 # This defaults to the first control of your selected mixer
 # For a list of the available, use `amixer -D $Your_Mixer scontrols`
-SCONTROL="${2:-$(amixer -D ${2:-default} scontrols |
+SCONTROL="${2:-$(amixer -D $MIXER scontrols |
                   sed -n "s/Simple mixer control '\([A-Za-z ]*\)',0/\1/p" |
                   head -n1
                 )}"
