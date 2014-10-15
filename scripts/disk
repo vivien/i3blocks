@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-DIR="${1:-$HOME}"
-ALERT_LOW="${2:-10}" # color will turn red under this value (default: 10%)
+DIR="${BLOCK_INSTANCE:-$HOME}"
+ALERT_LOW="${1:-10}" # color will turn red under this value (default: 10%)
 
 df -h -P -l "$DIR" 2>/dev/null |
 	awk -v alert_low=$ALERT_LOW '

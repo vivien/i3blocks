@@ -17,24 +17,27 @@
 
 #------------------------------------------------------------------------
 
-# The first parameter sets your desired mixer
+# The second parameter overrides the mixer selection
 # For PulseAudio users, use "pulse"
-# For Jack/Jack2 users, use "jack"
+# For Jack/Jack2 users, use "jackplug"
 # For ALSA users, you may use "default" for your primary card
 # or you may use hw:# where # is the number of the card desired
-MIXER="${1:-default}"
+MIXER="default"
+[ -n "$(lsmod | grep pulse)" ] && MIXER="pulse"
+[ -n "$(lsmod | grep jack)" ] && MIXER="jackplug"
+MIXER="${2:-$MIXER}"
 
-# The second parameter sets the control to report and configure
+# The instance option sets the control to report and configure
 # This defaults to the first control of your selected mixer
 # For a list of the available, use `amixer -D $Your_Mixer scontrols`
-SCONTROL="${2:-$(amixer -D $MIXER scontrols |
+SCONTROL="${BLOCK_INSTANCE:-$(amixer -D $MIXER scontrols |
                   sed -n "s/Simple mixer control '\([A-Za-z ]*\)',0/\1/p" |
                   head -n1
                 )}"
 
-# The third parameter sets the step to change the volume by (and units to display)
+# The first parameter sets the step to change the volume by (and units to display)
 # This may be in in % or dB (eg. 5% or 3dB)
-STEP="${3:-5%}"
+STEP="${1:-5%}"
 
 #------------------------------------------------------------------------
 
@@ -59,9 +62,9 @@ format() {
 #------------------------------------------------------------------------
 
 case $BLOCK_BUTTON in
-3) amixer -q -D $MIXER sset $SCONTROL $(capability) toggle ;;  # right click, mute/unmute
-4) amixer -q -D $MIXER sset $SCONTROL $(capability) ${STEP}+ ;; # scroll up, increase
-5) amixer -q -D $MIXER sset $SCONTROL $(capability) ${STEP}- ;; # scroll down, decrease
+  3) amixer -q -D $MIXER sset $SCONTROL $(capability) toggle ;;  # right click, mute/unmute
+  4) amixer -q -D $MIXER sset $SCONTROL $(capability) ${STEP}+ ;; # scroll up, increase
+  5) amixer -q -D $MIXER sset $SCONTROL $(capability) ${STEP}- ;; # scroll down, decrease
 esac
 
 volume | format
