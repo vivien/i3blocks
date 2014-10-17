@@ -17,7 +17,7 @@ ifndef DOCDIR
   DOCDIR=$(PREFIX)/share/doc/$(PROGRAM)
 endif
 ifndef VERSION
-  VERSION = "$(shell git describe --tags --always 2> /dev/null)"
+  VERSION = $(shell git describe --tags --always 2> /dev/null)
   ifeq ($(strip $(VERSION)),"")
     VERSION = $(RELEASE_VERSION)
   endif
@@ -74,5 +74,10 @@ uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/$(PROGRAM).1
 	rm -rf $(DESTDIR)$(LIBEXECDIR)/$(PROGRAM)
 	rm -rf $(DESTDIR)$(DOCDIR)
+
+dist: clean man
+	( git ls-files * ; ls $(PROGRAM).1 ) | \
+	  tar -T - -c --transform 's,^,$(PROGRAM)-$(VERSION)/,' \
+	  -f $(PROGRAM)-$(VERSION).tar.gz
 
 .PHONY: all clean install uninstall
