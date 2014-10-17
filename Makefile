@@ -75,4 +75,8 @@ uninstall:
 	rm -rf $(DESTDIR)$(LIBEXECDIR)/$(PROGRAM)
 	rm -rf $(DESTDIR)$(DOCDIR)
 
+release: clean $(PROGRAM).1
+	tar -c --transform 's,^\./,./$(PROGRAM)-$(RELEASE_VERSION)/,' \
+		--exclude-vcs -f ../$(PROGRAM)-$(RELEASE_VERSION).tar.gz .
+
 .PHONY: all clean install uninstall
