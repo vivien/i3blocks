@@ -23,19 +23,21 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef DEBUG
+extern unsigned log_level;
+
+enum log_level {
+	LOG_NORMAL,
+	LOG_WARN,
+	LOG_DEBUG,
+};
+
 #define debug(msg, ...) \
-	fprintf(stderr, "DEBUG %s:%d: " msg "\n", __func__, __LINE__, ##__VA_ARGS__)
+	if (log_level >= LOG_DEBUG) { \
+		fprintf(stderr, "DEBUG %s:%d: " msg "\n", __func__, __LINE__, ##__VA_ARGS__); \
+	}
 
 #define error(msg, ...) \
 	fprintf(stderr, "ERROR %s:%d: " msg "\n", __func__, __LINE__, ##__VA_ARGS__)
-#else
-#define debug(msg, ...) \
-	do { } while (0)
-
-#define error(msg, ...) \
-	fprintf(stderr, msg "\n", ##__VA_ARGS__)
-#endif /* DEBUG */
 
 #define errorx(msg, ...) \
 	error(msg ": %s", ##__VA_ARGS__, strerror(errno))

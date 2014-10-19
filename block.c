@@ -122,6 +122,9 @@ linecpy(char **lines, char *dest, unsigned int size)
 static void
 mark_as_failed(struct block *block, const char *reason)
 {
+	if (log_level < LOG_WARN)
+		return;
+
 	struct properties *props = &block->updated_props;
 
 	memset(props, 0, sizeof(struct properties));

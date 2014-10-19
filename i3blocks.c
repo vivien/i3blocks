@@ -32,6 +32,8 @@
 #define VERSION "unknown"
 #endif
 
+unsigned log_level = LOG_NORMAL;
+
 static void
 start(void)
 {
@@ -46,10 +48,13 @@ main(int argc, char *argv[])
 	struct bar *bar;
 	int c;
 
-	while (c = getopt(argc, argv, "c:hV"), c != -1) {
+	while (c = getopt(argc, argv, "c:vhV"), c != -1) {
 		switch (c) {
 		case 'c':
 			inifile = optarg;
+			break;
+		case 'v':
+			log_level++;
 			break;
 		case 'h':
 			printf("Usage: %s [-c <configfile>] [-h] [-V]\n", argv[0]);
@@ -62,6 +67,8 @@ main(int argc, char *argv[])
 			return 1;
 		}
 	}
+
+	debug("log level %u", log_level);
 
 	bar = ini_load(inifile);
 	if (!bar) {
