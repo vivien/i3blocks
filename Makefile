@@ -18,7 +18,7 @@ ifndef DOCDIR
 endif
 ifndef VERSION
   VERSION = $(shell git describe --tags --always 2> /dev/null)
-  ifeq ($(strip $(VERSION)),"")
+  ifeq ($(strip $(VERSION)),)
     VERSION = $(RELEASE_VERSION)
   endif
 endif
