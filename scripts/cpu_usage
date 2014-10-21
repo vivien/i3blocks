@@ -29,7 +29,7 @@ GetOptions("help|h" => \&help,
 
 # Get CPU usage
 $ENV{LC_ALL}="en_US"; # if mpstat is not run under en_US locale, things may break, so make sure it is
-open (MPSTAT, 'mpstat 1 1 |') or die "Can't exec mpstat: $!";
+open (MPSTAT, 'mpstat 1 1 |') or die;
 while (<MPSTAT>) {
     if (/^Average:\s+all\s+(\d+\.\d+)\s+\d+\.\d+\s+(\d+\.\d+)/) {
         $cpu_usage = $1 + $2; # %usr + %sys
