@@ -85,6 +85,9 @@ Or you may install i3blocks from source:
     $ make clean debug # or make clean all
     # make install
 
+Note: the generation of the manpage requires the `ronn` utility, packaged in
+common distributions as `ruby-ronn`.
+
 ### Usage
 
   * Set your `status_command` in a bar block of your i3 config file:
