@@ -52,7 +52,7 @@ $(PROGRAM).1: $(PROGRAM).1.ronn
 	ronn -w -r $<
 
 clean:
-	rm -f *.o $(PROGRAM) $(PROGRAM).1
+	rm -f *.o $(PROGRAM)
 
 install: all man
 	install -m 755 -d $(DESTDIR)$(PREFIX)/bin
@@ -79,5 +79,8 @@ dist: clean man
 	( git ls-files * ; ls $(PROGRAM).1 ) | \
 	  tar -T - -c --transform 's,^,$(PROGRAM)-$(VERSION)/,' \
 	  -f $(PROGRAM)-$(VERSION).tar.gz
+
+distclean: clean
+	rm -f $(PROGRAM).1 $(PROGRAM)-*.tar.gz
 
 .PHONY: all clean install uninstall
