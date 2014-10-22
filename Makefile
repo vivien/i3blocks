@@ -77,7 +77,7 @@ uninstall:
 
 dist: clean man
 	( git ls-files * ; ls $(PROGRAM).1 ) | \
-	  tar -T - -c --transform 's,^,$(PROGRAM)-$(VERSION)/,' \
+	  tar -T - -c -z --transform 's,^,$(PROGRAM)-$(VERSION)/,' \
 	  -f $(PROGRAM)-$(VERSION).tar.gz
 
 .PHONY: all clean install uninstall
