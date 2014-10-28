@@ -21,9 +21,15 @@ my $status;
 my $percent;
 my $full_text;
 my $short_text;
+my $bat_number = 0;
+
+# read optional arg specifying battery number
+if ($#ARGV == 0) {
+	$bat_number = $ARGV[0];
+}
 
 # read the first line of the "acpi" command output
-open (ACPI, 'acpi -b |') or die "Can't exec acpi: $!\n";
+open (ACPI, "acpi -b | grep \"Battery $bat_number\" |") or die "Can't exec acpi: $!\n";
 $acpi = <ACPI>;
 close(ACPI);
 
