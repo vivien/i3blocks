@@ -22,8 +22,11 @@ my $percent;
 my $full_text;
 my $short_text;
 
+# read optional variable specifying battery number
+my $bat_number = $ENV{BLOCK_INSTANCE} || 0;
+
 # read the first line of the "acpi" command output
-open (ACPI, 'acpi -b |') or die "Can't exec acpi: $!\n";
+open (ACPI, "acpi -b | grep \"Battery $bat_number\" |") or die "Can't exec acpi: $!\n";
 $acpi = <ACPI>;
 close(ACPI);
 
