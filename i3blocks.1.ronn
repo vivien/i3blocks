@@ -7,7 +7,7 @@ i3blocks(1) -- A flexible scheduler for i3bar
 
 ## DESCRIPTION
 
-**i3blocks** allows to easily describe blocks in a simple format, and
+**i3blocks** allows one to easily describe blocks in a simple format, and
 generate a status line for i3bar(1). It handles clicks, signals and time
 interval for user scripts.
 
