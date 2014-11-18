@@ -24,6 +24,10 @@ echo "$load"
 echo "$load"
 
 # color if load is too high
-if [ $(awk 'BEGIN{ print "'$cpus'"<="'$load'" }') -eq 1 ]; then
-	echo "#FF0000"
-fi
+awk -v cpus=$cpus -v cpuload=$load '
+    BEGIN { 
+        if( cpus <= cpuload ) { 
+            print "#FF0000"; 
+        } 
+    }
+'
