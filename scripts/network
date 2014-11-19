@@ -44,7 +44,7 @@ IPADDR="No Addr"
 [[ $1 != '-4' ]] && [[ -n $(ipv6) ]] && IPADDR=$(ipv6)
 
 case $BLOCK_BUTTON in
-  3) echo "$IPADDR" | xclip -q -se c; exit 0;;
+  3) echo -n "$IPADDR" | xclip -q -se c; exit 0;;
 esac
 
 # full text
