@@ -16,23 +16,41 @@
 
 INTERFACE="${BLOCK_INSTANCE:-eth0}"
 
-state="$(cat /sys/class/net/$INTERFACE/operstate)"
+state () {
+  cat /sys/class/net/$INTERFACE/operstate
+}
+ 
+speed () {
+  cat /sys/class/net/$INTERFACE/speed 2> /dev/null
+}
+ 
+ipv4 () {
+  ip addr show $INTERFACE | perl -n -e '/inet ([^\/]+).*? scope global/ && print $1'
+}
+ 
+ipv6 () {
+  ip -6 addr show $INTERFACE | perl -n -e '/inet6 ([^\/]+).*? scope global/ && print $1'
+}
 
-if [ "$state" != "up" ]; then
-	echo "down"
-	echo "down"
-	echo "#FF0000"
-	exit 0
+if [ "$(state)" != 'up' ]; then
+  echo down # full text
+  echo down # short text
+  echo \#FF0000 # color
+  exit 0
 fi
 
-speed="$(cat /sys/class/net/$INTERFACE/speed 2> /dev/null)"
+IPADDR="No Addr"
+[[ $1 != '-6' ]] && [[ -n $(ipv4) ]] && IPADDR=$(ipv4)
+[[ $1 != '-4' ]] && [[ -n $(ipv6) ]] && IPADDR=$(ipv6)
 
-ipaddr="$(ip addr show $INTERFACE | perl -n -e'/inet (.+)\// && print $1')"
-ipaddr="${ipaddr:-0.0.0.0}"
+case $BLOCK_BUTTON in
+  3) echo "$IPADDR" | xclip -q -se c; exit 0;;
+esac
 
 # full text
-echo -n "$ipaddr"
-[ -n "$speed" ] && echo " ($speed Mbits/s)" || echo
-
+echo -n "$IPADDR"
+SPEED=$(speed)
+[ -n "$SPEED" ] && echo " ($SPEED Mbits/s)" || echo
+ 
 # short text
-echo "$ipaddr"
+echo "$IPADDR"
