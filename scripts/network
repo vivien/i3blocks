@@ -1,5 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 # Copyright (C) 2014 Julien Bonjean <julien@bonjean.info>
+# Copyright (C) 2014 Alexander Keller <github@nycroth.com>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,23 +17,15 @@
 
 INTERFACE="${BLOCK_INSTANCE:-eth0}"
 
-state () {
-  cat /sys/class/net/$INTERFACE/operstate
-}
- 
-speed () {
-  cat /sys/class/net/$INTERFACE/speed 2> /dev/null
-}
- 
 ipv4 () {
-  ip addr show $INTERFACE | perl -n -e '/inet ([^\/]+).*? scope global/ && print $1'
+  ip addr show $INTERFACE | perl -n -e '/inet ([^ ]+).*? scope global/ && print $1'
 }
  
 ipv6 () {
-  ip -6 addr show $INTERFACE | perl -n -e '/inet6 ([^\/]+).*? scope global/ && print $1'
+  ip -6 addr show $INTERFACE | perl -n -e '/inet6 ([^ ]+).*? scope global/ && print $1'
 }
 
-if [ "$(state)" != 'up' ]; then
+if [ "$(cat /sys/class/net/$INTERFACE/operstate)" != 'up' ]; then
   echo down # full text
   echo down # short text
   echo \#FF0000 # color
@@ -47,10 +40,17 @@ case $BLOCK_BUTTON in
   3) echo -n "$IPADDR" | xclip -q -se c; exit 0;;
 esac
 
+level=$(sed -n "s/^${INTERFACE}:\ *[0-9]*\ *\\([0-9]*\\).*$/\\1/p" </proc/net/wireless)
+signal="$(echo "$level * 1.42857142857" | bc | awk '{print int($1+0.5)}')%"
+
+speed="$(cat /sys/class/net/$INTERFACE/speed)"
+[[ speed -eq 10000 ]] && speed="10Gb"
+[[ speed -eq 1000 ]] && speed="1Gb"
+[[ speed -eq 100 ]] && speed="100Mb"
+[[ speed -eq 10 ]] && speed="10Mb"
+
 # full text
-echo -n "$IPADDR"
-SPEED=$(speed)
-[ -n "$SPEED" ] && echo " ($SPEED Mbits/s)" || echo
- 
+echo "$IPADDR (${signal:-$speed})"
+
 # short text
 echo "$IPADDR"
