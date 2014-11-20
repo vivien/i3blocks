@@ -32,16 +32,16 @@ if [ "$(cat /sys/class/net/$INTERFACE/operstate)" != 'up' ]; then
   exit 0
 fi
 
-IPADDR="No Addr"
-[[ $1 != '-6' ]] && [[ -n $(ipv4) ]] && IPADDR=$(ipv4)
-[[ $1 != '-4' ]] && [[ -n $(ipv6) ]] && IPADDR=$(ipv6)
+ipaddr="No Addr"
+[[ $1 != '-6' ]] && [[ -n $(ipv4) ]] && ipaddr=$(ipv4)
+[[ $1 != '-4' ]] && [[ -n $(ipv6) ]] && ipaddr=$(ipv6)
 
 case $BLOCK_BUTTON in
-  3) echo -n "$IPADDR" | xclip -q -se c;;
+  3) echo -n "$ipaddr" | xclip -q -se c;;
 esac
 
-level=$(sed -n "s/^${INTERFACE}:\ *[0-9]*\ *\\([0-9]*\\).*$/\\1/p" </proc/net/wireless)
-signal="$(echo "$level * 1.42857142857" | bc | awk '{print int($1+0.5)}')%"
+level=$(sed -n "s/${INTERFACE}: *[0-9]* *\\([0-9]*\\).*/\\1/p" </proc/net/wireless)
+signal="$(echo "$level * 1.42857142857" | bc | awk '{print int($1 + 0.5)}')%"
 
 speed="$(cat /sys/class/net/$INTERFACE/speed)"
 [[ speed -eq 10000 ]] && speed="10Gb"
@@ -50,7 +50,7 @@ speed="$(cat /sys/class/net/$INTERFACE/speed)"
 [[ speed -eq 10 ]] && speed="10Mb"
 
 # full text
-echo "$IPADDR (${signal:-$speed})"
+echo "$ipaddr (${signal:-$speed})"
 
 # short text
-echo "$IPADDR"
+echo "$ipaddr"
