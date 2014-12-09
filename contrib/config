@@ -23,3 +23,20 @@ interval=20
 [temperature]
 label=TEMP
 interval=10
+
+# Key indicators
+#
+# Add the following to your ~/.i3/config:
+#
+# bindsym --release Caps_Lock exec pkill -SIGRTMIN+11 i3blocks
+# bindsym --release Num_Lock  exec pkill -SIGRTMIN+11 i3blocks
+#
+[keyindicator]
+instance=CAPS
+interval=once
+signal=11
+
+[keyindicator]
+instance=NUM
+interval=once
+signal=11
