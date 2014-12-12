@@ -50,7 +50,7 @@ speed="$(cat /sys/class/net/$INTERFACE/speed)"
 [[ speed -eq 10 ]] && speed="10Mb"
 
 # full text
-echo "$ipaddr (${signal:-$speed})"
+echo "$ipaddr (${speed:-$signal})"
 
 # short text
 echo "$ipaddr"
