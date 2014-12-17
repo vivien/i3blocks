@@ -40,17 +40,21 @@ case $BLOCK_BUTTON in
   3) echo -n "$ipaddr" | xclip -q -se c;;
 esac
 
-level=$(sed -n "s/${INTERFACE}: *[0-9]* *\\([0-9]*\\).*/\\1/p" </proc/net/wireless)
-signal="$(echo "$level * 1.42857142857" | bc | awk '{print int($1 + 0.5)}')%"
-
-speed="$(cat /sys/class/net/$INTERFACE/speed)"
-[[ speed -eq 10000 ]] && speed="10Gb"
-[[ speed -eq 1000 ]] && speed="1Gb"
-[[ speed -eq 100 ]] && speed="100Mb"
-[[ speed -eq 10 ]] && speed="10Mb"
-
 # full text
-echo "$ipaddr (${speed:-$signal})"
+if [[ -d /sys/class/net/${INTERFACE}/wireless ]]; then
+  level=$(sed -n "s/${INTERFACE}: *[0-9]* *\\([0-9]*\\).*/\\1/p" </proc/net/wireless)
+  signal="$(echo "$level * 1.42857142857" | bc | awk '{print int($1 + 0.5)}')%"
+
+  echo "$ipaddr ($signal)"
+else
+  if [[ speed -ge 1000 ]]; then
+    speed='$((speed / 1000))Gb'
+  else
+    speed='${speed}Mb'
+  fi
+
+  echo "$ipaddr ($speed)"
+fi
 
 # short text
 echo "$ipaddr"
