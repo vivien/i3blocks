@@ -17,12 +17,16 @@
 
 INTERFACE="${BLOCK_INSTANCE:-eth0}"
 
+ipv6 () {
+  ip -6 addr show $INTERFACE | perl -n -e '/inet6 ([^ ]+).*? scope global/ && print $1'
+}
+
 ipv4 () {
   ip addr show $INTERFACE | perl -n -e '/inet ([^ ]+).*? scope global/ && print $1'
 }
- 
-ipv6 () {
-  ip -6 addr show $INTERFACE | perl -n -e '/inet6 ([^ ]+).*? scope global/ && print $1'
+
+ip_all() {
+  ip addr show $INTERFACE | perl -n -e '/inet6? ([^ ]+).*? scope global/ && print $1'
 }
 
 if [ "$(cat /sys/class/net/$INTERFACE/operstate)" != 'up' ]; then
@@ -33,8 +37,13 @@ if [ "$(cat /sys/class/net/$INTERFACE/operstate)" != 'up' ]; then
 fi
 
 ipaddr="No Addr"
-[[ $1 != '-6' ]] && [[ -n $(ipv4) ]] && ipaddr=$(ipv4)
-[[ $1 != '-4' ]] && [[ -n $(ipv6) ]] && ipaddr=$(ipv6)
+if [[ $1 == '-6' ]]; then
+  ipaddr=$(ipv6)
+elif [[ $1 == '-4' ]]; then
+  ipaddr=$(ipv4)
+else
+  ipaddr=$(ip_all)
+fi
 
 case $BLOCK_BUTTON in
   3) echo -n "$ipaddr" | xclip -q -se c;;
