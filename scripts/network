@@ -33,11 +33,11 @@ ip_all() {
   ip addr show $INTERFACE | perl -n -e '/inet6? ([^ ]+).*? scope global/ && print $1'
 }
 
-if [ "$(cat /sys/class/net/$INTERFACE/operstate)" != 'up' ]; then
+if [[ "$(cat /sys/class/net/$INTERFACE/operstate)" == 'down' ]]; then
   echo down # full text
   echo down # short text
   echo \#FF0000 # color
-  exit 0
+  exit
 fi
 
 ipaddr="No Addr"
