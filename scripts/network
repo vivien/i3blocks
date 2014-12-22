@@ -40,7 +40,6 @@ if [[ "$(cat /sys/class/net/$INTERFACE/operstate)" == 'down' ]]; then
   exit
 fi
 
-ipaddr="No Addr"
 if [[ $1 == '-6' ]]; then
   ipaddr=$(ipv6)
 elif [[ $1 == '-4' ]]; then
@@ -48,6 +47,7 @@ elif [[ $1 == '-4' ]]; then
 else
   ipaddr=$(ip_all)
 fi
+ipaddr=${ipaddr:-"No Addr"}
 
 case $BLOCK_BUTTON in
   3) echo -n "$ipaddr" | xclip -q -se c;;
@@ -60,10 +60,12 @@ if [[ -d /sys/class/net/${INTERFACE}/wireless ]]; then
 
   echo "$ipaddr ($signal)"
 else
+  speed=$(</sys/class/net/$INTERFACE/speed)
+
   if [[ speed -ge 1000 ]]; then
-    speed='$((speed / 1000))Gb'
+    speed="$((speed / 1000))Gb/s"
   else
-    speed='${speed}Mb'
+    speed="${speed}Mb/s"
   fi
 
   echo "$ipaddr ($speed)"
