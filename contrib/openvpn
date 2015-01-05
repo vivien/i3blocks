@@ -50,7 +50,7 @@ sub print_output {
     foreach (@pid_files) {
         # Get current PID
         $pid=0;
-        open(PID, '<', $_);
+        open(PID, '<', $_) || next;
         while(<PID>) {
             chomp $_;
             $pid = $_;
