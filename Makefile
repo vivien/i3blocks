@@ -29,7 +29,7 @@ CPPFLAGS += -DSYSCONFDIR=\"$(SYSCONFDIR)\"
 CPPFLAGS += -DVERSION=\"${VERSION}\"
 CFLAGS += -std=gnu99 -Wall -Werror=format-security
 
-OBJS := $(wildcard src/*.c *.c)
+OBJS := $(wildcard *.c)
 OBJS := $(OBJS:.c=.o)
 
 %.o: %.c %.h
