@@ -20,7 +20,6 @@ from subprocess import Popen, PIPE
 from re import findall
 from os import environ
 from sys import exit, stderr
-from shutil import which
 from argparse import ArgumentParser
 
 class MpdBlock:
@@ -53,7 +52,11 @@ class MpdBlock:
             self.text["stopped"] = options.label_stopped
 
     def get_mpc_status(self):
-        proc_data = Popen(["mpc", "status", "--format", self.format], stdout=PIPE, stderr=PIPE).communicate()
+        mpc_options = ["mpc", "status"]
+        if self.format:
+            mpc_options.extend(["--format", self.format])
+
+        proc_data = Popen(mpc_options, stdout=PIPE, stderr=PIPE).communicate()
 
         # exit if mpc can't connect to the server (ie: it's down)
         if len(proc_data[1]) > 0:
