@@ -86,7 +86,7 @@ class MpdBlock:
             mpc_status = self.get_mpc_status()
 
         if len(mpc_status) == 2:
-            print(text["stopped"], end=" ")
+            print(self.text["stopped"], end=" ")
         else:
             status_test = findall("(playing|pause)", mpc_status[1])
             if status_test:
