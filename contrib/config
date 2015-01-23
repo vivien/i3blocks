@@ -11,6 +11,14 @@ command=$SCRIPT_DIR/$BLOCK_NAME
 interval=5
 signal=10
 
+# Network speed support
+#
+# Measure the network speed of a specific network interface at small
+# intervals.
+[netspeed]
+instance=eth0
+interval=3
+
 # OpenVPN support
 #
 # Support multiple VPN, with colors.
