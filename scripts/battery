@@ -27,7 +27,7 @@ my $threshold = 5;
 
 # -t to override the urgency threshold
 if ($#ARGV+1 == 2 && $ARGV[0] == '-t') {
-	$threshold=$ARGV[1];
+   $threshold=$ARGV[1];
 }
  
 # read the first line of the "acpi" command output
@@ -37,7 +37,7 @@ close(ACPI);
 
 # fail on unexpected output
 if ($acpi !~ /: (\w+), (\d+)%/) {
-	die "$acpi\n";
+   die "$acpi\n";
 }
 
 $status = $1;
@@ -45,15 +45,15 @@ $percent = $2;
 $full_text = "$percent%";
 
 if ($status eq 'Discharging') {
-	$full_text .= ' DIS';
+   $full_text .= ' DIS';
 } elsif ($status eq 'Charging') {
-	$full_text .= ' CHR';
+   $full_text .= ' CHR';
 }
 
 $short_text = $full_text;
 
 if ($acpi =~ /(\d\d:\d\d):/) {
-	$full_text .= " ($1)";
+   $full_text .= " ($1)";
 }
 
 # print text
@@ -62,21 +62,21 @@ print "$short_text\n";
 
 # consider color and urgent flag only on discharge
 if ($status eq 'Discharging') {
-	# take the percent as a float (subtract from 100% to find red)
-	# double this and cap it at 0xFF
-	# this will make 50% 0xFFFF00 (Yellow)
-	my $red = int(0xFF * ((100 - $percent) / 100) * 2);
-	my $green = int(0xFF * ($percent / 100) * 2);
-        if ($red > 0xFF) { $red = 0xFF; }
-        if ($green > 0xFF) { $green = 0xFF; }
+   # take the percent as a float (subtract from 100% to find red)
+   # double this and cap it at 0xFF
+   # this will make 50% 0xFFFF00 (Yellow)
+   my $red = int(0xFF * ((100 - $percent) / 100) * 2);
+   my $green = int(0xFF * ($percent / 100) * 2);
+   if ($red > 0xFF) { $red = 0xFF; }
+   if ($green > 0xFF) { $green = 0xFF; }
 
-	print "#";
-        print sprintf("%x", $red);
-        print sprintf("%x", $green);
-        print "00\n";
-	if ($percent < $threshold) {
-		exit(33); # set urgent flag
-	}
+   print "#";
+   print sprintf("%x", $red);
+   print sprintf("%x", $green);
+   print "00\n";
+   if ($percent < $threshold) {
+      exit(33); # set urgent flag
+   }
 }
 
 exit(0);
