@@ -63,7 +63,7 @@ print "$short_text\n";
 # consider color and urgent flag only on discharge
 if ($status eq 'Discharging') {
    # take the percent as a float (subtract from 100% to find red)
-   # double this and cap it at 0xFF
+   # multiply by the hex max 0xFF, double this and cap it at 0xFF
    # this will make 50% 0xFFFF00 (Yellow)
    my $red = int(0xFF * ((100 - $percent) / 100) * 2);
    my $green = int(0xFF * ($percent / 100) * 2);
