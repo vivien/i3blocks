@@ -71,8 +71,8 @@ if ($status eq 'Discharging') {
    if ($green > 0xFF) { $green = 0xFF; }
 
    print "#";
-   print sprintf("%x", $red);
-   print sprintf("%x", $green);
+   print sprintf("%02x", $red);
+   print sprintf("%02x", $green);
    print "00\n";
    if ($percent < $threshold) {
       exit(33); # set urgent flag
