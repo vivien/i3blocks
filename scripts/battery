@@ -26,7 +26,7 @@ my $bat_number = $ENV{BLOCK_INSTANCE} || 0;
 my $threshold = 5; 
 
 # -t to override the urgency threshold
-if ($#ARGV+1 == 2 && $ARGV[0] == '-t') {
+if ($#ARGV+1 == 2 && $ARGV[0] eq '-t') {
    $threshold=$ARGV[1];
 }
  
