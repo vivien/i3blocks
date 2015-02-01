@@ -27,6 +27,7 @@
 
 #include "block.h"
 #include "click.h"
+#include "json.h"
 #include "log.h"
 
 static void
@@ -251,9 +252,33 @@ block_reap(struct block *block)
 	/* The update went ok, so reset the defaults and merge the output */
 	memcpy(props, &block->default_props, sizeof(struct properties));
 	strncpy(props->urgent, code == EXIT_URGENT ? "true" : "false", sizeof(props->urgent) - 1);
-	linecpy(&lines, props->full_text, sizeof(props->full_text) - 1);
-	linecpy(&lines, props->short_text, sizeof(props->short_text) - 1);
-	linecpy(&lines, props->color, sizeof(props->color) - 1);
+
+	if (block->output == OUTPUT_PLAIN) {
+		/* PLAIN parsing: read three lines for full, short and color */
+		linecpy(&lines, props->full_text, sizeof(props->full_text) - 1);
+		linecpy(&lines, props->short_text, sizeof(props->short_text) - 1);
+		linecpy(&lines, props->color, sizeof(props->color) - 1);
+
+	} else {
+		/* JSON parsing: parse object containing PROPERTIES pairs */
+		int start, length;
+
+#define MIN(a, b) (a < b ? a : b)
+#define JSONPARSE(_name, _size, _flags) \
+	if ((_flags) & PROP_I3BAR) { \
+		json_parse(buf, #_name, &start, &length); \
+		if (start > 0) { \
+			strncpy(props->_name, buf + start, MIN(_size, length)); \
+			props->_name[length] = '\0'; \
+		} \
+	}
+
+		PROPERTIES(JSONPARSE);
+
+#undef JSONPARSE
+#undef MIN
+
+	}
 
 	if (*FULL_TEXT(block) && *LABEL(block)) {
 		static const size_t size = sizeof(props->full_text);
@@ -285,6 +310,10 @@ void block_setup(struct block *block)
 	else
 		block->interval = atoi(defaults->interval);
 	block->signal = atoi(defaults->signal);
+
+	block->output = OUTPUT_PLAIN;
+	if (strcmp(defaults->output, "json") == 0)
+		block->output = OUTPUT_JSON;
 
 	/* First update (for static blocks and loading labels) */
 	memcpy(updated, defaults, sizeof(struct properties));
