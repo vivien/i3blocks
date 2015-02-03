@@ -27,6 +27,7 @@
 
 #include "bar.h"
 #include "block.h"
+#include "io.h"
 #include "json.h"
 #include "log.h"
 
@@ -127,32 +128,6 @@ setup_signals(void)
 	return 0;
 }
 
-static int
-eventio_stdin(void)
-{
-	int flags;
-
-	/* Set owner process that is to receive "I/O possible" signal */
-	if (fcntl(STDIN_FILENO, F_SETOWN, getpid()) == -1) {
-		errorx("failed to set process as owner for stdin");
-		return 1;
-	}
-
-	/* Enable "I/O possible" signaling and make I/O nonblocking for file descriptor */
-	flags = fcntl(STDIN_FILENO, F_GETFL);
-	if (flags == -1) {
-		errorx("failed to get flags of stdin");
-		return 1;
-	}
-
-	if (fcntl(STDIN_FILENO, F_SETFL, flags | O_ASYNC | O_NONBLOCK) == -1) {
-		errorx("failed to enable I/O signaling for stdin");
-		return 1;
-	}
-
-	return 0;
-}
-
 int
 sched_init(struct bar *bar)
 {
@@ -164,7 +139,7 @@ sched_init(struct bar *bar)
 
 	/* Setup event I/O for stdin (clicks) */
 	if (!isatty(STDIN_FILENO))
-		if (eventio_stdin())
+		if (io_signal(STDIN_FILENO, SIGIO))
 			return 1;
 
 	return 0;

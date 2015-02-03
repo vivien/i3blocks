@@ -27,19 +27,8 @@
 #include "bar.h"
 #include "block.h"
 #include "click.h"
+#include "io.h"
 #include "log.h"
-
-static int
-readline(char *buffer, const size_t size)
-{
-	int nr = 0;
-	char c;
-
-	while (nr < size && read(STDIN_FILENO, &c, 1) > 0 && c != '\n')
-		buffer[nr++] = c;
-
-	return nr;
-}
 
 void
 bar_poll_timed(struct bar *bar)
@@ -58,7 +47,7 @@ bar_poll_clicked(struct bar *bar)
 {
 	char json[1024] = { 0 };
 
-	while (readline(json, sizeof(json)) > 0) {
+	while (io_readline(STDERR_FILENO, json, sizeof(json)) > 0) {
 		struct click click;
 
 		/* find the corresponding block */
