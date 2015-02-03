@@ -100,7 +100,7 @@ child_exec(struct block *block)
 }
 
 static void
-linecpy(char **lines, char *dest, unsigned int size)
+linecpy(char **lines, char *dest, size_t size)
 {
 	char *newline = strchr(*lines, '\n');
 
