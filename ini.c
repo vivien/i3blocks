@@ -88,7 +88,7 @@ parse_property(const char *line, struct properties *props, bool strict)
 #define PARSE(_name, _size, _flags) \
 	if ((!strict || (_flags) & PROP_I3BAR) && strcmp(key, #_name) == 0) { \
 		strncpy(props->_name, value, _size - 1); \
-		goto parsed; \
+		return 0; \
 	}
 
 	PROPERTIES(PARSE);
@@ -97,9 +97,6 @@ parse_property(const char *line, struct properties *props, bool strict)
 
 	error("unknown key: \"%s\"", key);
 	return 1;
-
-parsed:
-	return 0;
 }
 
 static int
