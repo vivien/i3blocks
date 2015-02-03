@@ -25,6 +25,7 @@
 #include "log.h"
 
 #define PROP_I3BAR	1 /* See http://i3wm.org/docs/i3bar-protocol.html */
+#define PROP_GAPS	1 /* See https://github.com/Airblader/i3/blob/gaps/docs/i3bar-protocol */
 #define PROP_STRING	2
 #define PROP_NUMBER	4
 #define PROP_BOOLEAN	8
@@ -56,6 +57,12 @@
 	_(signal,                8,                 PROP_NUMBER) \
 	_(label,                 32,                PROP_STRING) \
 	_(format,                8,                 PROP_STRING | PROP_NUMBER) \
+	_(background,            8,     PROP_GAPS | PROP_STRING) \
+	_(border,                8,     PROP_GAPS | PROP_STRING) \
+	_(border_top,            8,     PROP_GAPS | PROP_NUMBER) \
+	_(border_bottom,         8,     PROP_GAPS | PROP_NUMBER) \
+	_(border_left,           8,     PROP_GAPS | PROP_NUMBER) \
+	_(border_right,          8,     PROP_GAPS | PROP_NUMBER) \
 
 struct properties {
 #define DEFINE(_name, _size, _flags) char _name[_size];
