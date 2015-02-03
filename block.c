@@ -150,6 +150,44 @@ mark_as_failed(struct block *block, const char *reason)
 	strcpy(props->urgent, "true");
 }
 
+static void
+block_update_plain_text(struct block *block, char *buf)
+{
+	struct properties *props = &block->updated_props;
+	char *lines = buf;
+
+	linecpy(&lines, props->full_text, sizeof(props->full_text) - 1);
+	linecpy(&lines, props->short_text, sizeof(props->short_text) - 1);
+	linecpy(&lines, props->color, sizeof(props->color) - 1);
+}
+
+static void
+block_update(struct block *block)
+{
+	struct properties *props = &block->updated_props;
+	char buf[2048] = { 0 };
+
+	/* Note read(2) returns 0 for end-of-pipe */
+	if (read(block->out, buf, sizeof(buf) - 1) == -1) {
+		berrorx(block, "read stdout");
+		return mark_as_failed(block, strerror(errno));
+	}
+
+	/* Reset the defaults and merge the output */
+	memcpy(props, &block->default_props, sizeof(struct properties));
+
+	block_update_plain_text(block, buf);
+
+	if (*FULL_TEXT(block) && *LABEL(block)) {
+		static const size_t size = sizeof(props->full_text);
+		char concat[size];
+		snprintf(concat, size, "%s %s", LABEL(block), FULL_TEXT(block));
+		strcpy(props->full_text, concat);
+	}
+
+	bdebug(block, "updated successfully");
+}
+
 void
 block_spawn(struct block *block, struct click *click)
 {
@@ -212,10 +250,6 @@ block_spawn(struct block *block, struct click *click)
 void
 block_reap(struct block *block)
 {
-	struct properties *props = &block->updated_props;
-
-	char buf[2048] = { 0 };
-	char *lines = buf;
 	int status, code;
 
 	if (block->pid <= 0) {
@@ -250,28 +284,11 @@ block_reap(struct block *block)
 		goto close;
 	}
 
-	/* Note read(2) returns 0 for end-of-pipe */
-	if (read(block->out, buf, sizeof(buf) - 1) == -1) {
-		berrorx(block, "read stdout");
-		mark_as_failed(block, strerror(errno));
-		goto close;
-	}
+	block_update(block);
 
-	/* The update went ok, so reset the defaults and merge the output */
-	memcpy(props, &block->default_props, sizeof(struct properties));
-	strncpy(props->urgent, code == EXIT_URGENT ? "true" : "false", sizeof(props->urgent) - 1);
-	linecpy(&lines, props->full_text, sizeof(props->full_text) - 1);
-	linecpy(&lines, props->short_text, sizeof(props->short_text) - 1);
-	linecpy(&lines, props->color, sizeof(props->color) - 1);
-
-	if (*FULL_TEXT(block) && *LABEL(block)) {
-		static const size_t size = sizeof(props->full_text);
-		char concat[size];
-		snprintf(concat, size, "%s %s", LABEL(block), FULL_TEXT(block));
-		strcpy(props->full_text, concat);
-	}
-
-	bdebug(block, "updated successfully");
+	/* Exit code takes precedence over the output */
+	if (code == EXIT_URGENT)
+		strcpy(block->updated_props.urgent, "true");
 close:
 	if (close(block->out) == -1)
 		berrorx(block, "close stdout");
