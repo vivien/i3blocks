@@ -137,14 +137,19 @@ eventio_stdin(void)
 
 	/* Set owner process that is to receive "I/O possible" signal */
 	if (fcntl(STDIN_FILENO, F_SETOWN, getpid()) == -1) {
-		error("failed to set process as owner for stdin");
+		errorx("failed to set process as owner for stdin");
 		return 1;
 	}
 
 	/* Enable "I/O possible" signaling and make I/O nonblocking for file descriptor */
 	flags = fcntl(STDIN_FILENO, F_GETFL);
+	if (flags == -1) {
+		errorx("failed to get flags of stdin");
+		return 1;
+	}
+
 	if (fcntl(STDIN_FILENO, F_SETFL, flags | O_ASYNC | O_NONBLOCK) == -1) {
-		error("failed to enable I/O signaling for stdin");
+		errorx("failed to enable I/O signaling for stdin");
 		return 1;
 	}
 
