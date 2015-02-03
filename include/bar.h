@@ -29,5 +29,6 @@ void bar_poll_clicked(struct bar *);
 void bar_poll_outdated(struct bar *);
 void bar_poll_signaled(struct bar *, int);
 void bar_poll_exited(struct bar *);
+void bar_poll_readable(struct bar *, int);
 
 #endif /* _BAR_H */

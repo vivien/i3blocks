@@ -31,6 +31,7 @@
 
 #define INTER_ONCE	-1
 #define INTER_REPEAT	-2
+#define INTER_PERSIST	-3
 
 /* Block command exit codes */
 #define EXIT_URGENT	'!' /* 33 */
@@ -93,5 +94,6 @@ struct block {
 void block_setup(struct block *);
 void block_spawn(struct block *, struct click *);
 void block_reap(struct block *);
+void block_update(struct block *);
 
 #endif /* _BLOCK_H */

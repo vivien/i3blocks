@@ -2,6 +2,8 @@
 
 ## master
 
+  * Add support for persistent blocks (GH #85).
+
 ## 1.3
 
   * Fix click checking (GH #34).

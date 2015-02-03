@@ -28,6 +28,7 @@
 
 #include "block.h"
 #include "click.h"
+#include "io.h"
 #include "log.h"
 
 static void
@@ -161,16 +162,29 @@ block_update_plain_text(struct block *block, char *buf)
 	linecpy(&lines, props->color, sizeof(props->color) - 1);
 }
 
-static void
+void
 block_update(struct block *block)
 {
 	struct properties *props = &block->updated_props;
 	char buf[2048] = { 0 };
+	int nr;
 
-	/* Note read(2) returns 0 for end-of-pipe */
-	if (read(block->out, buf, sizeof(buf) - 1) == -1) {
-		berrorx(block, "read stdout");
-		return mark_as_failed(block, strerror(errno));
+	/* Read a single line for persistent block, everything otherwise */
+	if (block->interval == INTER_PERSIST) {
+		nr = io_readline(block->out, buf, sizeof(buf));
+		if (nr < 0) {
+			berror(block, "failed to read a line");
+			return mark_as_failed(block, "failed to read");
+		} else if (nr == 0) {
+			berror(block, "pipe closed");
+			return mark_as_failed(block, "pipe closed");
+		}
+	} else {
+		/* Note: read(2) returns 0 for end-of-pipe */
+		if (read(block->out, buf, sizeof(buf) - 1) == -1) {
+			berrorx(block, "read stdout");
+			return mark_as_failed(block, strerror(errno));
+		}
 	}
 
 	/* Reset the defaults and merge the output */
@@ -209,6 +223,11 @@ block_spawn(struct block *block, struct click *click)
 		return mark_as_failed(block, strerror(errno));
 	}
 
+	if (block->interval == INTER_PERSIST) {
+		if (io_signal(out[0], SIGRTMIN))
+			return mark_as_failed(block, "event I/O impossible");
+	}
+
 	block->pid = fork();
 	if (block->pid == -1) {
 		berrorx(block, "fork");
@@ -227,9 +246,9 @@ block_spawn(struct block *block, struct click *click)
 	}
 
 	/*
-	 * Note: no need to set the pipe read end as non-blocking, since it is
-	 * meant to be read once the child has exited (and thus the write end is
-	 * closed and read is available).
+	 * Note: for non-persistent blocks, no need to set the pipe read end as
+	 * non-blocking, since it is meant to be read once the child has exited
+	 * (and thus the write end is closed and read is available).
 	 */
 
 	/* Parent */
@@ -284,6 +303,10 @@ block_reap(struct block *block)
 		goto close;
 	}
 
+	/* Do not update unless it was meant to terminate */
+	if (block->interval == INTER_PERSIST)
+		goto close;
+
 	block_update(block);
 
 	/* Exit code takes precedence over the output */
@@ -306,6 +329,8 @@ void block_setup(struct block *block)
 		block->interval = INTER_ONCE;
 	else if (strcmp(defaults->interval, "repeat") == 0)
 		block->interval = INTER_REPEAT;
+	else if (strcmp(defaults->interval, "persist") == 0)
+		block->interval = INTER_PERSIST;
 	else
 		block->interval = atoi(defaults->interval);
 	block->signal = atoi(defaults->signal);

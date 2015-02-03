@@ -98,6 +98,8 @@ The following keys are specific to **i3blocks**.
     click or signal will still trigger an update).
     If "repeat" (or -2), the block will be spawned on startup, and as soon as
     it terminates (useful to repeat blocking commands). Use with caution!
+    If "persist" (or -3), the block will be executed only on startup, and
+    updated as soon as it outputs a line. Thus limited to single line updates.
 
   * `signal`:
 	The signal number used to update the block. All the real-time (think

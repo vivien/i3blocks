@@ -124,9 +124,25 @@ bar_poll_exited(struct bar *bar)
 					if (block->timestamp == time(NULL))
 						berror(block, "loop too fast");
 					block_spawn(block, NULL);
+				} else if (block->interval == INTER_PERSIST) {
+					bdebug(block, "unexpected exit?");
 				}
 				break;
 			}
+		}
+	}
+}
+
+void
+bar_poll_readable(struct bar *bar, const int fd)
+{
+	for (int i = 0; i < bar->num; ++i) {
+		struct block *block = bar->blocks + i;
+
+		if (block->out == fd) {
+			bdebug(block, "readable");
+			block_update(block);
+			break;
 		}
 	}
 }
