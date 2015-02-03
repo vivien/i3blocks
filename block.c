@@ -216,6 +216,9 @@ block_reap(struct block *block)
 	code = WEXITSTATUS(status);
 	bdebug(block, "process %d exited with %d", block->pid, code);
 
+	/* Process successfully reaped, reset the block PID */
+	block->pid = 0;
+
 	/* Note read(2) returns 0 for end-of-pipe */
 	if (read(block->err, buf, sizeof(buf)) == -1) {
 		berrorx(block, "read stderr");
@@ -268,8 +271,6 @@ close:
 		berrorx(block, "close stdout");
 	if (close(block->err) == -1)
 		berrorx(block, "close stderr");
-
-	block->pid = 0;
 }
 
 void block_setup(struct block *block)
