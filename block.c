@@ -220,7 +220,7 @@ block_reap(struct block *block)
 	block->pid = 0;
 
 	/* Note read(2) returns 0 for end-of-pipe */
-	if (read(block->err, buf, sizeof(buf)) == -1) {
+	if (read(block->err, buf, sizeof(buf) - 1) == -1) {
 		berrorx(block, "read stderr");
 		mark_as_failed(block, strerror(errno));
 		goto close;
@@ -245,7 +245,7 @@ block_reap(struct block *block)
 	}
 
 	/* Note read(2) returns 0 for end-of-pipe */
-	if (read(block->out, buf, sizeof(buf)) == -1) {
+	if (read(block->out, buf, sizeof(buf) - 1) == -1) {
 		berrorx(block, "read stdout");
 		mark_as_failed(block, strerror(errno));
 		goto close;
