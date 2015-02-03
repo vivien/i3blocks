@@ -59,7 +59,7 @@ escape(const char *str)
 }
 
 static void
-print_prop(const char *key, const char *value, const int flags)
+print_prop(const char *key, const char *value, int flags)
 {
 	/* Only print i3bar-specific properties */
 	if (!(flags & PROP_I3BAR))
