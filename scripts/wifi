@@ -16,7 +16,7 @@
 
 #------------------------------------------------------------------------
 
-INTERFACE="${BLOCK_INSTANCE:-eth0}"
+INTERFACE="${BLOCK_INSTANCE:-wlan0}"
 
 # -n removes the brackets from the output
 START_BRACKET='('
