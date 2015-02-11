@@ -261,22 +261,21 @@ block_reap(struct block *block)
 
 	} else {
 		/* JSON parsing: parse object containing PROPERTIES pairs */
-		int start, length;
+		int start, length, size;
 
-#define MIN(a, b) (a < b ? a : b)
 #define JSONPARSE(_name, _size, _flags) \
 	if ((_flags) & PROP_I3BAR) { \
 		json_parse(buf, #_name, &start, &length); \
 		if (start > 0) { \
-			strncpy(props->_name, buf + start, MIN(_size, length)); \
-			props->_name[length] = '\0'; \
+			size = _size < length ? _size : length; \
+			strncpy(props->_name, buf + start, size); \
+			props->_name[size] = '\0'; \
 		} \
 	}
 
 		PROPERTIES(JSONPARSE);
 
 #undef JSONPARSE
-#undef MIN
 
 	}
 
