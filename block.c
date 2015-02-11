@@ -101,7 +101,7 @@ child_exec(struct block *block)
 }
 
 static void
-linecpy(char **lines, char *dest, unsigned int size)
+linecpy(char **lines, char *dest, size_t size)
 {
 	char *newline = strchr(*lines, '\n');
 
@@ -217,8 +217,11 @@ block_reap(struct block *block)
 	code = WEXITSTATUS(status);
 	bdebug(block, "process %d exited with %d", block->pid, code);
 
+	/* Process successfully reaped, reset the block PID */
+	block->pid = 0;
+
 	/* Note read(2) returns 0 for end-of-pipe */
-	if (read(block->err, buf, sizeof(buf)) == -1) {
+	if (read(block->err, buf, sizeof(buf) - 1) == -1) {
 		berrorx(block, "read stderr");
 		mark_as_failed(block, strerror(errno));
 		goto close;
@@ -243,7 +246,7 @@ block_reap(struct block *block)
 	}
 
 	/* Note read(2) returns 0 for end-of-pipe */
-	if (read(block->out, buf, sizeof(buf)) == -1) {
+	if (read(block->out, buf, sizeof(buf) - 1) == -1) {
 		berrorx(block, "read stdout");
 		mark_as_failed(block, strerror(errno));
 		goto close;
@@ -292,8 +295,6 @@ close:
 		berrorx(block, "close stdout");
 	if (close(block->err) == -1)
 		berrorx(block, "close stderr");
-
-	block->pid = 0;
 }
 
 void block_setup(struct block *block)

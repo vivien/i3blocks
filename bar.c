@@ -93,7 +93,7 @@ bar_poll_outdated(struct bar *bar)
 }
 
 void
-bar_poll_signaled(struct bar *bar, const int sig)
+bar_poll_signaled(struct bar *bar, int sig)
 {
 	for (int i = 0; i < bar->num; ++i) {
 		struct block *block = bar->blocks + i;

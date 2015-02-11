@@ -77,6 +77,7 @@ i3blocks may already be packaged for your distribution:
   * Archlinux: [i3blocks](https://aur.archlinux.org/packages/i3blocks) and 
   [i3blocks-git](https://aur.archlinux.org/packages/i3blocks-git) AURs.
   * Gentoo: [ebuild](https://github.com/Sabayon-Labs/spike-community-overlay/tree/master/x11-misc/i3blocks)
+  * Debian: [i3blocks](https://packages.debian.org/i3blocks) and Ubuntu: [i3blocks](http://packages.ubuntu.com/i3blocks)
 
 Or you may install i3blocks from source:
 
