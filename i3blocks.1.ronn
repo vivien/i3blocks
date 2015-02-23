@@ -109,6 +109,9 @@ The following keys are specific to **i3blocks**.
   * `label`:
 	An optional label to preprend to the `full_text` after an update.
 
+  * `urgent_color`:
+  An optional default color for blocks that exit with urgent (CODE 33)
+
 
 ## COMMAND
 
