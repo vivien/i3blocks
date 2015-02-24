@@ -18,13 +18,8 @@
 
 #include <getopt.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 
-#include "block.h"
 #include "ini.h"
-#include "json.h"
 #include "log.h"
 #include "sched.h"
 
