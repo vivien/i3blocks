@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "click.h"
 #include "json.h"
 #include "log.h"
 

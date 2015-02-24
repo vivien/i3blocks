@@ -16,13 +16,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <errno.h>
+#include <signal.h>
+#include <stddef.h>
+#include <string.h>
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
 
+#include "bar.h"
 #include "block.h"
 #include "click.h"
-#include "json.h"
 #include "log.h"
 
 static int
