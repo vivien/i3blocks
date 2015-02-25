@@ -1,6 +1,7 @@
 # i3blocks
 
 [![Build Status](https://travis-ci.org/vivien/i3blocks.svg?branch=master)](https://travis-ci.org/vivien/i3blocks)
+[![Join the chat at https://gitter.im/vivien/i3blocks](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/vivien/i3blocks?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 i3blocks is a highly flexible **status line** for the [i3](http://i3wm.org) 
 window manager. It handles *clicks*, *signals* and *language-agnostic* user 
