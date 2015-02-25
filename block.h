@@ -51,6 +51,7 @@
 	_(interval,              8,                 PROP_STRING | PROP_NUMBER) \
 	_(signal,                8,                 PROP_NUMBER) \
 	_(label,                 32,                PROP_STRING) \
+	_(urgent_color,          8,                 PROP_STRING) \
 
 struct properties {
 #define DEFINE(_name, _size, _flags) char _name[_size];

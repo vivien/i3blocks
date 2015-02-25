@@ -253,10 +253,20 @@ block_reap(struct block *block)
 
 	/* The update went ok, so reset the defaults and merge the output */
 	memcpy(props, &block->default_props, sizeof(struct properties));
-	strncpy(props->urgent, code == EXIT_URGENT ? "true" : "false", sizeof(props->urgent) - 1);
 	linecpy(&lines, props->full_text, sizeof(props->full_text) - 1);
 	linecpy(&lines, props->short_text, sizeof(props->short_text) - 1);
-	linecpy(&lines, props->color, sizeof(props->color) - 1);
+
+	/* Handle urgent exit code */
+	if(code == EXIT_URGENT) {
+		strncpy(props->urgent, "true", sizeof(props->urgent) - 1);
+		if(block->default_props.urgent_color)
+			strncpy(props->color, block->default_props.urgent_color, sizeof(props->color) - 1);
+		else
+			linecpy(&lines, props->color, sizeof(props->color) - 1);
+	} else {
+		strncpy(props->urgent, "false", sizeof(props->urgent) - 1);
+		linecpy(&lines, props->color, sizeof(props->color) - 1);
+	}
 
 	if (*FULL_TEXT(block) && *LABEL(block)) {
 		static const size_t size = sizeof(props->full_text);
