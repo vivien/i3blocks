@@ -19,11 +19,15 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
+#include <signal.h>
+#include <stddef.h>
+#include <string.h>
 
 #include "block.h"
 #include "click.h"
-#include "json.h"
 #include "log.h"
+#include "bar.h"
 
 static int
 readline(char *buffer, const size_t size)

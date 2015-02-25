@@ -17,6 +17,7 @@
  */
 
 #include "json.h"
+#include "click.h"
 #include "log.h"
 
 /*

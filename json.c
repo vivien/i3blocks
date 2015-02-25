@@ -21,10 +21,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stddef.h>
 
 #include "bar.h"
 #include "block.h"
-#include "log.h"
 
 static inline bool
 is_number(const char *str)
