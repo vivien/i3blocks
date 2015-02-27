@@ -47,7 +47,7 @@ bar_poll_clicked(struct bar *bar)
 {
 	char json[1024] = { 0 };
 
-	while (io_readline(STDERR_FILENO, json, sizeof(json)) > 0) {
+	while (io_readline(STDIN_FILENO, json, sizeof(json)) > 0) {
 		struct click click;
 
 		/* find the corresponding block */
