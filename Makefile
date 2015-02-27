@@ -27,9 +27,9 @@ PROGRAM = i3blocks
 
 CPPFLAGS += -DSYSCONFDIR=\"$(SYSCONFDIR)\"
 CPPFLAGS += -DVERSION=\"${VERSION}\"
-CFLAGS += -std=gnu99 -Wall -Werror=format-security
+CFLAGS += -std=gnu99 -Iinclude -Wall -Werror=format-security
 
-OBJS := $(wildcard *.c)
+OBJS := $(wildcard src/*.c)
 OBJS := $(OBJS:.c=.o)
 
 %.o: %.c %.h
@@ -52,7 +52,7 @@ $(PROGRAM).1: $(PROGRAM).1.ronn
 	ronn -w -r $<
 
 clean:
-	rm -f *.o $(PROGRAM)
+	rm -f src/*.o $(PROGRAM)
 
 install: all man
 	install -m 755 -d $(DESTDIR)$(PREFIX)/bin
