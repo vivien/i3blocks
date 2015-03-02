@@ -1,0 +1,67 @@
+#!/bin/bash
+# Copyright (C) 2014 Julien Bonjean <julien@bonjean.info>
+# Copyright (C) 2014 Alexander Keller <github@nycroth.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#------------------------------------------------------------------------
+
+INTERFACE="${BLOCK_INSTANCE:-eth0}"
+
+#------------------------------------------------------------------------
+
+# As per #36 -- It is transparent: e.g. if the machine has no battery or wireless
+# connection (think desktop), the corresponding block should not be displayed.
+[[ ! -d /sys/class/net/${INTERFACE} ]] && exit
+
+#------------------------------------------------------------------------
+
+ipv6 () {
+  ip -6 addr show $INTERFACE | perl -n -e '/inet6 ([^ ]+).*? scope global/ && print $1'
+}
+
+ipv4 () {
+  ip addr show $INTERFACE | perl -n -e '/inet ([^ ]+).*? scope global/ && print $1'
+}
+
+ip_all() {
+  ip addr show $INTERFACE | perl -n -e '/inet6? ([^ ]+).*? scope global/ && print $1'
+}
+
+#------------------------------------------------------------------------
+
+if [[ "$(cat /sys/class/net/$INTERFACE/operstate)" == 'down' ]]; then
+  echo down # full text
+  echo down # short text
+  echo \#FF0000 # color
+  exit
+fi
+
+if [[ $1 == '-6' ]]; then
+  ipaddr=$(ipv6)
+elif [[ $1 == '-4' ]]; then
+  ipaddr=$(ipv4)
+else
+  ipaddr=$(ip_all)
+fi
+ipaddr=${ipaddr:-"No Addr"}
+
+case $BLOCK_BUTTON in
+  3) echo -n "$ipaddr" | xclip -q -se c;;
+esac
+
+#------------------------------------------------------------------------
+
+echo "$ipaddr" # full text
+echo "$ipaddr" # short text
