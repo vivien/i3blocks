@@ -1,0 +1,19 @@
+#!/usr/sbin/bash
+
+dateh="$(/home/vahit/devel/projects/i3blocks/scripts/hijri-date.py h)"
+dateg="$(/home/vahit/devel/projects/i3blocks/scripts/hijri-date.py g)"
+
+if [ $((BLOCK_BUTTON)) == 1 ]; then
+   echo "$dateh"
+   echo "$dateh"
+   echo "#66CD00"
+# elif [ $((BLOCK_BUTTON)) == 2 ]; then
+#    echo "$dateg"
+#    echo "$dateg"
+#    echo "#66CD00"
+#    exit 0
+fi
+echo "$dateg"
+echo "$dateg"
+echo "#66CD00"
+exit 0	
