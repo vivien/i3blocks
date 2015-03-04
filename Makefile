@@ -13,9 +13,6 @@ endif
 ifndef LIBEXECDIR
   LIBEXECDIR=$(PREFIX)/libexec
 endif
-ifndef DOCDIR
-  DOCDIR=$(PREFIX)/share/doc/$(PROGRAM)
-endif
 ifndef VERSION
   VERSION = $(shell git describe --tags --always 2> /dev/null)
   ifeq ($(strip $(VERSION)),)
@@ -64,16 +61,12 @@ install: all man
 	chmod 644 $(DESTDIR)$(SYSCONFDIR)/$(PROGRAM).conf
 	install -m 644 $(PROGRAM).1 $(DESTDIR)$(PREFIX)/share/man/man1
 	install -m 755 scripts/* $(DESTDIR)$(LIBEXECDIR)/$(PROGRAM)/
-	install -m 755 -d $(DESTDIR)$(DOCDIR)/contrib
-	install -m 755 contrib/* $(DESTDIR)$(DOCDIR)/contrib/
-	chmod 644 $(DESTDIR)$(DOCDIR)/contrib/config
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/$(PROGRAM)
 	rm -f $(DESTDIR)$(SYSCONFDIR)/$(PROGRAM).conf
 	rm -f $(DESTDIR)$(PREFIX)/share/man/man1/$(PROGRAM).1
 	rm -rf $(DESTDIR)$(LIBEXECDIR)/$(PROGRAM)
-	rm -rf $(DESTDIR)$(DOCDIR)
 
 dist: clean man
 	( git ls-files * ; ls $(PROGRAM).1 ) | \
