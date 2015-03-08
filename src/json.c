@@ -110,6 +110,11 @@ json_parse(const char *json, const char *name, int *start, int *len)
 	char *here = strstr(json, key);
 	if (here) {
 		here += keylen + 1;
+
+		/* skip pre-value whitespace */
+		while (isspace(*here))
+			here++;
+
 		if (*here == '"') {
 			/* string */
 			here++;
