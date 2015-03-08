@@ -33,6 +33,9 @@
 #define INTER_REPEAT	-2
 #define INTER_PERSIST	-3
 
+#define FORMAT_PLAIN	0
+#define FORMAT_JSON	1
+
 /* Block command exit codes */
 #define EXIT_URGENT	'!' /* 33 */
 #define EXIT_ERR_INTERNAL	66
@@ -52,6 +55,7 @@
 	_(interval,              8,                 PROP_STRING | PROP_NUMBER) \
 	_(signal,                8,                 PROP_NUMBER) \
 	_(label,                 32,                PROP_STRING) \
+	_(format,                8,                 PROP_STRING | PROP_NUMBER) \
 
 struct properties {
 #define DEFINE(_name, _size, _flags) char _name[_size];
@@ -66,6 +70,7 @@ struct block {
 	/* Shortcuts */
 	int interval;
 	unsigned signal;
+	unsigned format;
 
 	/* Runtime info */
 	unsigned long timestamp;

@@ -111,6 +111,10 @@ The following keys are specific to **i3blocks**.
   * `label`:
 	An optional label to preprend to the `full_text` after an update.
 
+  * `format`:
+    This property specifies the format of the output text. The default format
+    is plain text, as described in the [COMMAND][] section.
+    If "json" (or 1) is used, the block output is parsed as JSON.
 
 ## COMMAND
 

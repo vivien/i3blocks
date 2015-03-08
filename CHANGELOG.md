@@ -3,6 +3,7 @@
 ## master
 
   * Add support for persistent blocks (GH #85).
+  * Add support for JSON output format (GH #85).
 
 ## 1.3
 

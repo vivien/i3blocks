@@ -29,6 +29,7 @@
 #include "block.h"
 #include "click.h"
 #include "io.h"
+#include "json.h"
 #include "log.h"
 
 static void
@@ -162,6 +163,27 @@ block_update_plain_text(struct block *block, char *buf)
 	linecpy(&lines, props->color, sizeof(props->color) - 1);
 }
 
+static void
+block_update_json(struct block *block, char *buf)
+{
+	struct properties *props = &block->updated_props;
+	int start, length, size;
+
+#define PARSE(_name, _size, _flags) \
+	if ((_flags) & PROP_I3BAR) { \
+		json_parse(buf, #_name, &start, &length); \
+		if (start > 0) { \
+			size = _size - 1 < length ? _size - 1 : length; \
+			strncpy(props->_name, buf + start, size); \
+			props->_name[size] = '\0'; \
+		} \
+	}
+
+	PROPERTIES(PARSE);
+
+#undef PARSE
+}
+
 void
 block_update(struct block *block)
 {
@@ -190,7 +212,10 @@ block_update(struct block *block)
 	/* Reset the defaults and merge the output */
 	memcpy(props, &block->default_props, sizeof(struct properties));
 
-	block_update_plain_text(block, buf);
+	if (block->format == FORMAT_JSON)
+		block_update_json(block, buf);
+	else
+		block_update_plain_text(block, buf);
 
 	if (*FULL_TEXT(block) && *LABEL(block)) {
 		static const size_t size = sizeof(props->full_text);
@@ -333,6 +358,12 @@ void block_setup(struct block *block)
 		block->interval = INTER_PERSIST;
 	else
 		block->interval = atoi(defaults->interval);
+
+	if (strcmp(defaults->format, "json") == 0)
+		block->format = FORMAT_JSON;
+	else
+		block->format = FORMAT_PLAIN;
+
 	block->signal = atoi(defaults->signal);
 
 	/* First update (for static blocks and loading labels) */
