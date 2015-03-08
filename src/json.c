@@ -89,7 +89,7 @@ print_block(struct block *block)
 	PROPERTIES(PRINT);
 	fprintf(stdout, "}");
 
-#undef JSON
+#undef PRINT
 }
 
 /*
