@@ -119,8 +119,12 @@ json_parse(const char *json, const char *name, int *start, int *len)
 			/* string */
 			here++;
 			*start = here - json;
-			while (*here++ != '"')
-				*len += 1;
+			while (*here && *here != '"')
+				*len += 1, here++;
+
+			/* invalidate on incomplete string */
+			if (*here != '"')
+				*start = 0;
 		} else {
 			/* number */
 			*start = here - json;
