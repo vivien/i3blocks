@@ -9,8 +9,9 @@
 # command (often provided by a package of the same name) to read the status of
 # the battery, and eventually its remaining time (to full charge or discharge).
 #
-# The color will gradually change for a percentage below 85%, and the urgency
-# (exit code 33) is set if there is less that 5% remaining.
+# The color will gradually change from green to red, and the urgency
+# (exit code 33) is set if there is less that 5% remaining. This threshold
+# may be overridden with the -t ## option.
 
 use strict;
 use warnings;
@@ -22,7 +23,13 @@ my $percent;
 my $full_text;
 my $short_text;
 my $bat_number = $ENV{BLOCK_INSTANCE} || 0;
+my $threshold = 5; 
 
+# -t to override the urgency threshold
+if ($#ARGV+1 == 2 && $ARGV[0] eq '-t') {
+   $threshold=$ARGV[1];
+}
+ 
 # read the first line of the "acpi" command output
 open (ACPI, "acpi -b | grep 'Battery $bat_number' |") or die;
 $acpi = <ACPI>;
@@ -30,7 +37,7 @@ close(ACPI);
 
 # fail on unexpected output
 if ($acpi !~ /: (\w+), (\d+)%/) {
-	die "$acpi\n";
+   die "$acpi\n";
 }
 
 $status = $1;
@@ -38,15 +45,15 @@ $percent = $2;
 $full_text = "$percent%";
 
 if ($status eq 'Discharging') {
-	$full_text .= ' DIS';
+   $full_text .= ' DIS';
 } elsif ($status eq 'Charging') {
-	$full_text .= ' CHR';
+   $full_text .= ' CHR';
 }
 
 $short_text = $full_text;
 
 if ($acpi =~ /(\d\d:\d\d):/) {
-	$full_text .= " ($1)";
+   $full_text .= " ($1)";
 }
 
 # print text
@@ -55,20 +62,23 @@ print "$short_text\n";
 
 # consider color and urgent flag only on discharge
 if ($status eq 'Discharging') {
+   if ($percent <= $threshold) { # Auto red if at threshold
+      print "#FF0000\n";
+      exit(33); # set urgent flag
+   } else {
+      # take the percent as a float (subtract from 100% to find red)
+      # multiply by the hex max 0xFF, double this and cap it at 0xFF
+      # this will make 50% 0xFFFF00 (Yellow)
+      my $red = int(0xFF * ((100 - $percent) / 100) * 2);
+      my $green = int(0xFF * ($percent / 100) * 2);
+      if ($red > 0xFF) { $red = 0xFF; }
+      if ($green > 0xFF) { $green = 0xFF; }
 
-	if ($percent < 20) {
-		print "#FF0000\n";
-	} elsif ($percent < 40) {
-		print "#FFAE00\n";
-	} elsif ($percent < 60) {
-		print "#FFF600\n";
-	} elsif ($percent < 85) {
-		print "#A8FF00\n";
-	}
-
-	if ($percent < 5) {
-		exit(33);
-	}
+      print "#";
+      print sprintf("%02x", $red);
+      print sprintf("%02x", $green);
+      print "00\n";
+   }
 }
 
 exit(0);
