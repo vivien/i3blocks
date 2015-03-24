@@ -82,6 +82,7 @@ The following keys are standard, see
   * `urgent`
   * `separator`
   * `separator_block_width`
+  * `markup`
 
 The following keys are specific to **i3blocks**.
 
