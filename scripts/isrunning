@@ -1,0 +1,40 @@
+#!/bin/bash
+# Copyright (C) 2015 James Murphy
+# Licensed under the terms of the GNU GPL v2 only.
+#
+# i3blocks blocklet script to check if a program is running
+
+NAME="$1"
+DISPLAY_NAME=${2:-""}
+YES_TEXT=${3:-""}
+NO_TEXT=${4:-""}
+if [ -n "$DISPLAY_NAME" ]; then
+    test "$YES_TEXT" && YES_TEXT=" $YES_TEXT"
+    test "$NO_TEXT" && NO_TEXT=" $NO_TEXT"
+fi
+YES_COLOR=${5:-"#00FF00"}
+NO_COLOR=${6:-"#FF0000"}
+
+pgrep -x "$1" &>/dev/null
+FOUND=$?
+
+case "$FOUND" in
+    0) 
+        FULL_TEXT="$DISPLAY_NAME$YES_TEXT"
+        COLOR="$YES_COLOR"
+        ;;
+    1) 
+        FULL_TEXT="$DISPLAY_NAME$NO_TEXT"
+        COLOR="$NO_COLOR"
+        ;;
+    *)
+        FULL_TEXT="pgrep error $FOUND"
+        COLOR="#FF0000"
+        ;;
+esac
+
+if [ -n "$FULL_TEXT" ]; then
+    echo "$FULL_TEXT"
+    echo "$FULL_TEXT"
+    echo "$COLOR"
+fi
