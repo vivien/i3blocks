@@ -167,6 +167,21 @@ parse_bar(FILE *fp, struct bar *bar)
 }
 
 struct bar *
+ini_load_parse(FILE* fp, struct bar * bar) {
+    bar = calloc(1, sizeof(struct bar));
+    if (bar && parse_bar(fp, bar)) {
+        free(bar->blocks);
+        free(bar);
+        bar = NULL;
+    }
+
+    if (fclose(fp))
+        errorx("fclose");
+
+    return bar;
+}
+
+struct bar *
 ini_load(const char *inifile)
 {
 	const char * const home = getenv("HOME");
@@ -174,21 +189,7 @@ ini_load(const char *inifile)
 	const char * const xdg_dirs = getenv("XDG_CONFIG_DIRS");
 	char buf[PATH_MAX];
 	FILE *fp;
-	struct bar *bar;
-
-	struct bar *parse(void) {
-		bar = calloc(1, sizeof(struct bar));
-		if (bar && parse_bar(fp, bar)) {
-			free(bar->blocks);
-			free(bar);
-			bar = NULL;
-		}
-
-		if (fclose(fp))
-			errorx("fclose");
-
-		return bar;
-	}
+	struct bar *bar = 0;
 
 	/* command line config file? */
 	if (inifile) {
@@ -198,7 +199,7 @@ ini_load(const char *inifile)
 			errorx("fopen");
 			return NULL;
 		}
-		return parse();
+		return ini_load_parse(fp, bar);
 	}
 
 	/* user config file? */
@@ -210,13 +211,13 @@ ini_load(const char *inifile)
 		debug("try XDG home config %s", buf);
 		fp = fopen(buf, "r");
 		if (fp)
-			return parse();
+			return ini_load_parse(fp, bar);
 
 		snprintf(buf, PATH_MAX, "%s/.i3blocks.conf", home);
 		debug("try default $HOME config %s", buf);
 		fp = fopen(buf, "r");
 		if (fp)
-			return parse();
+			return ini_load_parse(fp, bar);
 
 		/* if user files don't exist, fall through... */
 		if (errno != ENOENT) {
@@ -235,7 +236,7 @@ ini_load(const char *inifile)
 	debug("try XDG dirs config %s", buf);
 	fp = fopen(buf, "r");
 	if (fp)
-		return parse();
+		return ini_load_parse(fp, bar);
 
 	snprintf(buf, PATH_MAX, "%s/i3blocks.conf", SYSCONFDIR);
 	debug("try default system config %s", buf);
@@ -245,5 +246,5 @@ ini_load(const char *inifile)
 		return NULL;
 	}
 
-	return parse();
+	return ini_load_parse(fp, bar);
 }
