@@ -176,6 +176,33 @@ free:
 	return NULL;
 }
 
+static struct bar *
+try_parse(const char *path, bool *found)
+{
+	struct bar *bar = NULL;
+	bool noent = false;
+	FILE *fp = fopen(path, "r");
+
+	debug("try file %s", path);
+
+	if (!fp) {
+		if (errno == ENOENT && found)
+			noent = true;
+		else
+			errorx("fopen");
+	} else {
+		bar = parse_bar(fp);
+
+		if (fclose(fp))
+			errorx("fclose");
+	}
+
+	if (found)
+		*found = !noent;
+
+	return bar;
+}
+
 struct bar *
 ini_load(const char *inifile)
 {
@@ -183,28 +210,12 @@ ini_load(const char *inifile)
 	const char * const xdg_home = getenv("XDG_CONFIG_HOME");
 	const char * const xdg_dirs = getenv("XDG_CONFIG_DIRS");
 	char buf[PATH_MAX];
-	FILE *fp;
 	struct bar *bar;
-
-	struct bar *parse(void) {
-		bar = parse_bar(fp);
-
-		if (fclose(fp))
-			errorx("fclose");
-
-		return bar;
-	}
+	bool found;
 
 	/* command line config file? */
-	if (inifile) {
-		debug("try custom config %s", inifile);
-		fp = fopen(inifile, "r");
-		if (!fp) {
-			errorx("fopen");
-			return NULL;
-		}
-		return parse();
-	}
+	if (inifile)
+		return try_parse(inifile, NULL);
 
 	/* user config file? */
 	if (home) {
@@ -212,24 +223,14 @@ ini_load(const char *inifile)
 			snprintf(buf, PATH_MAX, "%s/i3blocks/config", xdg_home);
 		else
 			snprintf(buf, PATH_MAX, "%s/.config/i3blocks/config", home);
-		debug("try XDG home config %s", buf);
-		fp = fopen(buf, "r");
-		if (fp)
-			return parse();
+		bar = try_parse(buf, &found);
+		if (found)
+			return bar;
 
 		snprintf(buf, PATH_MAX, "%s/.i3blocks.conf", home);
-		debug("try default $HOME config %s", buf);
-		fp = fopen(buf, "r");
-		if (fp)
-			return parse();
-
-		/* if user files don't exist, fall through... */
-		if (errno != ENOENT) {
-			errorx("fopen");
-			return NULL;
-		}
-
-		debug("no config found in $HOME");
+		bar = try_parse(buf, &found);
+		if (found)
+			return bar;
 	}
 
 	/* system config file? */
@@ -237,18 +238,10 @@ ini_load(const char *inifile)
 		snprintf(buf, PATH_MAX, "%s/i3blocks/config", xdg_dirs);
 	else
 		snprintf(buf, PATH_MAX, "%s/xdg/i3blocks/config", SYSCONFDIR);
-	debug("try XDG dirs config %s", buf);
-	fp = fopen(buf, "r");
-	if (fp)
-		return parse();
+	bar = try_parse(buf, &found);
+	if (found)
+		return bar;
 
 	snprintf(buf, PATH_MAX, "%s/i3blocks.conf", SYSCONFDIR);
-	debug("try default system config %s", buf);
-	fp = fopen(buf, "r");
-	if (!fp) {
-		errorx("fopen");
-		return NULL;
-	}
-
-	return parse();
+	return try_parse(buf, NULL);
 }
