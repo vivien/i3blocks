@@ -99,19 +99,24 @@ parse_property(const char *line, struct properties *props, bool strict)
 	return 1;
 }
 
-static int
-parse_bar(FILE *fp, struct bar *bar)
+static struct bar *
+parse_bar(FILE *fp)
 {
 	char line[2048];
 	struct block *block = NULL;
 	struct block global = {};
+	struct bar *bar;
+
+	bar = calloc(1, sizeof(struct bar));
+	if (!bar)
+		return NULL;
 
 	while (fgets(line, sizeof(line), fp) != NULL) {
 		int len = strlen(line);
 
 		if (line[len - 1] != '\n') {
 			error("line \"%s\" is not terminated by a newline", line);
-			return 1;
+			goto free;
 		}
 		line[len - 1] = '\0';
 
@@ -129,13 +134,13 @@ parse_bar(FILE *fp, struct bar *bar)
 
 			block = add_block(bar);
 			if (!block)
-				return 1;
+				goto free;
 
 			/* Init the block with default settings (if any) */
 			memcpy(block, &global, sizeof(struct block));
 
 			if (parse_section(line, block->default_props.name, sizeof(block->default_props.name)))
-				return 1;
+				goto free;
 
 			bdebug(block, "new block");
 			break;
@@ -148,14 +153,14 @@ parse_bar(FILE *fp, struct bar *bar)
 			}
 
 			if (parse_property(line, &block->default_props, false))
-				return 1;
+				goto free;
 
 			break;
 
 		/* Syntax error */
 		default:
 			error("malformated line: %s", line);
-			return 1;
+			goto free;
 		}
 	}
 
@@ -163,7 +168,12 @@ parse_bar(FILE *fp, struct bar *bar)
 	if (block)
 		block_setup(block);
 
-	return 0;
+	return bar;
+
+free:
+	free(bar->blocks);
+	free(bar);
+	return NULL;
 }
 
 struct bar *
@@ -177,12 +187,7 @@ ini_load(const char *inifile)
 	struct bar *bar;
 
 	struct bar *parse(void) {
-		bar = calloc(1, sizeof(struct bar));
-		if (bar && parse_bar(fp, bar)) {
-			free(bar->blocks);
-			free(bar);
-			bar = NULL;
-		}
+		bar = parse_bar(fp);
 
 		if (fclose(fp))
 			errorx("fclose");
