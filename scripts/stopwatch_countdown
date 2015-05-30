@@ -1,0 +1,77 @@
+#!/bin/bash
+
+# Copyright (C) 2015 Paulo Flabiano Smorigo <pfsmorigo@gmail.com>
+
+# ----------------------------------------------------------------------------
+# "THE BEER-WARE LICENSE" (Revision 42):
+# <pfsmorigo@gmail.com> wrote this file. As long as you retain this notice you
+# can do whatever you want with this stuff. If we meet some day, and you think
+# this stuff is worth it, you can buy me a beer in return.    Paulo F. Smorigo
+# ----------------------------------------------------------------------------
+
+# Stopwatch and countdown v1.0
+
+# Use right click to start/stop the counter and the scroll wheel to adjust the
+# time. If you start on 00:00 you will be in stopwatch mode (S), otherwise you
+# will be in countdown timer mode (C).
+
+TIME_FRACTION=${1:-300}
+TIME_FORMAT=${2:-%H:%M:%S}
+
+STORE_FILE=/tmp/i3blocks_stopwatch_countdown
+NOW=$(date +%s)
+
+# load values from the file if exists
+[ -f $STORE_FILE ] && IFS=, read MODE COUNTER EPOCH < $STORE_FILE
+
+# sanity check and reset it if necessary
+[[ $MODE =~ ^(C|S)$ ]] || MODE=C
+[[ $COUNTER =~ ^-?[0-9]+$ ]] || COUNTER=0
+[[ $EPOCH =~ ^-?[0-9]+$ ]] || EPOCH=0
+
+# event handler
+case $BLOCK_BUTTON in
+	3) # right click
+		if [ $EPOCH == 0 ]; then
+			case $MODE in
+				S) EPOCH=$(expr $NOW - $COUNTER) ;;
+				C) EPOCH=$(date -d "$COUNTER sec" +%s) ;;
+			esac
+		else
+			EPOCH=0
+		fi
+		;;
+
+	4|5) # scroll up or scroll down
+		[ $BLOCK_BUTTON = 4 ] && OP=+ || OP=-
+
+		# update the counter
+		let "COUNTER = $COUNTER $OP $TIME_FRACTION"
+
+		# change mode depending on the counter value
+		[ $COUNTER -le 0 ] && MODE=S || MODE=C
+
+		# stop the clock
+		EPOCH=0
+		;;
+esac
+
+# update counter if is on
+if [ $EPOCH -gt 0 ]; then
+	case $MODE in
+		S) let "COUNTER = $NOW - $EPOCH" ;;
+		C) let "COUNTER = $EPOCH - $NOW" ;;
+	esac
+fi
+
+# stop the clock if it reaches the target
+[ $COUNTER -lt 0 ] && COUNTER=0
+
+# store the current state
+echo "$MODE,$COUNTER,$EPOCH" > $STORE_FILE
+
+# print
+echo "$MODE $(date -u -d @$COUNTER +$TIME_FORMAT)"
+echo ""
+[ $MODE == C ] && [ $COUNTER -eq 0 ] && [ $EPOCH -ne 0 ] && exit 33
+[ $EPOCH -eq 0 ] && echo "#ffffff" || echo "#00ff00"
