@@ -1,0 +1,107 @@
+#!/bin/bash
+# Originally written by Roberto Santalla <roobre@roobre.es>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#------------------------------------------------------------------------
+
+usage() {
+    echo "Usage: $0 [-d 'down text'] [-p] [-s] [-6]
+    -d 'down': Placeholder text if the specified interface is down.
+    -p: Include CIDR prefix
+    -s: Include link speed (ethernet only)
+    -6: Use ipv6 address insead of v4" 1>&2
+    exit 1; 
+}
+
+# Default options
+d="down"
+p=0
+s=0
+inet="inet"
+
+while getopts "d:sp6" opt; do
+    case "${opt}" in
+        d)
+            d=${OPTARG}
+            ;;
+        p)
+            p=1
+            ;;
+        s)
+            s=1
+            ;;
+        6)
+            inet="inet6"
+            ;;
+        *)
+            usage
+            ;;
+        esac
+done
+
+# Use the provided interface, otherwise the device used for the default route.
+if [[ -n $BLOCK_INSTANCE ]]; then
+  IF=$BLOCK_INSTANCE
+else
+  IF=$(ip route | awk '/^default/ { print $5 ; exit }')
+fi
+
+#------------------------------------------------------------------------
+
+# Exit if the interface does not exist.
+[[ ! -d /sys/class/net/${IF} ]] && exit
+
+#------------------------------------------------------------------------
+
+if [[ "$(cat /sys/class/net/$IF/operstate)" = 'down' ]]; then
+  echo $d # full text
+  echo $d # short text
+  echo \#FF0000 # color
+  exit
+fi
+
+regex=" +inet6? ("
+
+    if [[ $inet = "inet6" ]]; then
+        regex="$regex([a-fA-F0-9]{0,4}:?){2,8}"
+    else
+        regex="$regex([0-9]+\.?){4}"
+    fi
+
+    if [[ $p -eq 1 ]]; then
+        regex="$regex(\/[0-9]+)?"
+    else
+        regex="$regex"
+    fi
+
+    regex="$regex).*"
+
+IPADDR=$(ip addr show dev $IF | grep "$inet " | sed -r "s/$regex/\1/")
+
+if [[ $s -eq 1 ]]; then
+    speed=" ($(cat /sys/class/net/$IF/speed))"
+else
+    speed=""
+fi
+
+case $BLOCK_BUTTON in
+  3) echo -n "$IPADDR" | xclip -q -se c ;;
+esac
+
+#------------------------------------------------------------------------
+
+echo "$IPADDR$speed" # full text
+echo "$IPADDR$speed" # short text
+echo \#00FF00
