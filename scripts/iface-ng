@@ -17,24 +17,46 @@
 #------------------------------------------------------------------------
 
 usage() {
-    echo "Usage: $0 [-d 'down text'] [-p] [-s] [-6]
-    -d 'down': Placeholder text if the specified interface is down.
-    -p: Include CIDR prefix
-    -s: Include link speed (ethernet only)
-    -6: Use ipv6 address insead of v4" 1>&2
+    echo "Usage: $0 [-d down] [-n \"no ip\"] [-c FF0000] [-C 00FF00] [-e] [-p] [-s] [-6]
+    -d down: Placeholder text if the specified interface is down. If set to an empty string,
+       the entire block is hidden (useful to save space on small screens).
+    -n \"no ip\": Placeholder text to display when the interface is up but it does not
+       have any ip address.
+    -c FF0000: Text color when interface is down.
+    -C 00FF00: Text color when interface is up.
+    -e: Show interface even if it does not exist (useful for tun/tap).
+    -p: Include CIDR prefix.
+    -s: Include link speed (ethernet only).
+    -6: Use ipv6 address insead of v4." 1>&2
     exit 1; 
 }
 
 # Default options
-d="down"
+downText="down"
+noipText="no ip"
+colorDown="FF0000"
+colorUp="00FF00"
+inet="inet"
+e=0
 p=0
 s=0
-inet="inet"
 
-while getopts "d:sp6" opt; do
+while getopts "d:n:c:C:esp6" opt; do
     case "${opt}" in
         d)
-            d=${OPTARG}
+            downText=${OPTARG}
+            ;;
+        d)
+            noipText=${OPTARG}
+            ;;
+        c)
+            colorDown=${OPTARG}
+            ;;
+        C)
+            colorUp=${OPTARG}
+            ;;
+        e)
+            e=1
             ;;
         p)
             p=1
@@ -53,45 +75,61 @@ done
 
 # Use the provided interface, otherwise the device used for the default route.
 if [[ -n $BLOCK_INSTANCE ]]; then
-  IF=$BLOCK_INSTANCE
+    IF=$BLOCK_INSTANCE
 else
-  IF=$(ip route | awk '/^default/ { print $5 ; exit }')
+    IF=$(ip route | awk '/^default/ { print $5 ; exit }')
 fi
 
 #------------------------------------------------------------------------
 
-# Exit if the interface does not exist.
-[[ ! -d /sys/class/net/${IF} ]] && exit
+if [[ ! -d /sys/class/net/${IF} ]]; then
+    if [[ $e -eq 1 ]]; then
+        echo $downText # full text
+        echo $downText # short text
+        echo "#$colorDown" # color
+    fi
+
+    exit
+fi
+
 
 #------------------------------------------------------------------------
 
 if [[ "$(cat /sys/class/net/$IF/operstate)" = 'down' ]]; then
-  echo $d # full text
-  echo $d # short text
-  echo \#FF0000 # color
-  exit
+    if [[ $downText = '' ]]; then
+        exit
+    fi
+    echo $downText # full text
+    echo $downText # short text
+    echo "#$colorDown" # color
+    exit
 fi
 
 regex=" +inet6? ("
 
-    if [[ $inet = "inet6" ]]; then
-        regex="$regex([a-fA-F0-9]{0,4}:?){2,8}"
-    else
-        regex="$regex([0-9]+\.?){4}"
-    fi
+if [[ $inet = "inet6" ]]; then
+    regex="$regex([a-fA-F0-9]{0,4}:?){2,8}"
+else
+    regex="$regex([0-9]+\.?){4}"
+fi
 
-    if [[ $p -eq 1 ]]; then
-        regex="$regex(\/[0-9]+)?"
-    else
-        regex="$regex"
-    fi
+if [[ $p -eq 1 ]]; then
+    regex="$regex(\/[0-9]+)?"
+else
+    regex="$regex"
+fi
 
-    regex="$regex).*"
+regex="$regex).*"
 
 IPADDR=$(ip addr show dev $IF | grep "$inet " | sed -r "s/$regex/\1/")
 
+
+if [[ $IPADDR = '' ]]; then
+    IPADDR=$noipText
+fi
+
 if [[ $s -eq 1 ]]; then
-    speed=" ($(cat /sys/class/net/$IF/speed))"
+    speed=" ($(cat /sys/class/net/$IF/speed) Mbps)"
 else
     speed=""
 fi
@@ -103,5 +141,5 @@ esac
 #------------------------------------------------------------------------
 
 echo "$IPADDR$speed" # full text
-echo "$IPADDR$speed" # short text
-echo \#00FF00
+echo "$IPADDR" # short text
+echo "#$colorUp"
