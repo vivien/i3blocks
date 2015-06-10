@@ -30,6 +30,14 @@ if ($BLOCK_INSTANCE) {
     $player_arg = "--player='$BLOCK_INSTANCE'";
 }
 
+if ($ENV{'BLOCK_BUTTON'} == 1) {
+    system("playerctl $player_arg previous");
+} elsif ($ENV{'BLOCK_BUTTON'} == 2) {
+    system("playerctl $player_arg play-pause");
+} elsif ($ENV{'BLOCK_BUTTON'} == 3) {
+    system("playerctl $player_arg next");
+}
+
 if ($player_arg eq '' or $player_arg =~ /cmus$/) {
     # try cmus first
     my @cmus = split /^/, qx(cmus-remote -Q);
