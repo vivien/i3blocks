@@ -67,11 +67,18 @@ fi
 # stop the clock if it reaches the target
 [ $COUNTER -lt 0 ] && COUNTER=0
 
+# if it reachs 0 trigger the alarm
+[ $MODE == C ] && [ $COUNTER -eq 0 ] && [ $EPOCH -ne 0 ] && EXIT=33
+
+# if instance is set and alarm is set, execute its content
+[ -n "$EXIT" ] && [ -n "$BLOCK_INSTANCE" ] && $BLOCK_INSTANCE && EPOCH=0
+
 # store the current state
 echo "$MODE,$COUNTER,$EPOCH" > $STORE_FILE
 
 # print
 echo "$MODE $(date -u -d @$COUNTER +$TIME_FORMAT)"
 echo ""
-[ $MODE == C ] && [ $COUNTER -eq 0 ] && [ $EPOCH -ne 0 ] && exit 33
 [ $EPOCH -eq 0 ] && echo "#ffffff" || echo "#00ff00"
+
+exit $EXIT
