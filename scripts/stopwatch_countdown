@@ -32,7 +32,7 @@ NOW=$(date +%s)
 # event handler
 case $BLOCK_BUTTON in
 	3) # right click
-		if [ $EPOCH == 0 ]; then
+		if [ $EPOCH -eq 0 ]; then
 			case $MODE in
 				S) EPOCH=$(expr $NOW - $COUNTER) ;;
 				C) EPOCH=$(date -d "$COUNTER sec" +%s) ;;
@@ -68,10 +68,10 @@ fi
 [ $COUNTER -lt 0 ] && COUNTER=0
 
 # if it reachs 0 trigger the alarm
-[ $MODE == C ] && [ $COUNTER -eq 0 ] && [ $EPOCH -ne 0 ] && EXIT=33
+[ $MODE = C -a $COUNTER -eq 0 -a $EPOCH -ne 0 ] && EXIT=33
 
 # if instance is set and alarm is set, execute its content
-[ -n "$EXIT" ] && [ -n "$BLOCK_INSTANCE" ] && $BLOCK_INSTANCE && EPOCH=0
+[ -n "$EXIT" -a -n "$BLOCK_INSTANCE" ] && $BLOCK_INSTANCE && EPOCH=0
 
 # store the current state
 echo "$MODE,$COUNTER,$EPOCH" > $STORE_FILE
