@@ -14,9 +14,28 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-case "$(xset -q|grep LED| awk '{ print $10 }')" in
-  "00000002") KBD="En" ;;
-  "00001006") KBD="Fa" ;;
-  *) KBD="CapsON" ;;
-esac
-echo $KBD
+# case "$(xset -q|grep LED| awk '{ print $10 }')" in
+#   "00000002") KBD="En" ;;
+#   "00001006") KBD="Fa" ;;
+#   *) KBD="CapsON" ;;
+# esac
+# echo $KBD
+
+layout="$(xkblayout-state print %s)"
+if [ "$layout" == 'us' ]; then
+    layout="En"
+    # color="AAF111"
+    echo $layout
+    echo $layout
+elif [ "$layout" == 'ir' ]; then
+    layout="Fa"
+    color="FFFF00"
+    echo $layout
+    echo $layout
+    echo $color
+fi
+
+
+# echo $layout
+# echo $layout
+# echo $color

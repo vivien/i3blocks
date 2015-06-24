@@ -1,15 +1,18 @@
 #!/usr/sbin/bash
 
 info="$(acpi --battery)"
+# echo $info
 batt_status="$(echo $info | awk '{print $3}')"
+# echo $batt_status
 if [ "$batt_status" == "Discharging," ]; then
     batt_level="$(echo $info | awk '{print $4}' | rev | cut -c3- | rev)"
     batt_remain="$(echo $info | awk '{print $5}' | rev | cut -d ":" -f2- | rev)"
     if [ $batt_level -le 20 ]; then
 	color="#FF0000"
-	# notify to me!!!
+	notify-send --urgency=critical --expire-time=5000 "Battery level lower that 20%, Recharg it."
     elif [ $batt_level -le 40 ]; then
 	color="#FFAE00"
+	# notify-send --urgency=normal --expire-time=5000 "Battery level lower that 40%, Recharg it."
     elif [ $batt_level -le 60 ]; then
 	color="#FFF600"
     elif [ $batt_level -le 85 ]; then
@@ -34,10 +37,17 @@ elif [ "$batt_status" == "Full," ]; then
     full_text="Full $batt_level"
     full_text="Full $batt_level"
     color="#FFFF00"
+elif [ "$batt_status" == "Unknown," ]; then
+    # if [ "$(echo $info | awk '{print $4}')" == "100%" ]; then
+    batt_level="$(echo $info | awk '{print $4}')"
+    full_text="Full $batt_level"
+    full_text="Full $batt_level"
+    color="#FFFF00"
+    # fi
 else
-    full_text="No Batt"
-    full_text="No Batt"
-    color="FF0000"
+        full_text="No Batt"
+        full_text="No Batt"
+        color="FF0000"
 fi
 
 echo $full_text

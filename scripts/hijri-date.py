@@ -54,13 +54,9 @@ def hijri_date():
         str(gr_date.tm_hour) +
         ":" +
         str(gr_date.tm_min) +
-        ":" +
-        str(gr_date.tm_sec) +
         " " +
         str(jal_today[3]) +
         " " +
-        str(jal_today[0]) +
-        "/" +
         str(jal_today[1]) +
         "/" +
         str(jal_today[2])
@@ -70,8 +66,6 @@ def hijri_date():
 def gregorian_date():
     today = time.strptime(time.ctime())
     print(
-        str(today.tm_year) +
-        '/' +
         str(today.tm_mon) +
         '/' +
         str(today.tm_mday) +
@@ -80,9 +74,7 @@ def gregorian_date():
         ' ' +
         str(today.tm_hour) +
         ':' +
-        str(today.tm_min) +
-        ':' +
-        str(today.tm_sec)
+        str(today.tm_min)
     )
 
 
