@@ -2,6 +2,11 @@
 
 ## master
 
+## 1.4
+
+  * Several scripts improvements and additions.
+  * Add support for the "markup" property (GH #94).
+  * Merge contrib scripts into the defaults (GH #36).
   * Add support for persistent blocks (GH #85).
   * Add support for JSON output format (GH #85).
 
