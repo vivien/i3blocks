@@ -1,4 +1,4 @@
-RELEASE_VERSION = 1.3
+RELEASE_VERSION = 1.4
 
 ifndef PREFIX
   PREFIX=/usr/local
