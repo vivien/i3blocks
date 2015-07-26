@@ -1,7 +1,8 @@
 #!/usr/bin/perl
 # Made by Pierre Mavro/Deimosfr <deimos@deimos.fr>
+# Minor contribution by Thor K. H. <thor@roht.no>
 # Licensed under the terms of the GNU GPL v3, or any later version.
-# Version: 0.2
+# Version: 0.3
 
 # Usage:
 # 1. The configuration name of OpenVPN should be familiar for you (home,work...)
@@ -25,7 +26,7 @@ sub print_output {
     # Total pid files
     my $total_pid = @pid_files;
     if ($total_pid == 0) {
-        print "VPN: down\n"x2;
+        print "down\n"x2;
         # Delete OpenVPN i3blocks temp files
         if (-f $openvpn_enabled) {
             unlink $openvpn_enabled or die "Can't delete $openvpn_enabled\n";
@@ -119,8 +120,8 @@ sub print_output {
         $names = $short_status;
     }
 
-    print "VPN: $names\n";
-    print "VPN: $short_status\n";
+    print "$names\n";
+    print "$short_status\n";
 
     # Print color if there were changes
     print "#00FF00\n" if ($change == 1);
