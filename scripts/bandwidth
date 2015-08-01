@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Copyright (C) 2012 Stefan Breunig <stefan+measure-net-speed@mathphys.fsk.uni-heidelberg.de>
 # Copyright (C) 2014 kaueraal
 # Copyright (C) 2015 Thiago Perrotta <perrotta dot thiago at poli dot ufrj dot br>
@@ -16,75 +16,66 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#------------------------------------------------------------------------
+
 # Use the provided interface, otherwise the device used for the default route.
 if [[ -n $BLOCK_INSTANCE ]]; then
-  INTERFACE=$BLOCK_INSTANCE
+  IF=$BLOCK_INSTANCE
 else
-  INTERFACE=$(ip route | awk '/^default/ { print $5 ; exit }')
+  IF=$(ip route | awk '/^default/ {print $5 ; exit}')
 fi
 
-# Issue #36 compliant.
-if ! [ -e "/sys/class/net/${INTERFACE}/operstate" ] || ! [ "`cat /sys/class/net/${INTERFACE}/operstate`" = "up" ]
-then
-    echo "$INTERFACE down"
-    echo "$INTERFACE down"
-    echo "#FF0000"
-    exit 0
+#------------------------------------------------------------------------
+
+# As per #36 -- It is transparent: e.g. if the machine has no battery or wireless
+# connection (think desktop), the corresponding block should not be displayed.
+[[ ! -d "/sys/class/net/${IF}" ]] && exit
+
+if ! [[ -e "/sys/class/net/${IF}/operstate" ]]; then
+  echo "$IF down"
+  exit
 fi
 
-# path to store the old results in
-path="/dev/shm/$(basename $0)-${INTERFACE}"
+rx1="$(cat /sys/class/net/${IF}/statistics/rx_bytes)"
+tx1="$(cat /sys/class/net/${IF}/statistics/tx_bytes)"
 
-# grabbing data for each adapter.
-read rx < "/sys/class/net/${INTERFACE}/statistics/rx_bytes"
-read tx < "/sys/class/net/${INTERFACE}/statistics/tx_bytes"
+sleep 1
 
-# get time
-time=$(date +%s)
+rx2="$(cat /sys/class/net/${IF}/statistics/rx_bytes)"
+tx2="$(cat /sys/class/net/${IF}/statistics/tx_bytes)"
 
-# write current data if file does not exist. Do not exit, this will cause
-# problems if this file is sourced instead of executed as another process.
-if ! [[ -f "${path}" ]]; then
-  echo "${time} ${rx} ${tx}" > "${path}"
-  chmod 0666 "${path}"
-fi
+# Calculate bytes transferred
+rx_rate=$(( $rx2 - $rx1 ))
+tx_rate=$(( $tx2 - $tx1 ))
 
-# read previous state and update data storage
-read old < "${path}"
-echo "${time} ${rx} ${tx}" > "${path}"
+# Unit multiplier
+# 0 = B/s, 1 = KB/s, 2 = MB/s, 3 = GB/s, >3 = ERROR
+rx_mult=0
+tx_mult=0
 
-# parse old data and calc time passed
-old=(${old//;/ })
-time_diff=$(( $time - ${old[0]} ))
+# Shift by 10 bytes to get Kb/s, again for Mb/s, etc...
+while [[ $rx_rate -gt 1024 ]]; do
+  rx_rate=$(( $rx_rate >> 10 ))
+  rx_mult=$(( $rx_mult + 1 ))
+done
 
-# sanity check: has a positive amount of time passed
-[[ "${time_diff}" -gt 0 ]] || exit
+while [[ $tx_rate -gt 1024 ]]; do
+  tx_rate=$(( $tx_rate >> 10 ))
+  tx_mult=$(( $tx_mult + 1 ))
+done
 
-# calc bytes transferred, and their rate in byte/s
-rx_diff=$(( $rx - ${old[1]} ))
-tx_diff=$(( $tx - ${old[2]} ))
-rx_rate=$(( $rx_diff / $time_diff ))
-tx_rate=$(( $tx_diff / $time_diff ))
+case "$rx_mult" in
+  0) printf 'IN %sb ' "$rx_rate" ;;
+  1) printf 'IN %sK ' "$rx_rate" ;;
+  2) printf 'IN %sM ' "$rx_rate" ;;
+  3) printf 'IN %sG ' "$rx_rate" ;;
+  *) printf 'ERROR ' ;;
+esac
 
-# shift by 10 bytes to get KiB/s. If the value is larger than
-# 1024^2 = 1048576, then display MiB/s instead
-
-# incoming
-echo -n "IN "
-rx_kib=$(( $rx_rate >> 10 ))
-if [[ "$rx_rate" -gt 1048576 ]]; then
-  printf '%sM' "`echo "scale=1; $rx_kib / 1024" | bc`"
-else
-  echo -n "${rx_kib}K"
-fi
-
-echo -n " "
-
-# outgoing
-echo -n "OUT "
-tx_kib=$(( $tx_rate >> 10 ))
-if [[ "$tx_rate" -gt 1048576 ]]; then
-  printf '%sM' "`echo "scale=1; $tx_kib / 1024" | bc`"
-else
-  echo -n "${tx_kib}K"
-fi
+case "$tx_mult" in
+  0) printf 'OUT %sb\n' "$tx_rate" ;;
+  1) printf 'OUT %sK\n' "$tx_rate" ;;
+  2) printf 'OUT %sM\n' "$tx_rate" ;;
+  3) printf 'OUT %sG\n' "$tx_rate" ;;
+  *) printf 'ERROR\n' ;;
+esac

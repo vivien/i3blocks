@@ -1,5 +1,4 @@
-#!/bin/bash
-# Copyright (C) 2014 Alexander Keller <github@nycroth.com>
+#!/bin/sh
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,20 +26,4 @@ INTERFACE="${BLOCK_INSTANCE:-wlan0}"
 
 #------------------------------------------------------------------------
 
-QUALITY=$(grep $INTERFACE /proc/net/wireless | awk '{ print int($3 * 100 / 70) }')
-
-#------------------------------------------------------------------------
-
-echo $QUALITY% # full text
-echo $QUALITY% # short text
-
-# color
-if [[ $QUALITY -ge 80 ]]; then
-    echo "#00FF00"
-elif [[ $QUALITY -lt 80 ]]; then
-    echo "#FFF600"
-elif [[ $QUALITY -lt 60 ]]; then
-    echo "#FFAE00"
-elif [[ $QUALITY -lt 40 ]]; then
-    echo "#FF0000"
-fi
+grep $INTERFACE /proc/net/wireless | awk '{ printf("%d%%\n", $3 * 100 / 70) }'
