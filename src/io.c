@@ -16,44 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define _GNU_SOURCE /* for F_SETSIG */
-
 #include <fcntl.h>
 #include <unistd.h>
 
 #include "log.h"
-
-int
-io_signal(int fd, int sig)
-{
-	int flags;
-
-	/* Assign the signal for this file descriptor */
-	if (fcntl(fd, F_SETSIG, sig) == -1) {
-		errorx("failed to set signal %d on fd %d", sig, fd);
-		return 1;
-	}
-
-	/* Set owner process that is to receive "I/O possible" signal */
-	if (fcntl(fd, F_SETOWN, getpid()) == -1) {
-		errorx("failed to set process as owner of fd %d", fd);
-		return 1;
-	}
-
-	flags = fcntl(fd, F_GETFL);
-	if (flags == -1) {
-		errorx("failed to get flags of fd %d", fd);
-		return 1;
-	}
-
-	/* Enable "I/O possible" signaling and make I/O nonblocking */
-	if (fcntl(fd, F_SETFL, flags | O_ASYNC | O_NONBLOCK) == -1) {
-		errorx("failed to enable I/O signaling for fd %d", fd);
-		return 1;
-	}
-
-	return 0;
-}
 
 static ssize_t
 read_nonblock(int fd, char *buf, size_t size)
