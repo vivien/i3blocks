@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 # Copyright (C) 2014 Tony Crisci <tony@dubstepdish.com>
+# Copyright (C) 2015 Thiago Perrotta <perrotta dot thiago at poli dot ufrj dot br>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -30,16 +31,30 @@ if ($BLOCK_INSTANCE) {
     $player_arg = "--player='$BLOCK_INSTANCE'";
 }
 
-if ($ENV{'BLOCK_BUTTON'} == 1) {
-    system("playerctl $player_arg previous");
-} elsif ($ENV{'BLOCK_BUTTON'} == 2) {
-    system("playerctl $player_arg play-pause");
-} elsif ($ENV{'BLOCK_BUTTON'} == 3) {
-    system("playerctl $player_arg next");
+sub buttons {
+    my $method = shift;
+
+    if($method eq 'mpd') {
+        if ($ENV{'BLOCK_BUTTON'} == 1) {
+            system("mpc prev");
+        } elsif ($ENV{'BLOCK_BUTTON'} == 2) {
+            system("mpc toggle");
+        } elsif ($ENV{'BLOCK_BUTTON'} == 3) {
+            system("mpc next");
+        }
+    }
+    else {
+        if ($ENV{'BLOCK_BUTTON'} == 1) {
+            system("playerctl $player_arg previous");
+        } elsif ($ENV{'BLOCK_BUTTON'} == 2) {
+            system("playerctl $player_arg play-pause");
+        } elsif ($ENV{'BLOCK_BUTTON'} == 3) {
+            system("playerctl $player_arg next");
+        }
+    }
 }
 
-if ($player_arg eq '' or $player_arg =~ /cmus$/) {
-    # try cmus first
+sub cmus {
     my @cmus = split /^/, qx(cmus-remote -Q);
     if ($? == 0) {
         foreach my $line (@cmus) {
@@ -54,41 +69,46 @@ if ($player_arg eq '' or $player_arg =~ /cmus$/) {
         }
 
         if (@metadata) {
+            buttons;
+
             # metadata found so we are done
             print(join ' - ', @metadata);
             exit 0;
         }
     }
-    else {
-
-        if ($ENV{'BLOCK_BUTTON'} == 1) {
-            system("mpc prev");
-        } elsif ($ENV{'BLOCK_BUTTON'} == 2) {
-            system("mpc toggle");
-        } elsif ($ENV{'BLOCK_BUTTON'} == 3) {
-            system("mpc next");
-        }
-        # try mpd (via mpc)
-        my $data = qx(mpc current);
-        if (not $data eq '') {
-            print($data);
-            exit 0;
-        } else {
-            print("else");
-        }
-    }
-
-    # if cmus was given, we are done
-    exit 0 unless $player_arg eq '';
 }
 
-my $artist = qx(playerctl $player_arg metadata artist);
-# exit status will be nonzero when playerctl cannot find your player
-exit(0) if $?;
-push(@metadata, $artist) if $artist;
+sub mpd {
+    my $data = qx(mpc current);
+    if (not $data eq '') {
+        buttons("mpd");
+        print($data);
+        exit 0;
+    }
+}
 
-my $title = qx(playerctl $player_arg metadata title);
-exit(0) if $?;
-push(@metadata, $title) if $title;
+sub playerctl {
+    my $artist = qx(playerctl $player_arg metadata artist);
+    # exit status will be nonzero when playerctl cannot find your player
+    exit(0) if $?;
 
-print(join(" - ", @metadata)) if @metadata;
+    buttons;
+
+    push(@metadata, $artist) if $artist;
+
+    my $title = qx(playerctl $player_arg metadata title);
+    exit(0) if $?;
+    push(@metadata, $title) if $title;
+
+    print(join(" - ", @metadata)) if @metadata;
+}
+
+if ($player_arg eq '') {
+    mpd;
+}
+elsif ($player_arg =~ /cmus$/) {
+    cmus;
+}
+else {
+    playerctl;
+}
