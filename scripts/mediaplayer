@@ -59,6 +59,24 @@ if ($player_arg eq '' or $player_arg =~ /cmus$/) {
             exit 0;
         }
     }
+    else {
+
+        if ($ENV{'BLOCK_BUTTON'} == 1) {
+            system("mpc prev");
+        } elsif ($ENV{'BLOCK_BUTTON'} == 2) {
+            system("mpc toggle");
+        } elsif ($ENV{'BLOCK_BUTTON'} == 3) {
+            system("mpc next");
+        }
+        # try mpd (via mpc)
+        my $data = qx(mpc current);
+        if (not $data eq '') {
+            print($data);
+            exit 0;
+        } else {
+            print("else");
+        }
+    }
 
     # if cmus was given, we are done
     exit 0 unless $player_arg eq '';
