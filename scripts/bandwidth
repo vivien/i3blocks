@@ -16,6 +16,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+# Get custom IN and OUT labels if provided by command line arguments
+while [[ $# -gt 1 ]]; do
+    key="$1"
+    case "$key" in 
+        -i|--inlabel)
+            INLABEL="$2"
+            shift;;
+        -o|--outlabel)
+            OUTLABEL="$2"
+            shift;;
+    esac
+    shift
+done
+
+[[ -z $INLABEL ]] && INLABEL="IN "
+[[ -z $OUTLABEL ]] && OUTLABEL="OUT "
+
 # Use the provided interface, otherwise the device used for the default route.
 if [[ -n $BLOCK_INSTANCE ]]; then
   INTERFACE=$BLOCK_INSTANCE
@@ -70,7 +87,7 @@ tx_rate=$(( $tx_diff / $time_diff ))
 # 1024^2 = 1048576, then display MiB/s instead
 
 # incoming
-echo -n "IN "
+echo -n "$INLABEL"
 rx_kib=$(( $rx_rate >> 10 ))
 if [[ "$rx_rate" -gt 1048576 ]]; then
   printf '%sM' "`echo "scale=1; $rx_kib / 1024" | bc`"
@@ -81,7 +98,7 @@ fi
 echo -n " "
 
 # outgoing
-echo -n "OUT "
+echo -n "$OUTLABEL"
 tx_kib=$(( $tx_rate >> 10 ))
 if [[ "$tx_rate" -gt 1048576 ]]; then
   printf '%sM' "`echo "scale=1; $tx_kib / 1024" | bc`"
