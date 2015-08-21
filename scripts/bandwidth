@@ -19,7 +19,7 @@
 # Get custom IN and OUT labels if provided by command line arguments
 while [[ $# -gt 1 ]]; do
     key="$1"
-    case $key in 
+    case "$key" in 
         -i|--inlabel)
             INLABEL="$2"
             shift;;
