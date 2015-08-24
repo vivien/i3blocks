@@ -98,7 +98,7 @@ common distributions as `ruby-ronn`.
           status_command i3blocks
         }
 
-  * For customization, copy the default i3blocks.conf into ~/.i3blocks.conf
+  * For customization, copy the default i3blocks.conf into ~/.i3blocks.conf (`cp /etc/i3blocks.conf ~/.i3blocks.conf`)
   * Restart i3 (e.g. `i3-msg restart`)
 
 ## Copying
