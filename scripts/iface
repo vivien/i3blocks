@@ -46,7 +46,7 @@ esac
 
 # If no interface is found, use the first global scope address
 IPADDR="$(ip addr show $IF |
-            awk "/$AF.*/ { split(\$2, out, /\//); print(out[1]) }" |
+            awk "/$AF/ { split(\$2, out, /\//); print(out[1]) }" |
             head -n 1)"
 
 #------------------------------------------------------------------------

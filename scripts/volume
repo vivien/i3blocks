@@ -34,17 +34,10 @@ SCONTROL="${BLOCK_INSTANCE:-$(amixer -D $MIXER scontrols |
 
 #------------------------------------------------------------------------
 
-capability() { # Return "Capture" if the device is a capture device
-  amixer -D "$MIXER" get "$SCONTROL" |
-    awk '/^Capabilities:.*cvolume/ { print "Capture" }'
-}
-
-#------------------------------------------------------------------------
-
 case "$BLOCK_BUTTON" in
-  3) amixer -q -D "$MIXER" sset "$SCONTROL" "$(capability)" toggle ;; # right click, mute/unmute
-  4) amixer -q -D "$MIXER" sset "$SCONTROL" "$(capability)" unmute ;; # scroll up, increase
-  5) amixer -q -D "$MIXER" sset "$SCONTROL" "$(capability)" unmute ;; # scroll down, decrease
+  3) amixer -q -D "$MIXER" sset "$SCONTROL" toggle ;; # right click, mute/unmute
+  4) amixer -q -D "$MIXER" sset "$SCONTROL" unmute ;; # scroll up, increase
+  5) amixer -q -D "$MIXER" sset "$SCONTROL" unmute ;; # scroll down, decrease
 esac
 
-amixer -D "$MIXER" get "$SCONTROL" "$(capability)" | grep -oP '\d{1,3}%' | head -n 1
+amixer -D "$MIXER" get "$SCONTROL" | grep -oP '\d{1,3}%' | head -n 1
