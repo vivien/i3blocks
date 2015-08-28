@@ -64,20 +64,18 @@ while [[ $tx_rate -gt 1024 ]]; do
   tx_mult=$(( $tx_mult + 1 ))
 done
 
-# First argument may change the in label
 case "$rx_mult" in
-  0) printf "${1:-IN}" ' %sb ' "$rx_rate" ;;
-  1) printf "${1:-IN}" ' %sK ' "$rx_rate" ;;
-  2) printf "${1:-IN}" ' %sM ' "$rx_rate" ;;
-  3) printf "${1:-IN}" ' %sG ' "$rx_rate" ;;
-  *) printf 'ERROR ' ;;
+  0) printf '%sb/' "$rx_rate" ;;
+  1) printf '%sK/' "$rx_rate" ;;
+  2) printf '%sM/' "$rx_rate" ;;
+  3) printf '%sG/' "$rx_rate" ;;
+  *) printf 'ERROR/' ;;
 esac
 
-# Second argument may change the out label
 case "$tx_mult" in
-  0) printf "${2:-OUT}" ' %sb\n' "$tx_rate" ;;
-  1) printf "${2:-OUT}" ' %sK\n' "$tx_rate" ;;
-  2) printf "${2:-OUT}" ' %sM\n' "$tx_rate" ;;
-  3) printf "${2:-OUT}" ' %sG\n' "$tx_rate" ;;
+  0) printf '%sb\n' "$tx_rate" ;;
+  1) printf '%sK\n' "$tx_rate" ;;
+  2) printf '%sM\n' "$tx_rate" ;;
+  3) printf '%sG\n' "$tx_rate" ;;
   *) printf 'ERROR\n' ;;
 esac
