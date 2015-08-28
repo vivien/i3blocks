@@ -1,6 +1,5 @@
-#!/bin/bash
+#!/bin/sh
 # Copyright (C) 2014 Julien Bonjean <julien@bonjean.info>
-# Copyright (C) 2014 Alexander Keller <github@nycroth.com>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,44 +17,42 @@
 #------------------------------------------------------------------------
 
 # Use the provided interface, otherwise the device used for the default route.
-if [[ -n $BLOCK_INSTANCE ]]; then
-  IF=$BLOCK_INSTANCE
+if [[ -n "$BLOCK_INSTANCE" ]]; then
+  IF="$BLOCK_INSTANCE"
 else
-  IF=$(ip route | awk '/^default/ { print $5 ; exit }')
+  IF="$(ip route | awk '/^default/ { print $5 }')"
 fi
 
 #------------------------------------------------------------------------
 
 # As per #36 -- It is transparent: e.g. if the machine has no battery or wireless
 # connection (think desktop), the corresponding block should not be displayed.
-[[ ! -d /sys/class/net/${IF} ]] && exit
+[[ ! -d "/sys/class/net/${IF}" ]] && exit
 
-#------------------------------------------------------------------------
 
 if [[ "$(cat /sys/class/net/$IF/operstate)" = 'down' ]]; then
-  echo down # full text
-  echo down # short text
-  echo \#FF0000 # color
+  echo 'down'
   exit
 fi
 
-case $1 in
+case "$1" in
   -4)
-    AF=inet ;;
+    AF='inet' ;;
   -6)
-    AF=inet6 ;;
+    AF='inet6' ;;
   *)
-    AF=inet6? ;;
+    AF='inet6?' ;;
 esac
 
-# if no interface is found, use the first device with a global scope
-IPADDR=$(ip addr show $IF | perl -n -e "/$AF ([^\/]+).* scope global/ && print \$1 and exit")
-
-case $BLOCK_BUTTON in
-  3) echo -n "$IPADDR" | xclip -q -se c ;;
-esac
+# If no interface is found, use the first global scope address
+IPADDR="$(ip addr show $IF |
+            awk "/$AF/ { split(\$2, out, /\//); print(out[1]) }" |
+            head -n 1)"
 
 #------------------------------------------------------------------------
 
-echo "$IPADDR" # full text
-echo "$IPADDR" # short text
+case "$BLOCK_BUTTON" in
+  3) echo -n "$IPADDR" | xclip -q -se c ;;
+esac
+
+echo "$IPADDR"
