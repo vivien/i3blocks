@@ -126,11 +126,8 @@ linecpy(char **lines, char *dest, size_t size)
 	if (newline)
 		*newline = '\0';
 
-	/* if text in non-empty, copy it */
-	if (**lines) {
-		strncpy(dest, *lines, size);
-		*lines += strlen(dest);
-	}
+	strncpy(dest, *lines, size);
+	*lines += strlen(dest);
 
 	/* increment if next char is non-null */
 	if (*(*lines + 1))
