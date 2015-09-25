@@ -21,9 +21,13 @@
 plugged_in="$(cat /sys/class/power_supply/AC/online)"
 
 cap=100
-for battery in /sys/class/power_supply/BAT*; do
-	cap=$((($(cat "$battery/capacity") + $cap) / 2))
-done
+if [[ -n $BLOCK_INSTANCE ]]; then
+  cap=$((($(cat "/sys/class/power_supply/$BLOCK_INSTANCE/capacity") + $cap) / 2))
+else
+  for battery in /sys/class/power_supply/BAT*; do
+    cap=$((($(cat "$battery/capacity") + $cap) / 2))
+  done
+fi
 
 ((plugged_in)) && echo -n '+' || echo -n '-'
 echo "$cap%"
