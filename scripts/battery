@@ -21,7 +21,7 @@
 plugged_in="$(cat /sys/class/power_supply/AC/online)"
 
 cap=100
-if [[ -n $BLOCK_INSTANCE ]]; then
+if [[ -n "$BLOCK_INSTANCE" ]]; then
   cap=$((($(cat "/sys/class/power_supply/$BLOCK_INSTANCE/capacity") + $cap) / 2))
 else
   for battery in /sys/class/power_supply/BAT*; do
@@ -29,5 +29,13 @@ else
   done
 fi
 
+if [[ -e /usr/bin/acpi ]]; then
+  dtime=" ($(acpi | grep -o '[0-9]*:[0-9]*:[0-9]*' | cut -d: -f1,2))"
+elif [[ -e '/sys/class/power_supply/BAT0/time_to_empty' ]] ||
+     [[ -e '/sys/class/power_supply/BAT0/time_to_full' ]]; then
+  dtime=" ($(cat /sys/class/power_supply/BAT0/time_to_empty))"
+  ((plugged_in)) && dtime="$(cat /sys/class/power_supply/BAT0/time_to_full)"
+fi
+
 ((plugged_in)) && echo -n '+' || echo -n '-'
-echo "$cap%"
+echo "$cap%$dtime"
