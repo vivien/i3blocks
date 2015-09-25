@@ -15,15 +15,20 @@
 
 #------------------------------------------------------------------------
 
-INTERFACE="${BLOCK_INSTANCE:-wlan0}"
+# Use the provided interface, otherwise the device used for the default route.
+if [[ -n "$BLOCK_INSTANCE" ]]; then
+  IF="$BLOCK_INSTANCE"
+else
+  IF="$(grep -o '.*:' /proc/net/wireless | tr -d ':')"
+fi
 
 #------------------------------------------------------------------------
 
 # As per #36 -- It is transparent: e.g. if the machine has no battery or wireless
 # connection (think desktop), the corresponding block should not be displayed.
-[[ ! -d /sys/class/net/${INTERFACE}/wireless ]] ||
-    [[ "$(cat /sys/class/net/$INTERFACE/operstate)" = 'down' ]] && exit
+[[ ! -d /sys/class/net/${IF}/wireless ]] ||
+  [[ "$(cat /sys/class/net/$IF/operstate)" = 'down' ]] && exit
 
 #------------------------------------------------------------------------
 
-grep $INTERFACE /proc/net/wireless | awk '{ printf("%d%%\n", $3 * 100 / 70) }'
+grep $IF /proc/net/wireless | awk '{ printf("%d%%\n", $3 * 100 / 70) }'
