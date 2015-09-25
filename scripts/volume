@@ -40,4 +40,4 @@ case "$BLOCK_BUTTON" in
   5) amixer -q -D "$MIXER" sset "$SCONTROL" unmute ;; # scroll down, decrease
 esac
 
-amixer -D "$MIXER" get "$SCONTROL" | grep -oP '\d{1,3}%' | head -n 1
+amixer -D "$MIXER" get "$SCONTROL" | grep -o '[0-9]*%' | head -n 1
