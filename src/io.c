@@ -81,8 +81,11 @@ io_readline(int fd, char *buffer, size_t size)
 	int nr = 0;
 	char c;
 
-	while (nr < size && read_nonblock(fd, &c, 1) > 0 && c != '\n')
+	while (nr < size && read_nonblock(fd, &c, 1) > 0) {
 		buffer[nr++] = c;
+		if (c == '\n')
+			break;
+    }
 
 	return nr;
 }
