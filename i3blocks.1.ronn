@@ -157,6 +157,9 @@ eventually an empty string as the value.
   * `BLOCK_INSTANCE`:
     An optional argument to the script.
 
+  * `BLOCK_INTERVAL`:
+    The interval that the block is set to update with (see `interval` above).
+
   * `BLOCK_BUTTON`:
     Mouse button (1, 2 or 3) if the block was clicked.
 
