@@ -46,6 +46,7 @@ child_setup_env(struct block *block, struct click *click)
 {
 	child_setenv(block, "BLOCK_NAME", NAME(block));
 	child_setenv(block, "BLOCK_INSTANCE", INSTANCE(block));
+	child_setenv(block, "BLOCK_INTERVAL", INTERVAL(block));
 	child_setenv(block, "BLOCK_BUTTON", click ? click->button : "");
 	child_setenv(block, "BLOCK_X", click ? click->x : "");
 	child_setenv(block, "BLOCK_Y", click ? click->y : "");
