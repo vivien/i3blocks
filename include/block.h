@@ -43,7 +43,7 @@
 #define PROPERTIES(_) \
 	_(full_text,             1024, PROP_I3BAR | PROP_STRING) \
 	_(short_text,            512,  PROP_I3BAR | PROP_STRING) \
-	_(color,                 8,    PROP_I3BAR | PROP_STRING) \
+	_(color,                 10,   PROP_I3BAR | PROP_STRING) \
 	_(min_width,             1024, PROP_I3BAR | PROP_STRING | PROP_NUMBER) \
 	_(align,                 8,    PROP_I3BAR | PROP_STRING) \
 	_(name,                  32,   PROP_I3BAR | PROP_STRING) \
