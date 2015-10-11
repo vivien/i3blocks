@@ -126,11 +126,8 @@ linecpy(char **lines, char *dest, size_t size)
 	if (newline)
 		*newline = '\0';
 
-	/* if text in non-empty, copy it */
-	if (**lines) {
-		strncpy(dest, *lines, size);
-		*lines += strlen(dest);
-	}
+	strncpy(dest, *lines, size);
+	*lines += strlen(dest);
 
 	/* increment if next char is non-null */
 	if (*(*lines + 1))
@@ -146,6 +143,8 @@ mark_as_failed(struct block *block, const char *reason)
 	struct properties *props = &block->updated_props;
 
 	memset(props, 0, sizeof(struct properties));
+	strcpy(props->name, NAME(block));
+	strcpy(props->instance, INSTANCE(block));
 	snprintf(props->full_text, sizeof(props->full_text), "[%s] %s", NAME(block), reason);
 	snprintf(props->short_text, sizeof(props->short_text), "[%s] ERROR", NAME(block));
 	strcpy(props->color, "#FF0000");

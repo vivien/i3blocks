@@ -99,19 +99,24 @@ parse_property(const char *line, struct properties *props, bool strict)
 	return 1;
 }
 
-static int
-parse_bar(FILE *fp, struct bar *bar)
+static struct bar *
+parse_bar(FILE *fp)
 {
 	char line[2048];
 	struct block *block = NULL;
 	struct block global = {};
+	struct bar *bar;
+
+	bar = calloc(1, sizeof(struct bar));
+	if (!bar)
+		return NULL;
 
 	while (fgets(line, sizeof(line), fp) != NULL) {
 		int len = strlen(line);
 
 		if (line[len - 1] != '\n') {
 			error("line \"%s\" is not terminated by a newline", line);
-			return 1;
+			goto free;
 		}
 		line[len - 1] = '\0';
 
@@ -129,13 +134,13 @@ parse_bar(FILE *fp, struct bar *bar)
 
 			block = add_block(bar);
 			if (!block)
-				return 1;
+				goto free;
 
 			/* Init the block with default settings (if any) */
 			memcpy(block, &global, sizeof(struct block));
 
 			if (parse_section(line, block->default_props.name, sizeof(block->default_props.name)))
-				return 1;
+				goto free;
 
 			bdebug(block, "new block");
 			break;
@@ -148,14 +153,14 @@ parse_bar(FILE *fp, struct bar *bar)
 			}
 
 			if (parse_property(line, &block->default_props, false))
-				return 1;
+				goto free;
 
 			break;
 
 		/* Syntax error */
 		default:
 			error("malformated line: %s", line);
-			return 1;
+			goto free;
 		}
 	}
 
@@ -163,7 +168,39 @@ parse_bar(FILE *fp, struct bar *bar)
 	if (block)
 		block_setup(block);
 
-	return 0;
+	return bar;
+
+free:
+	free(bar->blocks);
+	free(bar);
+	return NULL;
+}
+
+static struct bar *
+try_parse(const char *path, bool *found)
+{
+	struct bar *bar = NULL;
+	bool noent = false;
+	FILE *fp = fopen(path, "r");
+
+	debug("try file %s", path);
+
+	if (!fp) {
+		if (errno == ENOENT && found)
+			noent = true;
+		else
+			errorx("fopen");
+	} else {
+		bar = parse_bar(fp);
+
+		if (fclose(fp))
+			errorx("fclose");
+	}
+
+	if (found)
+		*found = !noent;
+
+	return bar;
 }
 
 struct bar *
@@ -173,33 +210,12 @@ ini_load(const char *inifile)
 	const char * const xdg_home = getenv("XDG_CONFIG_HOME");
 	const char * const xdg_dirs = getenv("XDG_CONFIG_DIRS");
 	char buf[PATH_MAX];
-	FILE *fp;
 	struct bar *bar;
-
-	struct bar *parse(void) {
-		bar = calloc(1, sizeof(struct bar));
-		if (bar && parse_bar(fp, bar)) {
-			free(bar->blocks);
-			free(bar);
-			bar = NULL;
-		}
-
-		if (fclose(fp))
-			errorx("fclose");
-
-		return bar;
-	}
+	bool found;
 
 	/* command line config file? */
-	if (inifile) {
-		debug("try custom config %s", inifile);
-		fp = fopen(inifile, "r");
-		if (!fp) {
-			errorx("fopen");
-			return NULL;
-		}
-		return parse();
-	}
+	if (inifile)
+		return try_parse(inifile, NULL);
 
 	/* user config file? */
 	if (home) {
@@ -207,24 +223,14 @@ ini_load(const char *inifile)
 			snprintf(buf, PATH_MAX, "%s/i3blocks/config", xdg_home);
 		else
 			snprintf(buf, PATH_MAX, "%s/.config/i3blocks/config", home);
-		debug("try XDG home config %s", buf);
-		fp = fopen(buf, "r");
-		if (fp)
-			return parse();
+		bar = try_parse(buf, &found);
+		if (found)
+			return bar;
 
 		snprintf(buf, PATH_MAX, "%s/.i3blocks.conf", home);
-		debug("try default $HOME config %s", buf);
-		fp = fopen(buf, "r");
-		if (fp)
-			return parse();
-
-		/* if user files don't exist, fall through... */
-		if (errno != ENOENT) {
-			errorx("fopen");
-			return NULL;
-		}
-
-		debug("no config found in $HOME");
+		bar = try_parse(buf, &found);
+		if (found)
+			return bar;
 	}
 
 	/* system config file? */
@@ -232,18 +238,10 @@ ini_load(const char *inifile)
 		snprintf(buf, PATH_MAX, "%s/i3blocks/config", xdg_dirs);
 	else
 		snprintf(buf, PATH_MAX, "%s/xdg/i3blocks/config", SYSCONFDIR);
-	debug("try XDG dirs config %s", buf);
-	fp = fopen(buf, "r");
-	if (fp)
-		return parse();
+	bar = try_parse(buf, &found);
+	if (found)
+		return bar;
 
 	snprintf(buf, PATH_MAX, "%s/i3blocks.conf", SYSCONFDIR);
-	debug("try default system config %s", buf);
-	fp = fopen(buf, "r");
-	if (!fp) {
-		errorx("fopen");
-		return NULL;
-	}
-
-	return parse();
+	return try_parse(buf, NULL);
 }

@@ -44,7 +44,7 @@
 #define PROPERTIES(_) \
 	_(full_text,             1024, PROP_I3BAR | PROP_STRING) \
 	_(short_text,            512,  PROP_I3BAR | PROP_STRING) \
-	_(color,                 8,    PROP_I3BAR | PROP_STRING) \
+	_(color,                 10,   PROP_I3BAR | PROP_STRING) \
 	_(min_width,             1024, PROP_I3BAR | PROP_STRING | PROP_NUMBER) \
 	_(align,                 8,    PROP_I3BAR | PROP_STRING) \
 	_(name,                  32,   PROP_I3BAR | PROP_STRING) \
@@ -52,13 +52,14 @@
 	_(urgent,                8,    PROP_I3BAR | PROP_BOOLEAN) \
 	_(separator,             8,    PROP_I3BAR | PROP_BOOLEAN) \
 	_(separator_block_width, 8,    PROP_I3BAR | PROP_NUMBER) \
+	_(markup,                8,    PROP_I3BAR | PROP_STRING) \
 	_(command,               1024,              PROP_STRING) \
 	_(interval,              8,                 PROP_STRING | PROP_NUMBER) \
 	_(signal,                8,                 PROP_NUMBER) \
 	_(label,                 32,                PROP_STRING) \
 	_(format,                8,                 PROP_STRING | PROP_NUMBER) \
-	_(background,            8,     PROP_GAPS | PROP_STRING) \
-	_(border,                8,     PROP_GAPS | PROP_STRING) \
+	_(background,            10,    PROP_GAPS | PROP_STRING) \
+	_(border,                10,    PROP_GAPS | PROP_STRING) \
 	_(border_top,            8,     PROP_GAPS | PROP_NUMBER) \
 	_(border_bottom,         8,     PROP_GAPS | PROP_NUMBER) \
 	_(border_left,           8,     PROP_GAPS | PROP_NUMBER) \
