@@ -158,6 +158,9 @@ block_update_plain_text(struct block *block, char *buf)
 	char *lines = buf;
 
 	linecpy(&lines, props->full_text, sizeof(props->full_text) - 1);
+        if (block->interval == INTER_PERSIST)
+                return;
+
 	linecpy(&lines, props->short_text, sizeof(props->short_text) - 1);
 	linecpy(&lines, props->color, sizeof(props->color) - 1);
 }
