@@ -50,7 +50,8 @@ END {
 	# full text
 	printf("%.1fG/%.1fG (%.f%)\n", used, total, pct)
 
-	# TODO: short text
+	# short text
+	printf("%.f%\n", pct)
 
 	# TODO: color (if less than X%)
 }
