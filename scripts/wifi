@@ -36,7 +36,7 @@ echo $QUALITY% # short text
 
 # color
 if [[ $QUALITY -ge 80 ]]; then
-    echo "#00FF00"
+    echo "$BLOCK_COLOR_GOOD"
 elif [[ $QUALITY -lt 80 ]]; then
     echo "#FFF600"
 elif [[ $QUALITY -lt 60 ]]; then

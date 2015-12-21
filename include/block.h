@@ -57,6 +57,10 @@
 	_(signal,                8,                 PROP_NUMBER) \
 	_(label,                 32,                PROP_STRING) \
 	_(format,                8,                 PROP_STRING | PROP_NUMBER) \
+	_(color_good,            8,                 PROP_STRING) \
+	_(color_fair,            8,                 PROP_STRING) \
+	_(color_degraded,        8,                 PROP_STRING) \
+	_(color_bad,             8,                 PROP_STRING) \
 
 struct properties {
 #define DEFINE(_name, _size, _flags) char _name[_size];

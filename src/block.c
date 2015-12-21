@@ -50,6 +50,10 @@ child_setup_env(struct block *block, struct click *click)
 	child_setenv(block, "BLOCK_BUTTON", click ? click->button : "");
 	child_setenv(block, "BLOCK_X", click ? click->x : "");
 	child_setenv(block, "BLOCK_Y", click ? click->y : "");
+	child_setenv(block, "BLOCK_COLOR_GOOD", block->default_props.color_good);
+	child_setenv(block, "BLOCK_COLOR_FAIR", block->default_props.color_fair);
+	child_setenv(block, "BLOCK_COLOR_DEGRADED", block->default_props.color_degraded);
+	child_setenv(block, "BLOCK_COLOR_BAD", block->default_props.color_bad);
 }
 
 static void
