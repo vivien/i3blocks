@@ -36,11 +36,11 @@ echo $QUALITY% # short text
 
 # color
 if [[ $QUALITY -ge 80 ]]; then
-    echo "#00FF00"
-elif [[ $QUALITY -lt 80 ]]; then
-    echo "#FFF600"
-elif [[ $QUALITY -lt 60 ]]; then
-    echo "#FFAE00"
-elif [[ $QUALITY -lt 40 ]]; then
-    echo "#FF0000"
+  echo "#00FF00"
+elif [[ $QUALITY -ge 60 ]]; then
+  echo "#FFF600"
+elif [[ $QUALITY -ge 40 ]]; then
+  echo "#FFAE00"
+else
+  echo "#FF0000"
 fi
