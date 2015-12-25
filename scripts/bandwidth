@@ -88,20 +88,20 @@ tx_rate=$(( $tx_diff / $time_diff ))
 
 # incoming
 echo -n "$INLABEL"
-rx_kib=$(( $rx_rate >> 10 ))
-if [[ "$rx_rate" -gt 1048576 ]]; then
-  printf '%sM' "`echo "scale=1; $rx_kib / 1024" | bc`"
+rx_bps=$(( $rx_rate * 8 ))
+if [[ "$rx_bps" -gt 1024000 ]]; then
+  printf '%sM' "`echo "scale=1; $rx_bps / 1024000" | bc`"
 else
-  echo -n "${rx_kib}K"
+  printf '%sK' "`echo "scale=1; $rx_bps / 1024" | bc`"
 fi
 
 echo -n " "
 
 # outgoing
 echo -n "$OUTLABEL"
-tx_kib=$(( $tx_rate >> 10 ))
-if [[ "$tx_rate" -gt 1048576 ]]; then
-  printf '%sM' "`echo "scale=1; $tx_kib / 1024" | bc`"
+tx_bps=$(( $tx_rate * 8 ))
+if [[ "$tx_bps" -gt 1024000 ]]; then
+  printf '%sM' "`echo "scale=1; $tx_bps / 1024000" | bc`"
 else
-  echo -n "${tx_kib}K"
+  printf '%sK' "`echo "scale=1; $tx_bps / 1024" | bc`"
 fi
