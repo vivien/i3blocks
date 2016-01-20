@@ -1,0 +1,4 @@
+#!/bin/bash
+setxkbmap -query | awk '/layout/{print $2}' | tr -d '\n'
+echo -n " "
+setxkbmap -query | awk '/variant/{print $2}'
