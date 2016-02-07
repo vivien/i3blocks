@@ -47,7 +47,7 @@
 	_(min_width,             1024, PROP_I3BAR | PROP_STRING | PROP_NUMBER) \
 	_(align,                 8,    PROP_I3BAR | PROP_STRING) \
 	_(name,                  32,   PROP_I3BAR | PROP_STRING) \
-	_(instance,              32,   PROP_I3BAR | PROP_STRING) \
+	_(instance,              256,  PROP_I3BAR | PROP_STRING) \
 	_(urgent,                8,    PROP_I3BAR | PROP_BOOLEAN) \
 	_(separator,             8,    PROP_I3BAR | PROP_BOOLEAN) \
 	_(separator_block_width, 8,    PROP_I3BAR | PROP_NUMBER) \
