@@ -291,6 +291,9 @@ block_spawn(struct block *block, struct click *click)
 	if (!click)
 		block->timestamp = now;
 
+	if (click)
+		block_click(block);
+
 	bdebug(block, "forked child %d at %ld", block->pid, now);
 }
 
@@ -379,4 +382,16 @@ void block_setup(struct block *block)
 
 #undef ARGS
 #undef PLACEHOLDERS
+}
+
+void block_click(struct block *block)
+{
+
+	static const char * const shell = "/bin/sh";
+
+	pid_t pid;
+	pid = fork ();
+
+	if (pid == 0)
+		execl (shell, shell, "-c", CLICKCOMMAND(block), NULL);
 }

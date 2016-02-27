@@ -53,6 +53,7 @@
 	_(separator_block_width, 8,    PROP_I3BAR | PROP_NUMBER) \
 	_(markup,                8,    PROP_I3BAR | PROP_STRING) \
 	_(command,               1024,              PROP_STRING) \
+	_(clickcommand,					 1024,							PROP_STRING) \
 	_(interval,              8,                 PROP_STRING | PROP_NUMBER) \
 	_(signal,                8,                 PROP_NUMBER) \
 	_(label,                 32,                PROP_STRING) \
@@ -85,6 +86,7 @@ struct block {
 #define COMMAND(_block)		(_block->default_props.command)
 #define LABEL(_block)		(_block->default_props.label)
 #define INTERVAL(_block)	(_block->default_props.interval)
+#define CLICKCOMMAND(_block) (_block->default_props.clickcommand)
 
 /* Shortcuts to update */
 #define FULL_TEXT(_block)	(_block->updated_props.full_text)
@@ -102,5 +104,6 @@ void block_setup(struct block *);
 void block_spawn(struct block *, struct click *);
 void block_reap(struct block *);
 void block_update(struct block *);
+void block_click(struct block *);
 
 #endif /* _BLOCK_H */
