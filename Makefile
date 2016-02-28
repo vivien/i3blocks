@@ -54,22 +54,26 @@ $(PROGRAM).1: $(PROGRAM).1.ronn
 clean:
 	rm -f src/*.o $(PROGRAM)
 
-install: all man
+install: all
 	install -m 755 -d $(DESTDIR)$(PREFIX)/bin
 	install -m 755 -d $(DESTDIR)$(SYSCONFDIR)
-	install -m 755 -d $(DESTDIR)$(DATAROOTDIR)/man/man1
 	install -m 755 -d $(DESTDIR)$(LIBEXECDIR)/$(PROGRAM)
 	install -m 755 $(PROGRAM) $(DESTDIR)$(PREFIX)/bin/$(PROGRAM)
 	sed 's,$$SCRIPT_DIR,$(LIBEXECDIR)/$(PROGRAM),' $(PROGRAM).conf > $(DESTDIR)$(SYSCONFDIR)/$(PROGRAM).conf
 	chmod 644 $(DESTDIR)$(SYSCONFDIR)/$(PROGRAM).conf
-	install -m 644 $(PROGRAM).1 $(DESTDIR)$(DATAROOTDIR)/man/man1
 	install -m 755 scripts/* $(DESTDIR)$(LIBEXECDIR)/$(PROGRAM)/
+
+install-man: man
+	install -m 755 -d $(DESTDIR)$(DATAROOTDIR)/man/man1
+	install -m 644 $(PROGRAM).1 $(DESTDIR)$(DATAROOTDIR)/man/man1
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/$(PROGRAM)
 	rm -f $(DESTDIR)$(SYSCONFDIR)/$(PROGRAM).conf
-	rm -f $(DESTDIR)$(DATAROOTDIR)/man/man1/$(PROGRAM).1
 	rm -rf $(DESTDIR)$(LIBEXECDIR)/$(PROGRAM)
+
+uninstall-man:
+	rm -f $(DESTDIR)$(DATAROOTDIR)/man/man1/$(PROGRAM).1
 
 dist: clean man
 	( git ls-files * ; ls $(PROGRAM).1 ) | \
@@ -79,4 +83,4 @@ dist: clean man
 distclean: clean
 	rm -f $(PROGRAM).1 $(PROGRAM)-*.tar.gz
 
-.PHONY: all clean install uninstall
+.PHONY: all clean install uninstall install-man uninstall-man
