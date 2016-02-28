@@ -345,6 +345,9 @@ close:
 		berrorx(block, "close stdout");
 	if (close(block->err) == -1)
 		berrorx(block, "close stderr");
+
+	/* Invalidate descriptors to avoid misdetection after reassignment */
+	block->out = block->err = -1;
 }
 
 void block_setup(struct block *block)
