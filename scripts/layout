@@ -1,0 +1,23 @@
+#!/bin/bash
+#
+# Copyright 2016 Anton Karmanov <starcom24@gmail.com>
+#
+# Licensed under the terms of the GNU GPL v3, or any later version.
+#
+# This script is meant to use with i3blocks. It parses dbus messages to read a
+# current keyboard layout name when it changed.
+# This script needs kbdd installed to work.
+#
+# Interval for this blocklet script should be persist (or -2), so it could not
+# use short text or color strings.
+
+# Get initial state of layout
+N=$( dbus-send --print-reply=literal --dest=ru.gentoo.KbddService \
+	/ru/gentoo/KbddService ru.gentoo.kbdd.getCurrentLayout |\
+	sed -un 's/^.*uint32 //p' )
+echo $( dbus-send --print-reply=literal --dest=ru.gentoo.KbddService \
+	/ru/gentoo/KbddService ru.gentoo.kbdd.getLayoutName uint32:$N )
+
+# Parse dbus output
+dbus-monitor "interface='ru.gentoo.kbdd',member='layoutNameChanged'" |\
+	sed -un '0~2p' | sed -un 's:.*string "\(.*\)".*:\1:p'  | sed -u '/:/d'
