@@ -87,8 +87,8 @@ Or you may install i3blocks from source:
     $ make clean debug # or make clean all
     # make install
 
-Note: the generation of the manpage requires the `ronn` utility, packaged in
-common distributions as `ruby-ronn`.
+Note: the generation of the manpage requires the `pandoc` utility, packaged in
+common distributions as `pandoc`.
 
 ### Usage
 
