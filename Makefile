@@ -48,8 +48,8 @@ $(PROGRAM): ${OBJS}
 
 man: $(PROGRAM).1
 
-$(PROGRAM).1: $(PROGRAM).1.ronn
-	ronn -w -r $<
+$(PROGRAM).1: $(PROGRAM).1.md
+	pandoc --to man --standalone --output $@ $<
 
 clean:
 	rm -f src/*.o $(PROGRAM)
