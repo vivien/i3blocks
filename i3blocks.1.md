@@ -80,6 +80,8 @@ for details.
 
  - `color`
 
+ - `background`
+
  - `min_width`
 
  - `align`
