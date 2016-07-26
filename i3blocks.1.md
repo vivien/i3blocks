@@ -82,6 +82,8 @@ for details.
 
  - `background`
 
+ - `border`
+
  - `min_width`
 
  - `align`
