@@ -21,8 +21,8 @@ my $status;
 my $percent;
 my $full_text;
 my $short_text;
+my $output_color;
 my $bat_number = $ENV{BLOCK_INSTANCE} || 0;
-
 # read the first line of the "acpi" command output
 open (ACPI, "acpi -b | grep 'Battery $bat_number' |") or die;
 $acpi = <ACPI>;
@@ -55,20 +55,22 @@ print "$short_text\n";
 
 # consider color and urgent flag only on discharge
 if ($status eq 'Discharging') {
-
 	if ($percent < 20) {
-		print "#FF0000\n";
+    $output_color = $ENV{BLOCK_COLOR_BAD} || "#FF0000";
 	} elsif ($percent < 40) {
-		print "#FFAE00\n";
+    $output_color = $ENV{BLOCK_COLOR_DEGRADED} || "#FFAE00";
 	} elsif ($percent < 60) {
-		print "#FFF600\n";
+    $output_color = $ENV{BLOCK_COLOR_FAIR} || "#FFF600";
 	} elsif ($percent < 85) {
-		print "#A8FF00\n";
+    $output_color = $ENV{BLOCK_COLOR_GOOD} || "#A8FF00";
 	}
+
+	if (defined $output_color) {
+    print "$output_color\n";
+  }
 
 	if ($percent < 5) {
 		exit(33);
 	}
 }
-
 exit(0);
