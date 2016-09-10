@@ -19,6 +19,7 @@ use utf8;
 my $acpi;
 my $status;
 my $percent;
+my $ac_adapt;
 my $full_text;
 my $short_text;
 my $bat_number = $ENV{BLOCK_INSTANCE} || 0;
@@ -41,6 +42,20 @@ if ($status eq 'Discharging') {
 	$full_text .= ' DIS';
 } elsif ($status eq 'Charging') {
 	$full_text .= ' CHR';
+} elsif ($status eq 'Unknown') {
+	open (AC_ADAPTER, "acpi -a |") or die;
+	$ac_adapt = <AC_ADAPTER>;
+	close(AC_ADAPTER);
+
+	if ($ac_adapt =~ /: ([\w-]+)/) {
+		$ac_adapt = $1;
+
+		if ($ac_adapt eq 'on-line') {
+			$full_text .= ' CHR';
+		} elsif ($ac_adapt eq 'off-line') {
+			$full_text .= ' DIS';
+		}
+	}
 }
 
 $short_text = $full_text;
