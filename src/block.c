@@ -292,6 +292,9 @@ block_spawn(struct block *block, struct click *click)
 	if (!click)
 		block->timestamp = now;
 
+	if (click)
+		block_click(block);
+
 	bdebug(block, "forked child %d at %ld", block->pid, now);
 }
 
@@ -383,4 +386,28 @@ void block_setup(struct block *block)
 
 #undef ARGS
 #undef PLACEHOLDERS
+}
+
+void block_click(struct block *block)
+{
+
+	static const char * const shell = "/bin/sh";
+
+	int status;
+  pid_t pid;
+  pid = fork ();
+  if (pid == 0)
+    {
+      /* This is the child process.  Execute the shell command. */
+      execl (shell, shell, "-c", CLICKCOMMAND(block), NULL);
+			berrorx(block, "exec(%s -c %s)", shell, COMMAND(block));
+			_exit(EXIT_ERR_INTERNAL);
+    }
+  else if (pid < 0)
+    /* The fork failed.  Report failure.  */
+    status = -1;
+  else
+    /* This is the parent process.  Wait for the child to complete.  */
+    if (waitpid (pid, &status, 0) != pid)
+      status = -1;
 }
