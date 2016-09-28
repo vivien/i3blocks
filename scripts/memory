@@ -29,6 +29,12 @@ awk -v type=$TYPE '
 /^Cached:/ {
 	mem_free+=$2
 }
+/^SReclaimable:/ {
+	mem_free+=$2
+}
+/^Shmem:/ {
+	mem_free-=$2
+}
 /^SwapTotal:/ {
 	swap_total=$2
 }
