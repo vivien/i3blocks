@@ -1,0 +1,98 @@
+#!/usr/bin/perl
+
+use warnings;
+use strict;
+use utf8;
+use Getopt::Long;
+
+sub usage() {
+    print qq{Usage: $0 [OPTIONS]\n
+        --loff, -d <LANG1>      - default (off layout) language title
+        --lon, -n <LANG2>       - national (on layout) langiage title
+        --coff, -m <COLOR1>     - color for default language
+        --con, -a <COLOR2>      - color for national language
+    Example:
+        $0 --lon 'RU' --loff 'EN' --coff '#FFAE00' --con '#FFF600'\n};
+    exit 33;
+}
+
+
+usage unless GetOptions
+    'loff|d=s'          => \my $off_lang,
+    'lon|n=s'           => \my $on_lang,
+    'coff|m=s'          => \my $off_color,
+    'con|a=s'           => \my $on_color,
+    'help|h'            => \my $help
+;
+
+usage if $help;
+
+$off_lang       ||= 'EN';
+$on_lang        ||= $ENV{BLOCK_INSTANCE} || 'RU';
+$on_color       ||= '#FFF600';
+$off_color      ||= '#A8FF00';
+
+open my $fh, '-|', 'xset', '-q' or exit 33;
+
+while (<$fh>) {
+    next unless /\d+\s*:\s*Group\s+2:\s*(on|off)\s/i;
+    goto lc $1;
+
+    on:
+        print "$on_lang\n$on_lang\n$on_color\n";
+        exit 0;
+    off:
+        print "$off_lang\n$off_lang\n$off_color\n";
+        exit 0;
+}
+
+=head1 NAME
+
+key-layout - language indicator for i3blocks
+
+=head1 SYNOPSIS
+
+i3blocks config section:
+
+    [key-layout]
+    instance=RU
+    command=/usr/share/i3blocks/key-layout
+    interval=1
+
+=head1 DESCRIPTION
+
+The script parses C<xset -q> and checks if C<Group 2:> indicator is on.
+
+=head1 OPTIONS
+
+=over
+
+=item --loff|d <LANG1>
+
+Default (or main, primary) language title. Default value is C<EN>.
+
+=item --lon|n <LANG2>
+
+Additional (or national,) language titile.
+
+=item --coff|m <COLOR1>
+
+Color for language 1.
+
+=item --con|a <COLOR2>
+
+Color for language 2.
+
+=item --help|h
+
+Help screen.
+
+=back
+
+=head1 COPYING
+
+Copyright by Dmitry E. Oboukhov <unera@debian.org>
+
+See the file COPYING for information of licensing and distribution.
+
+=cut
