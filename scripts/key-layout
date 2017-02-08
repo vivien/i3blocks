@@ -5,6 +5,9 @@ use strict;
 use utf8;
 use Getopt::Long;
 
+
+use constant GROUP_LED_MASK     => (1 << 12);
+
 sub usage() {
     print qq{Usage: $0 [OPTIONS]\n
         --loff, -d <LANG1>      - default (off layout) language title
@@ -35,15 +38,14 @@ $off_color      ||= '#A8FF00';
 open my $fh, '-|', 'xset', '-q' or exit 33;
 
 while (<$fh>) {
-    next unless /\d+\s*:\s*Group\s+2:\s*(on|off)\s/i;
-    goto lc $1;
+    next unless /.*LED\s+mask:\s*([0-9a-fA-F]+)/i;
+    my $mask = hex $1;
 
-    on:
+    if ($mask & GROUP_LED_MASK) {
         print "$on_lang\n$on_lang\n$on_color\n";
-        exit 0;
-    off:
+    } else {
         print "$off_lang\n$off_lang\n$off_color\n";
-        exit 0;
+    }
 }
 
 =head1 NAME
