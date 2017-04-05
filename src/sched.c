@@ -31,7 +31,7 @@
 #include "json.h"
 #include "log.h"
 
-static sigset_t sigset;
+static sigset_t sigset_;
 
 static int
 gcd(int a, int b)
@@ -88,13 +88,13 @@ setup_timer(struct bar *bar)
 static int
 setup_signals(void)
 {
-	if (sigemptyset(&sigset) == -1) {
+	if (sigemptyset(&sigset_) == -1) {
 		errorx("sigemptyset");
 		return 1;
 	}
 
 #define ADD_SIG(_sig) \
-	if (sigaddset(&sigset, _sig) == -1) { errorx("sigaddset(%d)", _sig); return 1; }
+	if (sigaddset(&sigset_, _sig) == -1) { errorx("sigaddset(%d)", _sig); return 1; }
 
 	/* Control signals */
 	ADD_SIG(SIGTERM);
@@ -125,7 +125,7 @@ setup_signals(void)
 #undef ADD_SIG
 
 	/* Block signals for which we are interested in waiting */
-	if (sigprocmask(SIG_SETMASK, &sigset, NULL) == -1) {
+	if (sigprocmask(SIG_SETMASK, &sigset_, NULL) == -1) {
 		errorx("sigprocmask");
 		return 1;
 	}
@@ -141,11 +141,6 @@ sched_init(struct bar *bar)
 
 	if (setup_timer(bar))
 		return 1;
-
-	/* Setup event I/O for stdin (clicks) */
-	if (!isatty(STDIN_FILENO))
-		if (io_signal(STDIN_FILENO, SIGIO))
-			return 1;
 
 	return 0;
 }
@@ -164,7 +159,7 @@ sched_start(struct bar *bar)
 	bar_poll_timed(bar);
 
 	while (1) {
-		sig = sigwaitinfo(&sigset, &siginfo);
+		sig = sigwaitinfo(&sigset_, &siginfo);
 		if (sig == -1) {
 			/* Hiding the bar may interrupt this system call */
 			if (errno == EINTR)
@@ -192,11 +187,6 @@ sched_start(struct bar *bar)
 		} else if (sig == SIGIO) {
 			bar_poll_clicked(bar);
 
-		/* Persistent block ready to be read? */
-		} else if (sig == SIGRTMIN) {
-			bar_poll_readable(bar, siginfo.si_fd);
-			json_print_bar(bar);
-
 		/* Blocks signaled? */
 		} else if (sig > SIGRTMIN && sig <= SIGRTMAX) {
 			bar_poll_signaled(bar, sig - SIGRTMIN);
@@ -212,7 +202,7 @@ sched_start(struct bar *bar)
 	 * Unblock signals (so subsequent syscall can be interrupted)
 	 * and wait for child processes termination.
 	 */
-	if (sigprocmask(SIG_UNBLOCK, &sigset, NULL) == -1)
+	if (sigprocmask(SIG_UNBLOCK, &sigset_, NULL) == -1)
 		errorx("sigprocmask");
 	while (waitpid(-1, NULL, 0) > 0)
 		continue;

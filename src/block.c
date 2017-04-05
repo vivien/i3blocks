@@ -252,11 +252,6 @@ block_spawn(struct block *block, struct click *click)
 		return mark_as_failed(block, strerror(errno));
 	}
 
-	if (block->interval == INTER_PERSIST) {
-		if (io_signal(out[0], SIGRTMIN))
-			return mark_as_failed(block, "event I/O impossible");
-	}
-
 	block->pid = fork();
 	if (block->pid == -1) {
 		berrorx(block, "fork");
