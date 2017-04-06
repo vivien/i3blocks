@@ -31,7 +31,21 @@ QUALITY=$(grep $INTERFACE /proc/net/wireless | awk '{ print int($3 * 100 / 70) }
 
 #------------------------------------------------------------------------
 
-echo $QUALITY% # full text
+case $1 in
+  -4)
+    AF=inet ;;
+  -6)
+    AF=inet6 ;;
+  *)
+    AF=inet6? ;;
+esac
+
+# if no interface is found, use the first device with a global scope
+IPADDR=$(ip addr show $IF | perl -n -e "/$AF ([^\/]+).* scope global/ && print \$1 and exit")
+
+#------------------------------------------------------------------------
+
+echo "$QUALITY% - $IPADDR" # full text
 echo $QUALITY% # short text
 
 # color
