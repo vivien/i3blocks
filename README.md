@@ -57,6 +57,7 @@ The user contributed scripts may also use external tools:
 
   * `playerctl` (available [here](https://github.com/acrisci/playerctl)) used by `mediaplayer`.
   * `sensors` (often provided by the *lm-sensors* package) used by `temperature`.
+  * `kbdd` (see [here](https://github.com/qnikst/kbdd)) used by `layout`.
 
 ## Documentation
 
