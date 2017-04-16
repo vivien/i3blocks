@@ -82,6 +82,7 @@ if ($status eq 'Discharging') {
 	}
 
 	if ($percent < 5) {
+		system("notify-send 'Battery is critically low'");
 		exit(33);
 	}
 }
