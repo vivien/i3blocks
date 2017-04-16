@@ -19,7 +19,7 @@ customization such as text alignment, urgency, color, and more.
 - - -
 
 Here is an example of status line, showing the time updated every 5 seconds, 
-the volume updated only when i3blocks receives a SIGRTMIN+1, and click events.
+the volume updated only when i3blocks receives a SIGRTMIN+10, and click events.
 
 ```` ini
 [volume]
