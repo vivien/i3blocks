@@ -23,7 +23,7 @@
 # For ALSA users, you may use "default" for your primary card
 # or you may use hw:# where # is the number of the card desired
 MIXER="default"
-[ -n "$(lsmod | grep pulse)" ] && MIXER="pulse"
+command -v pulseaudio >/dev/null 2>&1 && pulseaudio --check && MIXER="pulse"
 [ -n "$(lsmod | grep jack)" ] && MIXER="jackplug"
 MIXER="${2:-$MIXER}"
 
