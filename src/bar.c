@@ -74,10 +74,11 @@ bar_poll_outdated(struct bar *bar)
 		struct block *block = bar->blocks + i;
 
 		if (block->interval > 0) {
-			const unsigned long now = time(NULL);
-			const unsigned long next_update = block->timestamp + block->interval;
+			struct timespec now;
+			clock_gettime(CLOCK_MONOTONIC, &now);
+			const unsigned long next_update = block->timestamp.tv_sec + block->interval;
 
-			if (((long) (next_update - now)) <= 0) {
+			if (((long) (next_update - now.tv_sec)) <= 0) {
 				bdebug(block, "outdated");
 				block_spawn(block, NULL);
 			}
@@ -121,7 +122,9 @@ bar_poll_exited(struct bar *bar)
 				bdebug(block, "exited");
 				block_reap(block);
 				if (block->interval == INTER_REPEAT) {
-					if (block->timestamp == time(NULL))
+					struct timespec now;
+					clock_gettime(CLOCK_MONOTONIC, &now);
+					if (block->timestamp.tv_sec == now.tv_sec)
 						berror(block, "loop too fast");
 					block_spawn(block, NULL);
 				} else if (block->interval == INTER_PERSIST) {

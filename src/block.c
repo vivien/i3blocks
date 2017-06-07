@@ -234,7 +234,8 @@ block_update(struct block *block)
 void
 block_spawn(struct block *block, struct click *click)
 {
-	const unsigned long now = time(NULL);
+	struct timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
 	int out[2], err[2];
 
 	if (!*COMMAND(block)) {
@@ -292,7 +293,7 @@ block_spawn(struct block *block, struct click *click)
 	if (!click)
 		block->timestamp = now;
 
-	bdebug(block, "forked child %d at %ld", block->pid, now);
+	bdebug(block, "forked child %d at %ld", block->pid, now.tv_sec);
 }
 
 void
