@@ -63,7 +63,7 @@ time=$(date +%s)
 # problems if this file is sourced instead of executed as another process.
 if ! [[ -f "${path}" ]]; then
   echo "${time} ${rx} ${tx}" > "${path}"
-  chmod 0666 "${path}"
+  chmod 0600 "${path}"
 fi
 
 # read previous state and update data storage
