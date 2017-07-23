@@ -87,6 +87,7 @@ struct block {
 #define COMMAND(_block)		(_block->default_props.command)
 #define LABEL(_block)		(_block->default_props.label)
 #define INTERVAL(_block)	(_block->default_props.interval)
+#define COLOR(_block)		(_block->default_props.color)
 
 /* Shortcuts to update */
 #define FULL_TEXT(_block)	(_block->updated_props.full_text)

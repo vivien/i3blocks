@@ -174,6 +174,9 @@ eventually an empty string as the value.
 `BLOCK_INSTANCE`
 :   An optional argument to the script.
 
+`BLOCK_COLOR`
+:   The color specified in the configuration for the block.
+
 `BLOCK_BUTTON`
 :   Mouse button (1, 2 or 3) if the block was clicked.
 
