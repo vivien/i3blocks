@@ -35,7 +35,7 @@ GetOptions("help|h" => \&help,
 $ENV{LC_ALL}="en_US"; # if mpstat is not run under en_US locale, things may break, so make sure it is
 open (MPSTAT, 'mpstat 1 1 |') or die;
 while (<MPSTAT>) {
-    if (/^.*\s+(\d+\.\d+)\s+$/) {
+    if (/^.*\s+(\d+\.\d+)[\s\x00]+$/) {
         $cpu_usage = 100 - $1; # 100% - %idle
         last;
     }
