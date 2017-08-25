@@ -47,7 +47,7 @@ capability() { # Return "Capture" if the device is a capture device
 }
 
 volume() {
-  amixer -D $MIXER get $SCONTROL $(capability)
+  amixer -M -D $MIXER get $SCONTROL $(capability) # Use option -M to obtain mapped volume (same volume level as alsamixer)
 }
 
 format() {
@@ -63,8 +63,8 @@ format() {
 
 case $BLOCK_BUTTON in
   3) amixer -q -D $MIXER sset $SCONTROL $(capability) toggle ;;  # right click, mute/unmute
-  4) amixer -q -D $MIXER sset $SCONTROL $(capability) ${STEP}+ unmute ;; # scroll up, increase
-  5) amixer -q -D $MIXER sset $SCONTROL $(capability) ${STEP}- unmute ;; # scroll down, decrease
+  4) amixer -M -q -D $MIXER sset $SCONTROL $(capability) ${STEP}+ unmute ;; # scroll up, increase
+  5) amixer -M -q -D $MIXER sset $SCONTROL $(capability) ${STEP}- unmute ;; # scroll down, decrease
 esac
 
 volume | format
