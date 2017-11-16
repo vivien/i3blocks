@@ -19,7 +19,7 @@
 #include <getopt.h>
 #include <stdio.h>
 
-#include "ini.h"
+#include "config.h"
 #include "log.h"
 #include "sched.h"
 
@@ -65,7 +65,7 @@ main(int argc, char *argv[])
 
 	debug("log level %u", log_level);
 
-	bar = ini_load(inifile);
+	bar = config_load(inifile);
 	if (!bar) {
 		error("Try '%s -h' for more information.", argv[0]);
 		return 1;

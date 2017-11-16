@@ -1,6 +1,6 @@
 /*
- * ini.h - generic INI format parsing header
- * Copyright (C) 2017  Vivien Didelot
+ * config.h - configuration file header
+ * Copyright (C) 2014  Vivien Didelot
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,12 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _INI_H
-#define _INI_H
+#ifndef _CONFIG_H
+#define _CONFIG_H
 
-typedef int ini_sec_cb_t(char *section, void *data);
-typedef int ini_prop_cb_t(char *key, char *value, void *data);
-int ini_read(int fd, size_t count, ini_sec_cb_t *sec_cb, ini_prop_cb_t *prop_cb,
-	     void *data);
+#include "bar.h"
 
-#endif /* _INI_H */
+struct bar *config_load(const char *);
+
+#endif /* _CONFIG_H */
