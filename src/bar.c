@@ -46,14 +46,18 @@ static int bar_poll_click(struct click *click, void *data)
 {
 	struct bar *bar = data;
 	struct block *block;
+	const char *instance;
+	const char *name;
 	int i;
 
 	/* find the corresponding block */
 	for (i = 0; i < bar->num; ++i) {
 		block = bar->blocks + i;
+		name = block_get(block, "name") ? : "";
+		instance = block_get(block, "instance") ? : "";
 
-		if (strcmp(NAME(block), click->name) == 0 &&
-		    strcmp(INSTANCE(block), click->instance) == 0) {
+		if (strcmp(name, click->name) == 0 &&
+		    strcmp(instance, click->instance) == 0) {
 			bdebug(block, "clicked");
 			block_spawn(block, click);
 			break; /* Unlikely to click several blocks */
