@@ -32,6 +32,30 @@
 #include "json.h"
 #include "log.h"
 
+const char *block_get(const struct block *block, const char *key)
+{
+	return map_get(block->customs, key);
+}
+
+static int block_set(struct block *block, const char *key, const char *value)
+{
+	return map_set(block->customs, key, value);
+}
+
+static int block_reset(struct block *block)
+{
+	map_clear(block->customs);
+
+	return map_copy(block->customs, block->defaults);
+}
+
+int block_for_each(const struct block *block,
+		   int (*func)(const char *key, const char *value, void *data),
+		   void *data)
+{
+	return map_for_each(block->customs, func, data);
+}
+
 static void
 child_setenv(struct block *block, const char *name, const char *value)
 {
@@ -44,9 +68,9 @@ child_setenv(struct block *block, const char *name, const char *value)
 static void
 child_setup_env(struct block *block, struct click *click)
 {
-	child_setenv(block, "BLOCK_NAME", NAME(block));
-	child_setenv(block, "BLOCK_INSTANCE", INSTANCE(block));
-	child_setenv(block, "BLOCK_INTERVAL", INTERVAL(block));
+	child_setenv(block, "BLOCK_NAME", block_get(block, "name") ? : "");
+	child_setenv(block, "BLOCK_INSTANCE", block_get(block, "instance") ? : "");
+	child_setenv(block, "BLOCK_INTERVAL", block_get(block, "interval") ? : "");
 	child_setenv(block, "BLOCK_BUTTON", click ? click->button : "");
 	child_setenv(block, "BLOCK_X", click ? click->x : "");
 	child_setenv(block, "BLOCK_Y", click ? click->y : "");
@@ -97,9 +121,9 @@ child_exec(struct block *block)
 {
 	static const char * const shell = "/bin/sh";
 
-	execl(shell, shell, "-c", COMMAND(block), (char *) NULL);
+	execl(shell, shell, "-c", block->command, (char *) NULL);
 	/* Unlikely to reach this point */
-	berrorx(block, "exec(%s -c %s)", shell, COMMAND(block));
+	berrorx(block, "exec(%s -c %s)", shell, block->command);
 	_exit(EXIT_ERR_INTERNAL);
 }
 
@@ -124,67 +148,64 @@ static void block_dump_stderr(struct block *block)
 static void
 mark_as_failed(struct block *block, const char *reason)
 {
+	const char *instance = block_get(block, "instance") ? : "";
+	const char *name = block_get(block, "name") ? : "";
+	char short_text[BUFSIZ];
+	char full_text[BUFSIZ];
+
 	if (log_level < LOG_WARN)
 		return;
 
-	struct properties *props = &block->updated_props;
+	map_clear(block->customs);
 
-	memset(props, 0, sizeof(struct properties));
-	strcpy(props->name, NAME(block));
-	strcpy(props->instance, INSTANCE(block));
-	snprintf(props->full_text, sizeof(props->full_text), "[%s] %s", NAME(block), reason);
-	snprintf(props->short_text, sizeof(props->short_text), "[%s] ERROR", NAME(block));
-	strcpy(props->color, "#FF0000");
-	strcpy(props->urgent, "true");
+	snprintf(full_text, sizeof(full_text), "[%s] %s", name, reason);
+	snprintf(short_text, sizeof(short_text), "[%s] ERROR", name);
+
+	block_set(block, "name", name);
+	block_set(block, "instance", instance);
+	block_set(block, "full_text", full_text);
+	block_set(block, "short_text", short_text);
+	block_set(block, "color", "#FF0000");
+	block_set(block, "urgent", "true");
 }
 
 static int block_update_plain_text(char *line, size_t num, void *data)
 {
 	struct block *block = data;
-	struct properties *props = &block->updated_props;
+	static const char * const keys[] = {
+		"full_text",
+		"short_text",
+		"color",
+	};
+	const char *key;
 
-	if (num == 0) {
-		strncpy(props->full_text, line, sizeof(props->full_text) - 1);
-	} else if (num == 1) {
-		strncpy(props->short_text, line, sizeof(props->short_text) - 1);
-	} else if (num == 2) {
-		strncpy(props->color, line, sizeof(props->color) - 1);
-	} else {
+	if (num >= sizeof(keys) / sizeof(keys[0])) {
 		berror(block, "too much lines for plain text update");
 		return -EINVAL;
 	}
 
-	return 0;
+	key = keys[num];
+
+	return block_set(block, key, line);
 }
 
 static int block_update_json(char *name, char *value, void *data)
 {
 	struct block *block = data;
 
-	struct properties *props = &block->updated_props;
-
-#define PARSE(_name, _size, _flags) \
-	if ((_flags) & PROP_I3BAR) { \
-		if (strcmp(name, #_name) == 0) \
-			strncpy(props->_name, value, _size - 1); \
-	}
-
-	PROPERTIES(PARSE);
-
-#undef PARSE
-
-	return 0;
+	return block_set(block, name, value);
 }
 
 void
 block_update(struct block *block)
 {
-	struct properties *props = &block->updated_props;
+	const char *full_text;
+	const char *label;
 	size_t count;
 	int err;
 
-	/* Reset the defaults and merge the output */
-	memcpy(props, &block->default_props, sizeof(struct properties));
+	/* Reset properties to default before updating from output */
+	block_reset(block);
 
 	if (block->interval == INTER_PERSIST)
 		count = 1;
@@ -202,11 +223,14 @@ block_update(struct block *block)
 		return mark_as_failed(block, "read failed");
 	}
 
-	if (*FULL_TEXT(block) && *LABEL(block)) {
-		static const size_t size = sizeof(props->full_text);
-		char concat[size];
-		snprintf(concat, size, "%s %s", LABEL(block), FULL_TEXT(block));
-		strcpy(props->full_text, concat);
+	full_text = block_get(block, "full_text") ? : "";
+	label = block_get(block, "label") ? : "";
+
+	if (*full_text && *label) {
+		const size_t sz = strlen(full_text) + strlen(label) + 2;
+		char concat[sz];
+		snprintf(concat, sz, "%s %s", label, full_text);
+		block_set(block, "full_text", concat);
 	}
 
 	bdebug(block, "updated successfully");
@@ -218,7 +242,7 @@ block_spawn(struct block *block, struct click *click)
 	const unsigned long now = time(NULL);
 	int out[2], err[2];
 
-	if (!*COMMAND(block)) {
+	if (!block->command) {
 		bdebug(block, "no command, skipping");
 		return;
 	}
@@ -321,7 +345,7 @@ block_reap(struct block *block)
 
 	/* Exit code takes precedence over the output */
 	if (code == EXIT_URGENT)
-		strcpy(block->updated_props.urgent, "true");
+		block_set(block, "urgent", "true");
 close:
 	if (close(block->out) == -1)
 		berrorx(block, "close stdout");
@@ -332,36 +356,67 @@ close:
 	block->out = block->err = -1;
 }
 
-void block_setup(struct block *block)
+static int block_debug_value(const char *key, const char *value, void *data)
 {
-	struct properties *defaults = &block->default_props;
-	struct properties *updated = &block->updated_props;
+	debug("    %s: %s", key, value);
 
-	/* Convenient shortcuts */
-	if (strcmp(defaults->interval, "once") == 0)
-		block->interval = INTER_ONCE;
-	else if (strcmp(defaults->interval, "repeat") == 0)
-		block->interval = INTER_REPEAT;
-	else if (strcmp(defaults->interval, "persist") == 0)
-		block->interval = INTER_PERSIST;
-	else
-		block->interval = atoi(defaults->interval);
+	return 0;
+}
 
-	if (strcmp(defaults->format, "json") == 0)
-		block->format = FORMAT_JSON;
-	else
-		block->format = FORMAT_PLAIN;
+static void block_debug(const struct block *block)
+{
+	block_for_each(block, block_debug_value, NULL);
+}
 
-	block->signal = atoi(defaults->signal);
+static int block_default(const char *key, const char *value, void *data)
+{
+	struct block *block = data;
+
+	if (strcmp(key, "command") == 0) {
+		if (value && *value != '\0')
+			block->command = value;
+	} if (strcmp(key, "interval") == 0) {
+		if (value && strcmp(value, "once") == 0)
+			block->interval = INTER_ONCE;
+		else if (value && strcmp(value, "repeat") == 0)
+			block->interval = INTER_REPEAT;
+		else if (value && strcmp(value, "persist") == 0)
+			block->interval = INTER_PERSIST;
+		else if (value)
+			block->interval = atoi(value);
+		else
+			block->interval = 0;
+	} else if (strcmp(key, "format") == 0) {
+		if (value && strcmp(value, "json") == 0)
+			block->format = FORMAT_JSON;
+		else
+			block->format = FORMAT_PLAIN;
+	} else if (strcmp(key, "signal") == 0) {
+		if (value)
+			block->signal = atoi(value);
+		else
+			block->signal = 0;
+	}
+
+	return 0;
+}
+
+int block_setup(struct block *block)
+{
+	int err;
+
+	err = map_for_each(block->defaults, block_default, block);
+	if (err)
+		return err;
 
 	/* First update (for static blocks and loading labels) */
-	memcpy(updated, defaults, sizeof(struct properties));
+	block->customs = map_create();
+	if (!block->customs)
+		return -ENOMEM;
 
-#define PLACEHOLDERS(_name, _size, _flags) "    %s: \"%s\"\n"
-#define ARGS(_name, _size, _flags) #_name, updated->_name,
+	block_reset(block);
 
-	debug("\n{\n" PROPERTIES(PLACEHOLDERS) "%s", PROPERTIES(ARGS) "}");
+	block_debug(block);
 
-#undef ARGS
-#undef PLACEHOLDERS
+	return 0;
 }

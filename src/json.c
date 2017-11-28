@@ -72,11 +72,10 @@ escape(const char *str)
 	fprintf(stdout, "\"");
 }
 
-static void
-print_prop(const char *key, const char *value, int flags)
+static int print_prop(const char *key, const char *value, void *data)
 {
 	if (!*value)
-		return;
+		return 0;
 
 	fprintf(stdout, ",\"%s\":", key);
 
@@ -86,19 +85,16 @@ print_prop(const char *key, const char *value, int flags)
 		fprintf(stdout, "%s", value);
 	else
 		escape(value);
+
+	return 0;
 }
 
 static void
 print_block(struct block *block)
 {
-#define PRINT(_name, _size, _flags) \
-	print_prop(#_name, block->updated_props._name, _flags); \
-
 	fprintf(stdout, ",{\"\":\"\"");
-	PROPERTIES(PRINT);
+	block_for_each(block, print_prop, NULL);
 	fprintf(stdout, "}");
-
-#undef PRINT
 }
 
 void
@@ -108,9 +104,10 @@ json_print_bar(struct bar *bar)
 
 	for (int i = 0; i < bar->num; ++i) {
 		struct block *block = bar->blocks + i;
+		const char *full_text = block_get(block, "full_text") ? : "";
 
 		/* full_text is the only mandatory key, skip if empty */
-		if (!*FULL_TEXT(block)) {
+		if (!*full_text) {
 			bdebug(block, "no text to display, skipping");
 			continue;
 		}

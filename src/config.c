@@ -28,14 +28,15 @@
 #include "ini.h"
 #include "io.h"
 #include "log.h"
+#include "map.h"
 
 #ifndef SYSCONFDIR
 #define SYSCONFDIR "/etc"
 #endif
 
 struct config {
-	struct properties *defaults;
-	struct properties *globals;
+	struct map *defaults;
+	struct map *globals;
 	struct bar *bar;
 };
 
@@ -64,7 +65,7 @@ static int config_finalize(struct config *conf)
 		if (!block)
 			return -ENOMEM;
 
-		memcpy(&block->default_props, conf->defaults, sizeof(struct properties));
+		block->defaults = conf->defaults;
 
 		block_setup(block);
 
@@ -76,43 +77,31 @@ static int config_finalize(struct config *conf)
 
 static int config_reset(struct config *conf)
 {
-	conf->defaults = calloc(1, sizeof(struct properties));
+	conf->defaults = map_create();
 	if (!conf->defaults)
 		return -ENOMEM;
 
 	if (conf->globals)
-		memcpy(conf->defaults, conf->globals, sizeof(struct properties));
+		return map_copy(conf->defaults, conf->globals);
 
 	return 0;
 }
 
 static int config_set(struct config *conf, const char *key, const char *value)
 {
-	struct properties *props = conf->defaults;
-	bool strict = false;
+	struct map *map = conf->defaults;
 
-	if (!props) {
+	if (!map) {
 		if (!conf->globals) {
-			conf->globals = calloc(1, sizeof(struct properties));
+			conf->globals = map_create();
 			if (!conf->globals)
 				return -ENOMEM;
 		}
 
-		props = conf->globals;
+		map = conf->globals;
 	}
 
-#define PARSE(_name, _size, _flags) \
-	if ((!strict || (_flags) & PROP_I3BAR) && strcmp(key, #_name) == 0) { \
-		strncpy(props->_name, value, _size - 1); \
-		return 0; \
-	}
-
-	PROPERTIES(PARSE);
-
-#undef PARSE
-
-	error("unknown key: \"%s\"", key);
-	return -EINVAL;
+	return map_set(map, key, value);
 }
 
 static int config_ini_section_cb(char *section, void *data)
