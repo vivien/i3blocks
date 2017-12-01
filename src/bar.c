@@ -42,29 +42,35 @@ bar_poll_timed(struct bar *bar)
 	}
 }
 
+static int bar_poll_click(struct click *click, void *data)
+{
+	struct bar *bar = data;
+	struct block *block;
+	int i;
+
+	/* find the corresponding block */
+	for (i = 0; i < bar->num; ++i) {
+		block = bar->blocks + i;
+
+		if (strcmp(NAME(block), click->name) == 0 &&
+		    strcmp(INSTANCE(block), click->instance) == 0) {
+			bdebug(block, "clicked");
+			block_spawn(block, click);
+			break; /* Unlikely to click several blocks */
+		}
+	}
+
+	return 0;
+}
+
 void
 bar_poll_clicked(struct bar *bar)
 {
-	char json[1024] = { 0 };
+	int err;
 
-	while (io_readline(STDIN_FILENO, json, sizeof(json)) > 0) {
-		struct click click;
-
-		/* find the corresponding block */
-		click_parse(json, &click);
-		if (!*click.name && !*click.instance)
-			continue;
-
-		for (int i = 0; i < bar->num; ++i) {
-			struct block *block = bar->blocks + i;
-
-			if (strcmp(NAME(block), click.name) == 0 && strcmp(INSTANCE(block), click.instance) == 0) {
-				bdebug(block, "clicked");
-				block_spawn(block, &click);
-				break; /* Unlikely to click several blocks */
-			}
-		}
-	}
+	err = click_read(bar_poll_click, bar);
+	if (err)
+		error("failed to read clicks");
 }
 
 void

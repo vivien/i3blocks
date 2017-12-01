@@ -103,36 +103,22 @@ child_exec(struct block *block)
 	_exit(EXIT_ERR_INTERNAL);
 }
 
-static void
-block_dump_stderr(struct block *block)
+static int block_dump_stderr_line(char *line, size_t num, void *data)
 {
-	char buf[2048] = { 0 };
+	struct block *block = data;
 
-	/* Note read(2) returns 0 for end-of-pipe */
-	if (read(block->err, buf, sizeof(buf) - 1) == -1) {
-		berrorx(block, "read stderr");
-		return;
-	}
+	bdebug(block, "{stderr} %s", line);
 
-	if (*buf)
-		bdebug(block, "stderr:\n{\n%s\n}", buf);
+	return 0;
 }
 
-static void
-linecpy(char **lines, char *dest, size_t size)
+static void block_dump_stderr(struct block *block)
 {
-	char *newline = strchr(*lines, '\n');
+	int err;
 
-	/* split if there's a newline */
-	if (newline)
-		*newline = '\0';
-
-	strncpy(dest, *lines, size);
-	*lines += strlen(dest);
-
-	/* increment if next char is non-null */
-	if (*(*lines + 1))
-		*lines += 1;
+	err = io_readlines(block->err, -1, block_dump_stderr_line, block);
+	if (err)
+		berror(block, "read stderr");
 }
 
 static void
@@ -152,33 +138,37 @@ mark_as_failed(struct block *block, const char *reason)
 	strcpy(props->urgent, "true");
 }
 
-static void
-block_update_plain_text(struct block *block, char *buf)
+static int block_update_plain_text(char *line, size_t num, void *data)
 {
+	struct block *block = data;
 	struct properties *props = &block->updated_props;
-	char *lines = buf;
 
-	linecpy(&lines, props->full_text, sizeof(props->full_text) - 1);
-        if (block->interval == INTER_PERSIST)
-                return;
+	if (num == 0) {
+		strncpy(props->full_text, line, sizeof(props->full_text) - 1);
+	} else if (num == 1) {
+		strncpy(props->short_text, line, sizeof(props->short_text) - 1);
+	} else if (num == 2) {
+		strncpy(props->color, line, sizeof(props->color) - 1);
+	} else {
+		berror(block, "too much lines for plain text update");
+		return -EINVAL;
+	}
 
-	linecpy(&lines, props->short_text, sizeof(props->short_text) - 1);
-	if (*lines)
-		linecpy(&lines, props->color, sizeof(props->color) - 1);
+	return 0;
 }
 
-static void
-block_update_json(struct block *block, char *buf)
+static int block_update_json(char *line, size_t num, void *data)
 {
+	struct block *block = data;
 	struct properties *props = &block->updated_props;
 	int start, length, size;
 
 #define PARSE(_name, _size, _flags) \
 	if ((_flags) & PROP_I3BAR) { \
-		json_parse(buf, #_name, &start, &length); \
+		json_parse(line, #_name, &start, &length); \
 		if (start > 0) { \
 			size = _size - 1 < length ? _size - 1 : length; \
-			strncpy(props->_name, buf + start, size); \
+			strncpy(props->_name, line + start, size); \
 			props->_name[size] = '\0'; \
 		} \
 	}
@@ -186,40 +176,35 @@ block_update_json(struct block *block, char *buf)
 	PROPERTIES(PARSE);
 
 #undef PARSE
+
+	return 0;
 }
 
 void
 block_update(struct block *block)
 {
 	struct properties *props = &block->updated_props;
-	char buf[2048] = { 0 };
-	int nr;
-
-	/* Read a single line for persistent block, everything otherwise */
-	if (block->interval == INTER_PERSIST) {
-		nr = io_readline(block->out, buf, sizeof(buf));
-		if (nr < 0) {
-			berror(block, "failed to read a line");
-			return mark_as_failed(block, "failed to read");
-		} else if (nr == 0) {
-			berror(block, "pipe closed");
-			return mark_as_failed(block, "pipe closed");
-		}
-	} else {
-		/* Note: read(2) returns 0 for end-of-pipe */
-		if (read(block->out, buf, sizeof(buf) - 1) == -1) {
-			berrorx(block, "read stdout");
-			return mark_as_failed(block, strerror(errno));
-		}
-	}
+	size_t count;
+	int err;
 
 	/* Reset the defaults and merge the output */
 	memcpy(props, &block->default_props, sizeof(struct properties));
 
-	if (block->format == FORMAT_JSON)
-		block_update_json(block, buf);
+	if (block->interval == INTER_PERSIST)
+		count = 1;
 	else
-		block_update_plain_text(block, buf);
+		count = -1; /* SIZE_MAX */
+
+	if (block->format == FORMAT_JSON)
+		err = io_readlines(block->out, count, block_update_json, block);
+	else
+		err = io_readlines(block->out, count, block_update_plain_text,
+				   block);
+
+	if (err) {
+		berror(block, "failed to read output");
+		return mark_as_failed(block, "read failed");
+	}
 
 	if (*FULL_TEXT(block) && *LABEL(block)) {
 		static const size_t size = sizeof(props->full_text);

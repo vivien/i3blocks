@@ -19,12 +19,51 @@
 #define _GNU_SOURCE /* for F_SETSIG */
 
 #include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
+#include "io.h"
 #include "log.h"
 
-int
-io_signal(int fd, int sig)
+/* Open a file read-only and nonblocking */
+int io_open(const char *path)
+{
+	int err;
+	int fd;
+
+	fd = open(path, O_RDONLY | O_NONBLOCK);
+	if (fd == -1) {
+		err = -errno;
+		if (err == -ENOENT) {
+			debug("open(\"%s\"): No such file or directory", path);
+		} else {
+			errorx("open(\"%s\")", path);
+		}
+
+		return err;
+	}
+
+	return fd;
+}
+
+/* Close a file */
+int io_close(int fd)
+{
+	int err;
+
+	err = close(fd);
+	if (err == -1) {
+		err = -errno;
+		errorx("close(%d)", fd);
+		return err;
+	}
+
+	return 0;
+}
+
+/* Bind a signal to a file */
+int io_signal(int fd, int sig)
 {
 	int flags;
 
@@ -55,37 +94,108 @@ io_signal(int fd, int sig)
 	return 0;
 }
 
-static ssize_t
-read_nonblock(int fd, char *buf, size_t size)
+/* Read up to size bytes and return the positive count on success */
+static ssize_t io_read(int fd, char *buf, size_t size)
 {
 	ssize_t nr;
+	int err;
 
 	nr = read(fd, buf, size);
 	if (nr == -1) {
-		if (errno == EAGAIN) {
-			/* no more reading */
-			return 0;
+		err = -errno;
+		if (err == -EAGAIN || err == -EWOULDBLOCK) {
+			debug("read(%d): would block", fd);
+			return -EAGAIN;
+		} else {
+			errorx("read(%d)", fd);
+			return err;
 		}
-
-		errorx("read from %d", fd);
-		return -1;
 	}
 
-	/* Note read(2) returns 0 for end-of-pipe */
+	if (nr == 0) {
+		debug("read(%d): end-of-pipe", fd);
+		return -EPIPE;
+	}
+
 	return nr;
 }
 
-int
-io_readline(int fd, char *buffer, size_t size)
+/* Read a single character and return a negative error code if none was read */
+static int io_getchar(int fd, char *c)
 {
-	int nr = 0;
-	char c;
+	ssize_t nr;
 
-	while (nr < size && read_nonblock(fd, &c, 1) > 0) {
-		buffer[nr++] = c;
-		if (c == '\n')
+	nr = io_read(fd, c, 1);
+	if (nr < 0)
+		return nr;
+
+	return 0;
+}
+
+/* Read a line including the newline character and return its positive length */
+static ssize_t io_getline(int fd, char *buf, size_t size)
+{
+	size_t len = 0;
+	int err;
+
+	for (;;) {
+		if (len == size)
+			return -ENOSPC;
+
+		err = io_getchar(fd, buf + len);
+		if (err)
+			return err;
+
+		if (buf[len++] == '\n')
 			break;
-    }
+	}
 
-	return nr;
+	/* at least 1 */
+	return len;
+}
+
+/* Read a line excluding the newline character */
+static int io_readline(int fd, io_line_cb *cb, size_t num, void *data)
+{
+	char buf[BUFSIZ];
+	ssize_t len;
+	int err;
+
+	len = io_getline(fd, buf, sizeof(buf));
+	if (len < 0)
+		return len;
+
+	/* replace newline with terminating null byte */
+	buf[len - 1] = '\0';
+
+	if (cb) {
+		err = cb(buf, num, data);
+		if (err)
+			return err;
+	}
+
+	return 0;
+}
+
+/* Read up to count lines excluding their newline character */
+int io_readlines(int fd, size_t count, io_line_cb *cb, void *data)
+{
+	size_t lines = 0;
+	int err;
+
+	while (count--) {
+		err = io_readline(fd, cb, lines++, data);
+		if (err) {
+			if (err == -EAGAIN)
+				break;
+
+			/* support end-of-file as well */
+			if (err == -EPIPE)
+				break;
+
+			return err;
+		}
+	}
+
+	return 0;
 }

@@ -27,6 +27,7 @@ struct click {
 	char *y;
 };
 
-void click_parse(char *, struct click *);
+typedef int click_cb_t(struct click *click, void *data);
+int click_read(click_cb_t *cb, void *data);
 
 #endif /* _CLICK_H */

@@ -16,9 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <unistd.h>
+
 #include "click.h"
+#include "io.h"
 #include "json.h"
 #include "log.h"
+
+struct click_ctx {
+	int (*cb)(struct click *click, void *data);
+	void *data;
+	struct click click;
+};
 
 /*
  * Parse a click, previous read from stdin.
@@ -30,14 +39,16 @@
  * Note that this function is non-idempotent. We need to parse from right to
  * left. It's ok since the JSON layout is known and fixed.
  */
-void
-click_parse(char *json, struct click *click)
+static int click_parse_line(char *json, size_t num, void *data)
 {
+	struct click_ctx *ctx = data;
+	struct click *click = &ctx->click;
 	int nst, nlen;
 	int ist, ilen;
 	int bst, blen;
 	int xst, xlen;
 	int yst, ylen;
+	int err;
 
 	json_parse(json, "y", &yst, &ylen);
 	json_parse(json, "x", &xst, &xlen);
@@ -63,4 +74,25 @@ click_parse(char *json, struct click *click)
 	debug("parsed click: name=%s instance=%s button=%s x=%s y=%s",
 			click->name, click->instance,
 			click->button, click->x, click->y);
+
+	if (!*click->name && !*click->instance)
+		return 0;
+
+	if (ctx->cb) {
+		err = ctx->cb(click, ctx->data);
+		if (err < 0)
+			return err;
+	}
+
+	return 0;
+}
+
+int click_read(click_cb_t *cb, void *data)
+{
+	struct click_ctx ctx = {
+		.cb = cb,
+		.data = data,
+	};
+
+	return io_readlines(STDIN_FILENO, -1, click_parse_line, &ctx);
 }
