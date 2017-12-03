@@ -53,9 +53,16 @@ int block_for_each(const struct block *block,
 
 static int block_setenv(const char *name, const char *value, void *data)
 {
+	int err;
+
 	if (!value)
 		value = "";
 
+	err = sys_setenv(name, value);
+	if (err)
+		return err;
+
+	/* Legacy env variables */
 	if (strcmp(name, "name") == 0)
 		return sys_setenv("BLOCK_NAME", value);
 	if (strcmp(name, "instance") == 0)
