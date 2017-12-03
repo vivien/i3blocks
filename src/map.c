@@ -16,100 +16,195 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "block.h"
 #include "map.h"
 
-#define PROPERTIES(_) \
-	_(full_text,             1024, PROP_I3BAR | PROP_STRING) \
-	_(short_text,            512,  PROP_I3BAR | PROP_STRING) \
-	_(color,                 8,    PROP_I3BAR | PROP_STRING) \
-	_(background,            8,    PROP_I3BAR | PROP_STRING) \
-	_(border,                8,    PROP_I3BAR | PROP_STRING) \
-	_(min_width,             1024, PROP_I3BAR | PROP_STRING | PROP_NUMBER) \
-	_(align,                 8,    PROP_I3BAR | PROP_STRING) \
-	_(name,                  32,   PROP_I3BAR | PROP_STRING) \
-	_(instance,              256,  PROP_I3BAR | PROP_STRING) \
-	_(urgent,                8,    PROP_I3BAR | PROP_BOOLEAN) \
-	_(separator,             8,    PROP_I3BAR | PROP_BOOLEAN) \
-	_(separator_block_width, 8,    PROP_I3BAR | PROP_NUMBER) \
-	_(markup,                8,    PROP_I3BAR | PROP_STRING) \
-	_(command,               1024,              PROP_STRING) \
-	_(interval,              8,                 PROP_STRING | PROP_NUMBER) \
-	_(signal,                8,                 PROP_NUMBER) \
-	_(label,                 32,                PROP_STRING) \
-	_(format,                8,                 PROP_STRING | PROP_NUMBER) \
+struct pair {
+	char *key;
+	char *value;
+
+	struct pair *next;
+};
 
 struct map {
-#define DEFINE(_name, _size, _flags) char _name[_size];
-	PROPERTIES(DEFINE);
-#undef DEFINE
+	struct pair *head;
 };
+
+static struct pair *map_head(const struct map *map)
+{
+	return map->head;
+}
+
+/* Return previous pair if key is found, last pair otherwise */
+static struct pair *map_prev(const struct map *map, const char *key)
+{
+	struct pair *prev = map_head(map);
+	struct pair *next = prev->next;
+
+	while (next) {
+		if (strcmp(next->key, key) == 0)
+			break;
+
+		prev = next;
+		next = next->next;
+	}
+
+	return prev;
+}
+
+/* Update the value of a pair */
+static int map_reassign(struct pair *pair, const char *value)
+{
+	free(pair->value);
+	pair->value = NULL;
+
+	if (value) {
+		pair->value = strdup(value);
+		if (!pair->value)
+			return -ENOMEM;
+	}
+
+	return 0;
+}
+
+/* Create a new key-value pair */
+static struct pair *map_pair(const char *key, const char *value)
+{
+	struct pair *pair;
+	int err;
+
+	pair = calloc(1, sizeof(struct pair));
+	if (!pair)
+		return NULL;
+
+	pair->key = strdup(key);
+	if (!pair->key) {
+		free(pair);
+		return NULL;
+	}
+
+	err = map_reassign(pair, value);
+	if (err) {
+		free(pair->key);
+		free(pair);
+		return NULL;
+	}
+
+	return pair;
+}
+
+/* Destroy a new key-value pair */
+void map_unpair(struct pair *pair)
+{
+	map_reassign(pair, NULL);
+	free(pair->key);
+	free(pair);
+}
+
+/* Insert a key-value pair after a given pair */
+static int map_insert(struct pair *prev, const char *key, const char *value)
+{
+	struct pair *pair;
+
+	pair = map_pair(key, value);
+	if (!pair)
+		return -ENOMEM;
+
+	pair->next = prev->next;
+	prev->next = pair;
+
+	return 0;
+}
+
+/* Delete the key-value pair after a given pair */
+static void map_delete(struct pair *prev)
+{
+	struct pair *pair = prev->next;
+
+	prev->next = pair->next;
+	map_unpair(pair);
+}
 
 const char *map_get(const struct map *map, const char *key)
 {
-#define VALUE(_name, _size, _flags) \
-	if (strcmp(key, #_name) == 0) \
-		return map->_name; \
+	struct pair *prev = map_prev(map, key);
+	struct pair *next = prev->next;
 
-	PROPERTIES(VALUE);
-
-#undef VALUE
-
-	return NULL;
+	if (next)
+		return next->value;
+	else
+		return NULL;
 }
 
 int map_set(struct map *map, const char *key, const char *value)
 {
-#define VALUE(_name, _size, _flags) \
-	if (strcmp(key, #_name) == 0) { \
-		strncpy(map->_name, value, _size); \
-		return 0; \
-	}
+	struct pair *prev = map_prev(map, key);
+	struct pair *next = prev->next;
 
-	PROPERTIES(VALUE);
-
-#undef VALUE
-
-	return -EINVAL;
+	if (next)
+		return map_reassign(next, value);
+	else
+		return map_insert(prev, key, value);
 }
 
 int map_for_each(const struct map *map, map_func_t *func, void *data)
 {
+	struct pair *pair = map_head(map);
 	int err;
 
-#define FOREACH(_name, _size, _flags) \
-	err = func(#_name, map->_name, data); \
-	if (err) \
-		return err;
-
-	PROPERTIES(FOREACH);
-
-#undef FOREACH
+	while (pair->next) {
+		pair = pair->next;
+		err = func(pair->key, pair->value, data);
+		if (err)
+			return err;
+	}
 
 	return 0;
 }
 
 void map_clear(struct map *map)
 {
-	memset(map, 0, sizeof(struct map));
+	struct pair *pair = map_head(map);
+
+	while (pair->next)
+		map_delete(pair);
+}
+
+static int map_dup(const char *key, const char *value, void *data)
+{
+	struct map *map = data;
+
+	return map_set(map, key, value);
 }
 
 int map_copy(struct map *map, const struct map *base)
 {
-	memcpy(map, base, sizeof(struct map));
-
-	return 0;
+	return map_for_each(base, map_dup, map);
 }
 
 void map_destroy(struct map *map)
 {
+	map_clear(map);
+	free(map->head);
 	free(map);
 }
 
 struct map *map_create(void)
 {
-	return calloc(1, sizeof(struct map));
+	struct map *map;
+
+	map = calloc(1, sizeof(struct map));
+	if (!map)
+		return NULL;
+
+	map->head = calloc(1, sizeof(struct pair));
+	if (!map->head) {
+		free(map);
+		return NULL;
+	}
+
+	return map;
 }
