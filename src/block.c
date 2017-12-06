@@ -157,20 +157,16 @@ static int block_update_plain_text(char *line, size_t num, void *data)
 	return 0;
 }
 
-static int block_update_json(char *line, size_t num, void *data)
+static int block_update_json(char *name, char *value, void *data)
 {
 	struct block *block = data;
+
 	struct properties *props = &block->updated_props;
-	int start, length, size;
 
 #define PARSE(_name, _size, _flags) \
 	if ((_flags) & PROP_I3BAR) { \
-		json_parse(line, #_name, &start, &length); \
-		if (start > 0) { \
-			size = _size - 1 < length ? _size - 1 : length; \
-			strncpy(props->_name, line + start, size); \
-			props->_name[size] = '\0'; \
-		} \
+		if (strcmp(name, #_name) == 0) \
+			strncpy(props->_name, value, _size - 1); \
 	}
 
 	PROPERTIES(PARSE);
@@ -196,7 +192,7 @@ block_update(struct block *block)
 		count = -1; /* SIZE_MAX */
 
 	if (block->format == FORMAT_JSON)
-		err = io_readlines(block->out, count, block_update_json, block);
+		err = json_read(block->out, count, block_update_json, block);
 	else
 		err = io_readlines(block->out, count, block_update_plain_text,
 				   block);

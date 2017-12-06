@@ -1,5 +1,5 @@
 /*
- * json.c - basic JSON parsing and printing
+ * json.c - flat JSON parsing
  * Copyright (C) 2014  Vivien Didelot
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,6 +17,7 @@
  */
 
 #include <ctype.h>
+#include <errno.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -25,6 +26,19 @@
 
 #include "bar.h"
 #include "block.h"
+#include "io.h"
+#include "json.h"
+#include "log.h"
+
+struct json {
+	char *name;
+	size_t name_len;
+	char *value;
+	size_t value_len;
+	json_pair_cb_t *pair_cb;
+	void *data;
+};
+
 
 static inline bool
 is_number(const char *str)
@@ -61,22 +75,17 @@ escape(const char *str)
 static void
 print_prop(const char *key, const char *value, int flags)
 {
-	/* Only print i3bar-specific properties */
-	if (!(flags & PROP_I3BAR))
-		return;
-
 	if (!*value)
 		return;
 
 	fprintf(stdout, ",\"%s\":", key);
 
-	/* Print as-is (except strings which must be escaped) */
-	if (flags & PROP_STRING && flags & PROP_NUMBER && is_number(value))
+	/* Print JSON values as-is, escape them otherwise */
+	if (strcmp(value, "true") == 0 || strcmp(value, "false") == 0 ||
+	    strcmp(value, "null") == 0 || is_number(value) || *value == '\"')
 		fprintf(stdout, "%s", value);
-	else if (flags & PROP_STRING)
-		escape(value);
 	else
-		fprintf(stdout, "%s", value);
+		escape(value);
 }
 
 static void
@@ -90,48 +99,6 @@ print_block(struct block *block)
 	fprintf(stdout, "}");
 
 #undef PRINT
-}
-
-/*
- * Parse the <json> input for the key <name> and store the start of its value
- * into <start> and its size into <len>.
- *
- * <start> set to 0 means that the key was not present.
- */
-void
-json_parse(const char *json, const char *name, int *start, int *len)
-{
-	const size_t keylen = strlen(name) + 2;
-	char key[keylen + 1];
-	snprintf(key, sizeof(key), "\"%s\"", name);
-
-	*start = *len = 0;
-
-	char *here = strstr(json, key);
-	if (here) {
-		here += keylen + 1;
-
-		/* skip pre-value whitespace */
-		while (isspace(*here))
-			here++;
-
-		if (*here == '"') {
-			/* string */
-			here++;
-			*start = here - json;
-			while (*here && *here != '"')
-				*len += 1, here++;
-
-			/* invalidate on incomplete string */
-			if (*here != '"')
-				*start = 0;
-		} else {
-			/* number */
-			*start = here - json;
-			while (isdigit(*here++))
-				*len += 1;
-		}
-	}
 }
 
 void
@@ -153,4 +120,219 @@ json_print_bar(struct bar *bar)
 
 	fprintf(stdout, "]\n");
 	fflush(stdout);
+}
+
+static int json_pair(struct json *json)
+{
+	if (!json->pair_cb)
+		return 0;
+
+	*(json->name + json->name_len) = '\0';
+	*(json->value + json->value_len) = '\0';
+
+	return json->pair_cb(json->name, json->value, json->data);
+}
+
+/* Return the length of the parsed string, 0 if it is invalid */
+static size_t json_parse_string(const char *line)
+{
+	const char *end = line;
+	int hex;
+
+	if (*line != '"')
+		return 0;
+
+	while (*++end != '"') {
+		/* control character or end-of-line? */
+		if (iscntrl(*end) || *end == '\0')
+			return 0;
+
+		/* any Unicode character except " or \ or control character? */
+		if (*end != '\\')
+			continue;
+
+		/* backslash escape */
+		switch (*++end) {
+		case '"':
+		case '\\':
+		case '/':
+		case 'b':
+		case 'f':
+		case 'n':
+		case 'r':
+		case 't':
+			break;
+		case 'u':
+			for (hex = 0; hex < 4; hex++)
+				if (!isxdigit(*++end))
+					return 0;
+			break;
+		default:
+			return 0;
+		}
+	}
+
+	return ++end - line;
+}
+
+/* Return the length of the parsed number, 0 if it is invalid */
+static size_t json_parse_number(const char *line)
+{
+	char *end;
+
+	strtoul(line, &end, 10);
+
+	return end - line;
+}
+
+/* Return the length of the parsed litteral, 0 if it is invalid */
+static size_t json_parse_litteral(const char *line, const char *litteral)
+{
+	const size_t len = strlen(litteral);
+
+	if (strncmp(line, litteral, len) != 0)
+		return 0;
+
+	return len;
+}
+
+/* A value can be a string, number, object, array, true, false, or null */
+static size_t json_parse_value(struct json *json, char *line)
+{
+	json->value = line;
+
+	json->value_len = json_parse_string(line);
+	if (json->value_len)
+		return json->value_len;
+
+	json->value_len = json_parse_number(line);
+	if (json->value_len)
+		return json->value_len;
+
+	json->value_len = json_parse_litteral(line, "true");
+	if (json->value_len)
+		return json->value_len;
+
+	json->value_len = json_parse_litteral(line, "false");
+	if (json->value_len)
+		return json->value_len;
+
+	json->value_len = json_parse_litteral(line, "null");
+	if (json->value_len)
+		return json->value_len;
+
+	/* nested arrays or objects are not supported */
+	json->value = NULL;
+
+	return 0;
+}
+
+/* Return the length of ':' optionally enclosed by whitespaces, 0 otherwise */
+static size_t json_parse_colon(const char *line)
+{
+	size_t len = 0;
+
+	while (isspace(*line))
+		line++, len++;
+
+	if (*line != ':')
+		return 0;
+
+	line++;
+	len++;
+
+	while (isspace(*line))
+		line++, len++;
+
+	return len;
+}
+
+/* Parse and store (unquoted) the name string */
+static size_t json_parse_name(struct json *json, char *line)
+{
+	size_t len;
+
+	len = json_parse_string(line);
+	if (!len)
+		return 0;
+
+	json->name = line + 1;
+	json->name_len = len - 2;
+
+	return len;
+}
+
+/* Parse an inline ["name"][\s+:\s+][value] name-value pair */
+static size_t json_parse_pair(struct json *json, char *line)
+{
+	size_t pair_len = 0;
+	size_t len;
+
+	len = json_parse_name(json, line);
+	if (!len)
+		return 0;
+
+	pair_len += len;
+	line += len;
+
+	len = json_parse_colon(line);
+	if (!len)
+		return 0;
+
+	pair_len += len;
+	line += len;
+
+	len = json_parse_value(json, line);
+	if (!len)
+		return 0;
+
+	pair_len += len;
+
+	return pair_len;
+}
+
+static int json_parse_line(char *line, size_t num, void *data)
+{
+	size_t len;
+	int err;
+
+	for (;;) {
+		/* only support a flat object at the moment */
+		while (*line == '}' || *line == ',' || *line == '{' ||
+		       isspace(*line))
+			line++;
+
+		if (*line == '\0')
+			break;
+
+		len = json_parse_pair(data, line);
+		if (!len)
+			return -EINVAL;
+
+		line += len;
+
+		/* valid delimiters after a pair */
+		if (*line != ',' && *line != '}' && *line != '\0' &&
+		    !isspace(*line))
+			return -EINVAL;
+
+		if (*line != '\0')
+			line++;
+
+		err = json_pair(data);
+		if (err)
+			return err;
+	}
+
+	return 0;
+}
+
+int json_read(int fd, size_t count, json_pair_cb_t *pair_cb, void *data)
+{
+	struct json json = {
+		.pair_cb = pair_cb,
+		.data = data,
+	};
+
+	return io_readlines(fd, count, json_parse_line, &json);
 }
