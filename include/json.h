@@ -22,7 +22,9 @@
 #include "bar.h"
 #include "block.h"
 
-void json_parse(const char *json, const char *name, int *start, int *len);
+typedef int json_pair_cb_t(char *name, char *value, void *data);
+int json_read(int fd, size_t count, json_pair_cb_t *pair_cb, void *data);
+
 void json_print_bar(struct bar *);
 
 #endif /* _JSON_H */
