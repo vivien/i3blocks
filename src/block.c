@@ -66,14 +66,14 @@ child_setenv(struct block *block, const char *name, const char *value)
 }
 
 static void
-child_setup_env(struct block *block, struct click *click)
+child_setup_env(struct block *block)
 {
 	child_setenv(block, "BLOCK_NAME", block_get(block, "name") ? : "");
 	child_setenv(block, "BLOCK_INSTANCE", block_get(block, "instance") ? : "");
 	child_setenv(block, "BLOCK_INTERVAL", block_get(block, "interval") ? : "");
-	child_setenv(block, "BLOCK_BUTTON", click ? click->button : "");
-	child_setenv(block, "BLOCK_X", click ? click->x : "");
-	child_setenv(block, "BLOCK_Y", click ? click->y : "");
+	child_setenv(block, "BLOCK_BUTTON", block_get(block, "button") ? : "");
+	child_setenv(block, "BLOCK_X", block_get(block, "x") ? : "");
+	child_setenv(block, "BLOCK_Y", block_get(block, "y") ? : "");
 }
 
 static void
@@ -236,10 +236,28 @@ block_update(struct block *block)
 	bdebug(block, "updated successfully");
 }
 
-void
-block_spawn(struct block *block, struct click *click)
+int block_click(struct block *block, const struct click *click)
 {
-	const unsigned long now = time(NULL);
+	int err;
+
+	err = block_set(block, "button", click->button);
+	if (err)
+		return err;
+
+	err = block_set(block, "x", click->x);
+	if (err)
+		return err;
+
+	return block_set(block, "y", click->y);
+}
+
+void block_touch(struct block *block)
+{
+	block->timestamp = time(NULL);
+}
+
+void block_spawn(struct block *block)
+{
 	int out[2], err[2];
 
 	if (!block->command) {
@@ -271,7 +289,7 @@ block_spawn(struct block *block, struct click *click)
 	/* Child? */
 	if (block->pid == 0) {
 		/* Error messages are merged into the parent's stderr... */
-		child_setup_env(block, click);
+		child_setup_env(block);
 		child_reset_signals(block);
 		child_redirect_write(block, out, STDOUT_FILENO);
 		child_redirect_write(block, err, STDERR_FILENO);
@@ -294,10 +312,7 @@ block_spawn(struct block *block, struct click *click)
 	block->out = out[0];
 	block->err = err[0];
 
-	if (!click)
-		block->timestamp = now;
-
-	bdebug(block, "forked child %d at %ld", block->pid, now);
+	bdebug(block, "forked child %d", block->pid);
 }
 
 void
