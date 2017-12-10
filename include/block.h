@@ -68,7 +68,9 @@ int block_for_each(const struct block *block,
 	errorx("[%s] " msg, block_get(block, "name") ? : "unknown", ##__VA_ARGS__)
 
 int block_setup(struct block *);
-void block_spawn(struct block *, struct click *);
+int block_click(struct block *block, const struct click *click);
+void block_spawn(struct block *block);
+void block_touch(struct block *block);
 void block_reap(struct block *);
 void block_update(struct block *);
 
