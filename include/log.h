@@ -20,24 +20,48 @@
 #define _LOG_H
 
 #include <errno.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 
 extern unsigned log_level;
 
 enum log_level {
-	LOG_NORMAL,
+	LOG_DEFAULT,
 	LOG_WARN,
 	LOG_DEBUG,
 };
 
-#define debug(msg, ...) \
-	if (log_level >= LOG_DEBUG) { \
-		fprintf(stderr, "DEBUG %s:%d: " msg "\n", __func__, __LINE__, ##__VA_ARGS__); \
+typedef void (*log_handle_t)(const char *cat, int lvl, const char *fmt, ...);
+
+extern log_handle_t log_handle;
+
+static inline void log_printf(const char *cat, int lvl, const char *fmt, ...)
+{
+	va_list ap;
+
+	if (log_level < lvl)
+		return;
+
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
+}
+
+#define log(cat, lvl, msg, ...)						\
+	{								\
+		if (log_handle)						\
+			log_handle(cat, lvl, msg, ##__VA_ARGS__);	\
+		else							\
+			log_printf(cat, lvl, cat " %s:%d: " msg "\n",	\
+				   __func__, __LINE__, ##__VA_ARGS__);	\
 	}
 
-#define error(msg, ...) \
-	fprintf(stderr, "ERROR %s:%d: " msg "\n", __func__, __LINE__, ##__VA_ARGS__)
+#define debug(...) \
+	log("DEBUG", LOG_DEBUG, ##__VA_ARGS__)
+
+#define error(...) \
+	log("ERROR", LOG_DEFAULT, ##__VA_ARGS__)
 
 #define errorx(msg, ...) \
 	error(msg ": %s", ##__VA_ARGS__, strerror(errno))

@@ -27,7 +27,9 @@
 #define VERSION "unknown"
 #endif
 
-unsigned log_level = LOG_NORMAL;
+unsigned log_level = LOG_DEFAULT;
+
+log_handle_t log_handle = NULL;
 
 static void
 start(void)
