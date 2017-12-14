@@ -19,10 +19,7 @@
 #ifndef _IO_H
 #define _IO_H
 
-int io_open(const char *path);
-int io_close(int fd);
-
-int io_signal(int fd, int sig);
+#include <unistd.h>
 
 typedef int io_line_cb(char *buf, size_t num, void *data);
 int io_readlines(int fd, size_t count, io_line_cb *cb, void *data);

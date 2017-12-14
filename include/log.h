@@ -39,7 +39,4 @@ enum log_level {
 #define error(msg, ...) \
 	fprintf(stderr, "ERROR %s:%d: " msg "\n", __func__, __LINE__, ##__VA_ARGS__)
 
-#define errorx(msg, ...) \
-	error(msg ": %s", ##__VA_ARGS__, strerror(errno))
-
 #endif /* _LOG_H */

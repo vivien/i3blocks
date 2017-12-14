@@ -16,19 +16,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <errno.h>
-#include <signal.h>
-#include <stddef.h>
 #include <string.h>
-#include <sys/wait.h>
-#include <time.h>
-#include <unistd.h>
 
 #include "bar.h"
 #include "block.h"
 #include "click.h"
 #include "io.h"
 #include "log.h"
+#include "sys.h"
 
 void
 bar_poll_timed(struct bar *bar)
@@ -87,7 +82,7 @@ bar_poll_outdated(struct bar *bar)
 		struct block *block = bar->blocks + i;
 
 		if (block->interval > 0) {
-			const unsigned long now = time(NULL);
+			const unsigned long now = sys_time();
 			const unsigned long next_update = block->timestamp + block->interval;
 
 			if (((long) (next_update - now)) <= 0) {
@@ -116,27 +111,23 @@ bar_poll_signaled(struct bar *bar, int sig)
 void
 bar_poll_exited(struct bar *bar)
 {
+	pid_t pid;
+	int err;
+
 	for (;;) {
-		siginfo_t infop = { 0 };
-
-		/* Non-blocking check for dead child(ren) */
-		if (waitid(P_ALL, 0, &infop, WEXITED | WNOHANG | WNOWAIT) == -1)
-			if (errno != ECHILD)
-				errorx("waitid");
-
-		/* Error or no (dead yet) child(ren) */
-		if (infop.si_pid == 0)
+		err = sys_waitid(&pid);
+		if (err)
 			break;
 
 		/* Find the dead process */
 		for (int i = 0; i < bar->num; ++i) {
 			struct block *block = bar->blocks + i;
 
-			if (block->pid == infop.si_pid) {
+			if (block->pid == pid) {
 				bdebug(block, "exited");
 				block_reap(block);
 				if (block->interval == INTER_REPEAT) {
-					if (block->timestamp == time(NULL))
+					if (block->timestamp == sys_time())
 						berror(block, "loop too fast");
 					block_spawn(block);
 					block_touch(block);
@@ -155,7 +146,7 @@ bar_poll_readable(struct bar *bar, const int fd)
 	for (int i = 0; i < bar->num; ++i) {
 		struct block *block = bar->blocks + i;
 
-		if (block->out == fd) {
+		if (block->out[0] == fd) {
 			bdebug(block, "readable");
 			block_update(block);
 			break;
