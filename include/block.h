@@ -56,15 +56,20 @@ struct block {
 
 const char *block_get(const struct block *block, const char *key);
 
+static inline const char *block_name(const struct block *block)
+{
+	return block_get(block, "name") ? : "<unknown>";
+}
+
 int block_for_each(const struct block *block,
 		   int (*func)(const char *key, const char *value, void *data),
 		   void *data);
 
-#define bdebug(block, msg, ...) \
-	debug("[%s] " msg, block_get(block, "name") ? : "unknown", ##__VA_ARGS__)
+#define block_debug(block, msg, ...) \
+	debug("[%s] " msg, block_name(block), ##__VA_ARGS__)
 
-#define berror(block, msg, ...) \
-	error("[%s] " msg, block_get(block, "name") ? : "unknown", ##__VA_ARGS__)
+#define block_error(block, msg, ...) \
+	error("[%s] " msg, block_name(block), ##__VA_ARGS__)
 
 int block_setup(struct block *block);
 int block_click(struct block *block, const struct click *click);

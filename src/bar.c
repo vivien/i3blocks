@@ -54,7 +54,7 @@ static int bar_poll_click(struct click *click, void *data)
 
 		if (strcmp(name, click->name) == 0 &&
 		    strcmp(instance, click->instance) == 0) {
-			bdebug(block, "clicked");
+			block_debug(block, "clicked");
 			block_click(block, click);
 			block_spawn(block);
 			break; /* Unlikely to click several blocks */
@@ -85,7 +85,7 @@ bar_poll_outdated(struct bar *bar)
 			const unsigned long next_update = block->timestamp + block->interval;
 
 			if (((long) (next_update - now)) <= 0) {
-				bdebug(block, "outdated");
+				block_debug(block, "outdated");
 				block_spawn(block);
 				block_touch(block);
 			}
@@ -100,7 +100,7 @@ bar_poll_signaled(struct bar *bar, int sig)
 		struct block *block = bar->blocks + i;
 
 		if (block->signal == sig) {
-			bdebug(block, "signaled");
+			block_debug(block, "signaled");
 			block_spawn(block);
 			block_touch(block);
 		}
@@ -123,15 +123,15 @@ bar_poll_exited(struct bar *bar)
 			struct block *block = bar->blocks + i;
 
 			if (block->pid == pid) {
-				bdebug(block, "exited");
+				block_debug(block, "exited");
 				block_reap(block);
 				if (block->interval == INTER_REPEAT) {
 					if (block->timestamp == sys_time())
-						berror(block, "loop too fast");
+						block_error(block, "loop too fast");
 					block_spawn(block);
 					block_touch(block);
 				} else if (block->interval == INTER_PERSIST) {
-					bdebug(block, "unexpected exit?");
+					block_debug(block, "unexpected exit?");
 				}
 				break;
 			}
@@ -146,7 +146,7 @@ bar_poll_readable(struct bar *bar, const int fd)
 		struct block *block = bar->blocks + i;
 
 		if (block->out[0] == fd) {
-			bdebug(block, "readable");
+			block_debug(block, "readable");
 			block_update(block);
 			break;
 		}

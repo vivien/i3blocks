@@ -20,23 +20,65 @@
 #define _LOG_H
 
 #include <errno.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 
-extern unsigned log_level;
+typedef void (*log_handle_t)(int lvl, const char *fmt, ...);
 
-enum log_level {
-	LOG_NORMAL,
-	LOG_WARN,
+enum {
+	LOG_FATAL,
+	LOG_ERROR,
 	LOG_DEBUG,
 };
 
-#define debug(msg, ...) \
-	if (log_level >= LOG_DEBUG) { \
-		fprintf(stderr, "DEBUG %s:%d: " msg "\n", __func__, __LINE__, ##__VA_ARGS__); \
+extern log_handle_t log_handle;
+extern void *log_data;
+extern int log_level;
+
+static inline void log_printf(int lvl, const char *fmt, ...)
+{
+	va_list ap;
+
+	if (log_level < lvl)
+		return;
+
+	fprintf(stderr, "<%d> ", lvl);
+
+	switch (lvl) {
+	case LOG_FATAL:
+		fprintf(stderr, "FATAL ");
+		break;
+	case LOG_ERROR:
+		fprintf(stderr, "ERROR ");
+		break;
+	case LOG_DEBUG:
+		fprintf(stderr, "DEBUG ");
+		break;
 	}
 
-#define error(msg, ...) \
-	fprintf(stderr, "ERROR %s:%d: " msg "\n", __func__, __LINE__, ##__VA_ARGS__)
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
+}
+
+#define log(lvl, fmt, ...)					\
+	{							\
+		log_printf(lvl, "%s:%s:%d: " fmt "\n",		\
+			   __FILE__, __func__, __LINE__,	\
+			   ##__VA_ARGS__);			\
+								\
+		if (log_handle)					\
+			log_handle(lvl, fmt, ##__VA_ARGS__);	\
+	}
+
+#define fatal(...) \
+	log(LOG_FATAL, ##__VA_ARGS__)
+
+#define error(...) \
+	log(LOG_ERROR, ##__VA_ARGS__)
+
+#define debug(...) \
+	log(LOG_DEBUG, ##__VA_ARGS__)
 
 #endif /* _LOG_H */

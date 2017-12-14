@@ -91,7 +91,7 @@ mark_as_failed(struct block *block, const char *reason)
 	char full_text[BUFSIZ];
 	const char *name;
 
-	if (log_level < LOG_WARN)
+	if (log_level < LOG_ERROR)
 		return;
 
 	block_reset(block);
@@ -117,7 +117,7 @@ static int block_update_plain_text(char *line, size_t num, void *data)
 	const char *key;
 
 	if (num >= sizeof(keys) / sizeof(keys[0])) {
-		berror(block, "too much lines for plain text update");
+		block_error(block, "too much lines for plain text update");
 		return -EINVAL;
 	}
 
@@ -183,7 +183,7 @@ int block_update(struct block *block)
 			return err;
 	}
 
-	bdebug(block, "updated successfully");
+	block_debug(block, "updated successfully");
 
 	return 0;
 }
@@ -302,7 +302,7 @@ static int block_fork(struct block *block)
 			sys_exit(EXIT_ERR_INTERNAL);
 	}
 
-	bdebug(block, "forked child %d", block->pid);
+	block_debug(block, "forked child %d", block->pid);
 
 	return block_parent(block);
 }
@@ -312,12 +312,12 @@ int block_spawn(struct block *block)
 	int err;
 
 	if (!block->command) {
-		bdebug(block, "no command, skipping");
+		block_debug(block, "no command, skipping");
 		return 0;
 	}
 
 	if (block->pid > 0) {
-		bdebug(block, "process already spawned");
+		block_debug(block, "process already spawned");
 		return 0;
 	}
 
@@ -343,7 +343,7 @@ static int block_wait(struct block *block)
 	int err;
 
 	if (block->pid <= 0) {
-		bdebug(block, "not spawned yet");
+		block_debug(block, "not spawned yet");
 		return -EAGAIN;
 	}
 
@@ -351,7 +351,7 @@ static int block_wait(struct block *block)
 	if (err)
 		return err;
 
-	bdebug(block, "process %d exited with %d", block->pid, block->code);
+	block_debug(block, "process %d exited with %d", block->pid, block->code);
 
 	/* Process successfully reaped, reset the block PID */
 	block->pid = 0;
@@ -368,13 +368,13 @@ static void block_close(struct block *block)
 
 	err = sys_close(block->out[0]);
 	if (err)
-		bdebug(block, "failed to close stdout");
+		block_debug(block, "failed to close stdout");
 
 	block->out[0] = -1;
 
 	err = sys_close(block->err[0]);
 	if (err)
-		bdebug(block, "failed to close stderr");
+		block_debug(block, "failed to close stderr");
 
 	block->err[0] = -1;
 }
@@ -383,7 +383,7 @@ static int block_stderr_line(char *line, size_t num, void *data)
 {
 	struct block *block = data;
 
-	bdebug(block, "{stderr} %s", line);
+	block_debug(block, "{stderr} %s", line);
 
 	return 0;
 }
@@ -480,7 +480,7 @@ int block_setup(struct block *block)
 
 	block_reset(block);
 
-	bdebug(block, "new block");
+	block_debug(block, "new block");
 
 	return 0;
 }

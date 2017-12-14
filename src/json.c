@@ -106,7 +106,7 @@ json_print_bar(struct bar *bar)
 
 		/* full_text is the only mandatory key, skip if empty */
 		if (!*full_text) {
-			bdebug(block, "no text to display, skipping");
+			block_debug(block, "no text to display, skipping");
 			continue;
 		}
 
