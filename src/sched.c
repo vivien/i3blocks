@@ -16,13 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <errno.h>
-#include <fcntl.h>
 #include <signal.h>
-#include <stdio.h>
 #include <string.h>
-#include <sys/time.h>
-#include <sys/wait.h>
 #include <unistd.h>
 
 #include "bar.h"
@@ -30,6 +25,7 @@
 #include "io.h"
 #include "json.h"
 #include "log.h"
+#include "sys.h"
 
 static sigset_t set;
 
@@ -65,21 +61,16 @@ static int
 setup_timer(struct bar *bar)
 {
 	const unsigned sleeptime = longest_sleep(bar);
+	int err;
 
 	if (!sleeptime) {
 		debug("no timer needed");
 		return 0;
 	}
 
-	struct itimerval itv = {
-		.it_value.tv_sec = sleeptime,
-		.it_interval.tv_sec = sleeptime,
-	};
-
-	if (setitimer(ITIMER_REAL, &itv, NULL) == -1) {
-		errorx("setitimer");
-		return 1;
-	}
+	err = sys_setitimer(sleeptime);
+	if (err)
+		return err;
 
 	debug("starting timer with interval of %d seconds", sleeptime);
 	return 0;
@@ -88,64 +79,84 @@ setup_timer(struct bar *bar)
 static int
 setup_signals(void)
 {
-	if (sigemptyset(&set) == -1) {
-		errorx("sigemptyset");
-		return 1;
-	}
+	int sig;
+	int err;
 
-#define ADD_SIG(_sig) \
-	if (sigaddset(&set, _sig) == -1) { errorx("sigaddset(%d)", _sig); return 1; }
+	err = sys_sigemptyset(&set);
+	if (err)
+		return err;
 
 	/* Control signals */
-	ADD_SIG(SIGTERM);
-	ADD_SIG(SIGINT);
+	err = sys_sigaddset(&set, SIGTERM);
+	if (err)
+		return err;
+
+	err = sys_sigaddset(&set, SIGINT);
+	if (err)
+		return err;
 
 	/* Timer signal */
-	ADD_SIG(SIGALRM);
+	err = sys_sigaddset(&set, SIGALRM);
+	if (err)
+		return err;
 
 	/* Block updates (forks) */
-	ADD_SIG(SIGCHLD);
+	err = sys_sigaddset(&set, SIGCHLD);
+	if (err)
+		return err;
 
 	/* Deprecated signals */
-	ADD_SIG(SIGUSR1);
-	ADD_SIG(SIGUSR2);
+	err = sys_sigaddset(&set, SIGUSR1);
+	if (err)
+		return err;
+
+	err = sys_sigaddset(&set, SIGUSR2);
+	if (err)
+		return err;
 
 	/* Click signal */
-	ADD_SIG(SIGIO);
+	err = sys_sigaddset(&set, SIGIO);
+	if (err)
+		return err;
 
 	/* I/O Possible signal for persistent blocks */
-	ADD_SIG(SIGRTMIN);
+	err = sys_sigaddset(&set, SIGRTMIN);
+	if (err)
+		return err;
 
 	/* Real-time signals for blocks */
-	for (int sig = SIGRTMIN + 1; sig <= SIGRTMAX; ++sig) {
+	for (sig = SIGRTMIN + 1; sig <= SIGRTMAX; ++sig) {
 		debug("provide signal %d (%s)", sig, strsignal(sig));
-		ADD_SIG(sig);
+		err = sys_sigaddset(&set, sig);
+		if (err)
+			return err;
 	}
-
-#undef ADD_SIG
 
 	/* Block signals for which we are interested in waiting */
-	if (sigprocmask(SIG_SETMASK, &set, NULL) == -1) {
-		errorx("sigprocmask");
-		return 1;
-	}
-
-	return 0;
+	return sys_sigsetmask(&set);
 }
 
 int
 sched_init(struct bar *bar)
 {
-	if (setup_signals())
-		return 1;
+	int err;
 
-	if (setup_timer(bar))
-		return 1;
+	err = setup_signals();
+	if (err)
+		return err;
+
+	err = setup_timer(bar);
+	if (err)
+		return err;
 
 	/* Setup event I/O for stdin (clicks) */
-	if (!isatty(STDIN_FILENO))
-		if (io_signal(STDIN_FILENO, SIGIO))
-			return 1;
+	err = sys_isatty(STDIN_FILENO);
+	if (err) {
+		if (err == -ENOTTY)
+			return sys_async(STDIN_FILENO, SIGIO);
+
+		return err;
+	}
 
 	return 0;
 }
@@ -153,8 +164,8 @@ sched_init(struct bar *bar)
 void
 sched_start(struct bar *bar)
 {
-	siginfo_t siginfo;
-	int sig;
+	int sig, fd;
+	int err;
 
 	/*
 	 * Initial display (for static blocks and loading labels),
@@ -164,13 +175,11 @@ sched_start(struct bar *bar)
 	bar_poll_timed(bar);
 
 	while (1) {
-		sig = sigwaitinfo(&set, &siginfo);
-		if (sig == -1) {
+		err = sys_sigwaitinfo(&set, &sig, &fd);
+		if (err) {
 			/* Hiding the bar may interrupt this system call */
-			if (errno == EINTR)
+			if (err == -EINTR)
 				continue;
-
-			errorx("sigwaitinfo");
 			break;
 		}
 
@@ -194,7 +203,7 @@ sched_start(struct bar *bar)
 
 		/* Persistent block ready to be read? */
 		} else if (sig == SIGRTMIN) {
-			bar_poll_readable(bar, siginfo.si_fd);
+			bar_poll_readable(bar, fd);
 			json_print_bar(bar);
 
 		/* Blocks signaled? */
@@ -212,10 +221,13 @@ sched_start(struct bar *bar)
 	 * Unblock signals (so subsequent syscall can be interrupted)
 	 * and wait for child processes termination.
 	 */
-	if (sigprocmask(SIG_UNBLOCK, &set, NULL) == -1)
-		errorx("sigprocmask");
-	while (waitpid(-1, NULL, 0) > 0)
-		continue;
+	err = sys_sigunblock(&set);
+	if (err)
+		error("failed to unblock signals");
+
+	err = sys_waitanychild();
+	if (err)
+		error("failed to wait any child");
 
 	debug("quit scheduling");
 }

@@ -48,8 +48,10 @@ struct block {
 
 	/* Runtime info */
 	unsigned long timestamp;
+	int out[2];
+	int err[2];
+	int code;
 	pid_t pid;
-	int out, err;
 };
 
 const char *block_get(const struct block *block, const char *key);
@@ -67,11 +69,11 @@ int block_for_each(const struct block *block,
 #define berrorx(block, msg, ...) \
 	errorx("[%s] " msg, block_get(block, "name") ? : "unknown", ##__VA_ARGS__)
 
-int block_setup(struct block *);
+int block_setup(struct block *block);
 int block_click(struct block *block, const struct click *click);
-void block_spawn(struct block *block);
+int block_spawn(struct block *block);
 void block_touch(struct block *block);
-void block_reap(struct block *);
-void block_update(struct block *);
+int block_reap(struct block *block);
+int block_update(struct block *block);
 
 #endif /* _BLOCK_H */

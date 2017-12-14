@@ -16,12 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <errno.h>
 #include <limits.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include "bar.h"
 #include "block.h"
@@ -29,6 +26,7 @@
 #include "io.h"
 #include "log.h"
 #include "map.h"
+#include "sys.h"
 
 #ifndef SYSCONFDIR
 #define SYSCONFDIR "/etc"
@@ -159,18 +157,19 @@ static struct bar *config_open(const char *path, bool *found)
 {
 	struct bar *bar = NULL;
 	bool noent = false;
+	int err;
 	int fd;
 
 	debug("try file %s", path);
 
-	fd = io_open(path);
-	if (fd < 0) {
-		if (fd == -ENOENT && found)
+	err = sys_open(path, &fd);
+	if (err) {
+		if (err == -ENOENT && found)
 			noent = true;
 	} else {
 		bar = config_read(fd);
-		fd = io_close(fd);
-		if (fd)
+		err = sys_close(fd);
+		if (err)
 			debug("closing \"%s\" failed", path);
 	}
 
@@ -183,9 +182,9 @@ static struct bar *config_open(const char *path, bool *found)
 struct bar *
 config_load(const char *inifile)
 {
-	const char * const home = getenv("HOME");
-	const char * const xdg_home = getenv("XDG_CONFIG_HOME");
-	const char * const xdg_dirs = getenv("XDG_CONFIG_DIRS");
+	const char * const home = sys_getenv("HOME");
+	const char * const xdg_home = sys_getenv("XDG_CONFIG_HOME");
+	const char * const xdg_dirs = sys_getenv("XDG_CONFIG_DIRS");
 	char buf[PATH_MAX];
 	struct bar *bar;
 	bool found;

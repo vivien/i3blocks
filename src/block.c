@@ -16,21 +16,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <errno.h>
-#include <signal.h>
-#include <stddef.h>
-#include <stdio.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/wait.h>
-#include <time.h>
-#include <unistd.h>
 
 #include "block.h"
 #include "click.h"
 #include "io.h"
 #include "json.h"
 #include "log.h"
+#include "sys.h"
 
 const char *block_get(const struct block *block, const char *key)
 {
@@ -56,93 +51,30 @@ int block_for_each(const struct block *block,
 	return map_for_each(block->customs, func, data);
 }
 
-static void
-child_setenv(struct block *block, const char *name, const char *value)
+static int block_setenv(const char *name, const char *value, void *data)
 {
-	if (setenv(name, value, 1) == -1) {
-		berrorx(block, "setenv(%s=%s)", name, value);
-		_exit(EXIT_ERR_INTERNAL);
-	}
-}
+	if (!value)
+		value = "";
 
-static void
-child_setup_env(struct block *block)
-{
-	child_setenv(block, "BLOCK_NAME", block_get(block, "name") ? : "");
-	child_setenv(block, "BLOCK_INSTANCE", block_get(block, "instance") ? : "");
-	child_setenv(block, "BLOCK_INTERVAL", block_get(block, "interval") ? : "");
-	child_setenv(block, "BLOCK_BUTTON", block_get(block, "button") ? : "");
-	child_setenv(block, "BLOCK_X", block_get(block, "x") ? : "");
-	child_setenv(block, "BLOCK_Y", block_get(block, "y") ? : "");
-}
-
-static void
-child_reset_signals(struct block *block)
-{
-	sigset_t set;
-
-	if (sigfillset(&set) == -1) {
-		berrorx(block, "sigfillset");
-		_exit(EXIT_ERR_INTERNAL);
-	}
-
-	/* It should be safe to assume that all signals are unblocked by default */
-	if (sigprocmask(SIG_UNBLOCK, &set, NULL) == -1) {
-		berrorx(block, "sigprocmask");
-		_exit(EXIT_ERR_INTERNAL);
-	}
-}
-
-static void
-child_redirect_write(struct block *block, int pipe[2], int fd)
-{
-	if (close(pipe[0]) == -1) {
-		berrorx(block, "close pipe read end");
-		_exit(EXIT_ERR_INTERNAL);
-	}
-
-	/* Defensive check */
-	if (pipe[1] == fd)
-		return;
-
-	if (dup2(pipe[1], fd) == -1) {
-		berrorx(block, "dup pipe write end");
-		_exit(EXIT_ERR_INTERNAL);
-	}
-
-	if (close(pipe[1]) == -1) {
-		berrorx(block, "close pipe write end");
-		_exit(EXIT_ERR_INTERNAL);
-	}
-}
-
-static void
-child_exec(struct block *block)
-{
-	static const char * const shell = "/bin/sh";
-
-	execl(shell, shell, "-c", block->command, (char *) NULL);
-	/* Unlikely to reach this point */
-	berrorx(block, "exec(%s -c %s)", shell, block->command);
-	_exit(EXIT_ERR_INTERNAL);
-}
-
-static int block_dump_stderr_line(char *line, size_t num, void *data)
-{
-	struct block *block = data;
-
-	bdebug(block, "{stderr} %s", line);
+	if (strcmp(name, "name") == 0)
+		return sys_setenv("BLOCK_NAME", value);
+	if (strcmp(name, "instance") == 0)
+		return sys_setenv("BLOCK_INSTANCE", value);
+	if (strcmp(name, "interval") == 0)
+		return sys_setenv("BLOCK_INTERVAL", value);
+	if (strcmp(name, "button") == 0)
+		return sys_setenv("BLOCK_BUTTON", value);
+	if (strcmp(name, "x") == 0)
+		return sys_setenv("BLOCK_X", value);
+	if (strcmp(name, "y") == 0)
+		return sys_setenv("BLOCK_Y", value);
 
 	return 0;
 }
 
-static void block_dump_stderr(struct block *block)
+static int block_child_env(struct block *block)
 {
-	int err;
-
-	err = io_readlines(block->err, -1, block_dump_stderr_line, block);
-	if (err)
-		berror(block, "read stderr");
+	return block_for_each(block, block_setenv, NULL);
 }
 
 static void
@@ -196,16 +128,10 @@ static int block_update_json(char *name, char *value, void *data)
 	return block_set(block, name, value);
 }
 
-void
-block_update(struct block *block)
+static int block_stdout(struct block *block)
 {
-	const char *full_text;
-	const char *label;
+	int out = block->out[0];
 	size_t count;
-	int err;
-
-	/* Reset properties to default before updating from output */
-	block_reset(block);
 
 	if (block->interval == INTER_PERSIST)
 		count = 1;
@@ -213,15 +139,25 @@ block_update(struct block *block)
 		count = -1; /* SIZE_MAX */
 
 	if (block->format == FORMAT_JSON)
-		err = json_read(block->out, count, block_update_json, block);
+		return json_read(out, count, block_update_json, block);
 	else
-		err = io_readlines(block->out, count, block_update_plain_text,
-				   block);
+		return io_readlines(out, count, block_update_plain_text, block);
+}
 
-	if (err) {
-		berror(block, "failed to read output");
-		return mark_as_failed(block, "read failed");
-	}
+int block_update(struct block *block)
+{
+	const char *full_text;
+	const char *label;
+	int err;
+
+	/* Reset properties to default before updating from output */
+	err = block_reset(block);
+	if (err)
+		return err;
+
+	err = block_stdout(block);
+	if (err)
+		return err;
 
 	full_text = block_get(block, "full_text") ? : "";
 	label = block_get(block, "label") ? : "";
@@ -230,10 +166,21 @@ block_update(struct block *block)
 		const size_t sz = strlen(full_text) + strlen(label) + 2;
 		char concat[sz];
 		snprintf(concat, sz, "%s %s", label, full_text);
-		block_set(block, "full_text", concat);
+		err = block_set(block, "full_text", concat);
+		if (err)
+			return err;
+	}
+
+	/* Exit code takes precedence over the output */
+	if (block->code == EXIT_URGENT) {
+		err = block_set(block, "urgent", "true");
+		if (err)
+			return err;
 	}
 
 	bdebug(block, "updated successfully");
+
+	return 0;
 }
 
 int block_click(struct block *block, const struct click *click)
@@ -253,49 +200,73 @@ int block_click(struct block *block, const struct click *click)
 
 void block_touch(struct block *block)
 {
-	block->timestamp = time(NULL);
+	block->timestamp = sys_time();
 }
 
-void block_spawn(struct block *block)
+static int block_child_sig(struct block *block)
 {
-	int out[2], err[2];
+	sigset_t set;
+	int err;
 
-	if (!block->command) {
-		bdebug(block, "no command, skipping");
-		return;
-	}
+	/* It'd be safe to assume that all signals are unblocked by default */
+	err = sys_sigfillset(&set);
+	if (err)
+		return err;
 
-	if (block->pid > 0) {
-		bdebug(block, "process already spawned");
-		return;
-	}
+	return sys_sigunblock(&set);
+}
 
-	if (pipe(out) == -1 || pipe(err) == -1) {
-		berrorx(block, "pipe");
-		return mark_as_failed(block, strerror(errno));
-	}
+static int block_child_pipe(int *pipe, int fd)
+{
+	int err;
 
-	if (block->interval == INTER_PERSIST) {
-		if (io_signal(out[0], SIGRTMIN))
-			return mark_as_failed(block, "event I/O impossible");
-	}
+	/* Close read end of the pipe */
+	err = sys_close(pipe[0]);
+	if (err)
+		return err;
 
-	block->pid = fork();
-	if (block->pid == -1) {
-		berrorx(block, "fork");
-		return mark_as_failed(block, strerror(errno));
-	}
+	/* Rebound write end of the pipe to fd */
+	err = sys_dup(pipe[1], fd);
+	if (err)
+		return err;
 
-	/* Child? */
-	if (block->pid == 0) {
-		/* Error messages are merged into the parent's stderr... */
-		child_setup_env(block);
-		child_reset_signals(block);
-		child_redirect_write(block, out, STDOUT_FILENO);
-		child_redirect_write(block, err, STDERR_FILENO);
-		/* ... until here */
-		child_exec(block);
-	}
+	/* Close the superfluous descriptor */
+	return sys_close(pipe[1]);
+}
+
+static int block_child_exec(struct block *block)
+{
+	return sys_execsh(block->command);
+}
+
+static int block_child(struct block *block)
+{
+	int err;
+
+	/* Error messages are merged into the parent's stderr... */
+	err = block_child_env(block);
+	if (err)
+		return err;
+
+	err = block_child_sig(block);
+	if (err)
+		return err;
+
+	err = block_child_pipe(block->out, STDOUT_FILENO);
+	if (err)
+		return err;
+
+	err = block_child_pipe(block->err, STDERR_FILENO);
+	if (err)
+		return err;
+
+	/* ... until here */
+	return block_child_exec(block);
+}
+
+static int block_parent(struct block *block)
+{
+	int err;
 
 	/*
 	 * Note: for non-persistent blocks, no need to set the pipe read end as
@@ -303,51 +274,141 @@ void block_spawn(struct block *block)
 	 * (and thus the write end is closed and read is available).
 	 */
 
-	/* Parent */
-	if (close(out[1]) == -1)
-		berrorx(block, "close stdout");
-	if (close(err[1]) == -1)
-		berrorx(block, "close stderr");
+	/* Close write end of stdout pipe */
+	err = sys_close(block->out[1]);
+	if (err)
+		return err;
 
-	block->out = out[0];
-	block->err = err[0];
-
-	bdebug(block, "forked child %d", block->pid);
+	/* Close write end of stderr pipe */
+	return sys_close(block->err[1]);
 }
 
-void
-block_reap(struct block *block)
+static int block_fork(struct block *block)
 {
-	int status, code;
+	int err;
+
+	err = sys_fork(&block->pid);
+	if (err)
+		return err;
+
+	if (block->pid == 0) {
+		err = block_child(block);
+		if (err)
+			sys_exit(EXIT_ERR_INTERNAL);
+	}
+
+	bdebug(block, "forked child %d", block->pid);
+
+	return block_parent(block);
+}
+
+int block_spawn(struct block *block)
+{
+	int err;
+
+	if (!block->command) {
+		bdebug(block, "no command, skipping");
+		return 0;
+	}
+
+	if (block->pid > 0) {
+		bdebug(block, "process already spawned");
+		return 0;
+	}
+
+	err = sys_pipe(block->out);
+	if (err)
+		return err;
+
+	err = sys_pipe(block->err);
+	if (err)
+		return err;
+
+	if (block->interval == INTER_PERSIST) {
+		err = sys_async(block->out[0], SIGRTMIN);
+		if (err)
+			return err;
+	}
+
+	return block_fork(block);
+}
+
+static int block_wait(struct block *block)
+{
+	int err;
 
 	if (block->pid <= 0) {
 		bdebug(block, "not spawned yet");
-		return;
+		return -EAGAIN;
 	}
 
-	if (waitpid(block->pid, &status, 0) == -1) {
-		berrorx(block, "waitpid(%d)", block->pid);
-		mark_as_failed(block, strerror(errno));
-		goto close;
-	}
+	err = sys_waitpid(block->pid, &block->code);
+	if (err)
+		return err;
 
-	code = WEXITSTATUS(status);
-	bdebug(block, "process %d exited with %d", block->pid, code);
+	bdebug(block, "process %d exited with %d", block->pid, block->code);
 
 	/* Process successfully reaped, reset the block PID */
 	block->pid = 0;
 
-	block_dump_stderr(block);
+	if (block->code == EXIT_ERR_INTERNAL)
+		return -ECHILD;
 
-	if (code != 0 && code != EXIT_URGENT) {
+	return 0;
+}
+
+static void block_close(struct block *block)
+{
+	int err;
+
+	err = sys_close(block->out[0]);
+	if (err)
+		bdebug(block, "failed to close stdout");
+
+	block->out[0] = -1;
+
+	err = sys_close(block->err[0]);
+	if (err)
+		bdebug(block, "failed to close stderr");
+
+	block->err[0] = -1;
+}
+
+static int block_stderr_line(char *line, size_t num, void *data)
+{
+	struct block *block = data;
+
+	bdebug(block, "{stderr} %s", line);
+
+	return 0;
+}
+
+static int block_stderr(struct block *block)
+{
+	return io_readlines(block->err[0], -1, block_stderr_line, block);
+}
+
+int block_reap(struct block *block)
+{
+	int err;
+
+	err = block_wait(block);
+	if (err) {
+		if (err == -EAGAIN)
+			return 0;
+
+		mark_as_failed(block, "internal error");
+		return err;
+	}
+
+	err = block_stderr(block);
+	if (err)
+		goto close;
+
+	if (block->code != 0 && block->code != EXIT_URGENT) {
 		char reason[32];
 
-		if (code == EXIT_ERR_INTERNAL)
-			sprintf(reason, "internal error");
-		else
-			sprintf(reason, "bad exit code %d", code);
-
-		berror(block, "%s", reason);
+		sprintf(reason, "bad exit code %d", block->code);
 		mark_as_failed(block, reason);
 		goto close;
 	}
@@ -356,19 +417,14 @@ block_reap(struct block *block)
 	if (block->interval == INTER_PERSIST)
 		goto close;
 
-	block_update(block);
-
-	/* Exit code takes precedence over the output */
-	if (code == EXIT_URGENT)
-		block_set(block, "urgent", "true");
+	err = block_update(block);
+	if (err)
+		mark_as_failed(block, "failed to update");
 close:
-	if (close(block->out) == -1)
-		berrorx(block, "close stdout");
-	if (close(block->err) == -1)
-		berrorx(block, "close stderr");
-
 	/* Invalidate descriptors to avoid misdetection after reassignment */
-	block->out = block->err = -1;
+	block_close(block);
+
+	return err;
 }
 
 static int block_debug_value(const char *key, const char *value, void *data)
