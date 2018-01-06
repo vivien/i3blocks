@@ -42,7 +42,7 @@ align=left
 
 You can use your own scripts, or the 
 [ones](https://github.com/vivien/i3blocks/tree/master/scripts) provided with 
-i3blocks. Feel free to contribute and improve them!
+i3blocks. Many [community-contributed scripts](https://github.com/vivien/i3blocks-contrib) are also available. Feel free to contribute and improve them!
 
 The default config will look like this:
 
