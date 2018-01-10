@@ -18,8 +18,9 @@
 
 #include <getopt.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-#include "config.h"
+#include "bar.h"
 #include "log.h"
 #include "sched.h"
 
@@ -41,14 +42,14 @@ start(void)
 int
 main(int argc, char *argv[])
 {
-	char *inifile = NULL;
+	char *path = NULL;
 	struct bar *bar;
 	int c;
 
 	while (c = getopt(argc, argv, "c:vhV"), c != -1) {
 		switch (c) {
 		case 'c':
-			inifile = optarg;
+			path = optarg;
 			break;
 		case 'v':
 			log_level++;
@@ -67,18 +68,19 @@ main(int argc, char *argv[])
 
 	debug("log level %u", log_level);
 
-	bar = config_load(inifile);
-	if (!bar) {
-		error("Try '%s -h' for more information.", argv[0]);
-		return 1;
-	}
+	bar = calloc(1, sizeof(struct bar));
+	if (!bar)
+		return EXIT_FAILURE;
+
+	start();
+
+	bar_load(bar, path);
 
 	if (sched_init(bar))
 		return 1;
 
-	start();
 	sched_start(bar);
 
 	//stop();
-	return 0;
+	return EXIT_SUCCESS;
 }

@@ -19,8 +19,9 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
-#include "bar.h"
+#include "map.h"
 
-struct bar *config_load(const char *);
+typedef int config_cb_t(struct map *map, void *data);
+int config_load(const char *path, config_cb_t *cb, void *data);
 
 #endif /* _CONFIG_H */

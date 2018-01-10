@@ -16,11 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
 #include <string.h>
 
 #include "bar.h"
 #include "block.h"
 #include "click.h"
+#include "config.h"
 #include "log.h"
 #include "sys.h"
 
@@ -151,4 +153,42 @@ bar_poll_readable(struct bar *bar, const int fd)
 			break;
 		}
 	}
+}
+
+static struct block *bar_add_block(struct bar *bar)
+{
+	struct block *block = NULL;
+	void *reloc;
+
+	reloc = realloc(bar->blocks, sizeof(struct block) * (bar->num + 1));
+	if (reloc) {
+		bar->blocks = reloc;
+		block = bar->blocks + bar->num;
+		bar->num++;
+	}
+
+	return block;
+}
+
+static int bar_config_cb(struct map *map, void *data)
+{
+	struct bar *bar = data;
+	struct block *block;
+
+	block = bar_add_block(bar);
+	if (!block)
+		return -ENOMEM;
+
+	block->defaults = map;
+
+	return block_setup(block);
+}
+
+void bar_load(struct bar *bar, const char *path)
+{
+	int err;
+
+	err = config_load(path, bar_config_cb, bar);
+	if (err)
+		fatal("Failed to load bar configuration file");
 }

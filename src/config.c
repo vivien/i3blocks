@@ -20,8 +20,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include "bar.h"
-#include "block.h"
+#include "config.h"
 #include "ini.h"
 #include "log.h"
 #include "map.h"
@@ -32,41 +31,24 @@
 #endif
 
 struct config {
-	struct map *defaults;
 	struct map *globals;
-	struct bar *bar;
+	struct map *current;
+	config_cb_t *cb;
+	void *data;
 };
-
-static struct block *
-add_block(struct bar *bar)
-{
-	struct block *block = NULL;
-	void *reloc;
-
-	reloc = realloc(bar->blocks, sizeof(struct block) * (bar->num + 1));
-	if (reloc) {
-		bar->blocks = reloc;
-		block = bar->blocks + bar->num;
-		bar->num++;
-	}
-
-	return block;
-}
 
 static int config_finalize(struct config *conf)
 {
-	if (conf->defaults) {
-		struct block *block;
+	int err;
 
-		block = add_block(conf->bar);
-		if (!block)
-			return -ENOMEM;
+	if (conf->current) {
+		if (conf->cb) {
+			err = conf->cb(conf->current, conf->data);
+			if (err)
+				return err;
+		}
 
-		block->defaults = conf->defaults;
-
-		block_setup(block);
-
-		conf->defaults = NULL;
+		conf->current = NULL;
 	}
 
 	return 0;
@@ -74,19 +56,19 @@ static int config_finalize(struct config *conf)
 
 static int config_reset(struct config *conf)
 {
-	conf->defaults = map_create();
-	if (!conf->defaults)
+	conf->current = map_create();
+	if (!conf->current)
 		return -ENOMEM;
 
 	if (conf->globals)
-		return map_copy(conf->defaults, conf->globals);
+		return map_copy(conf->current, conf->globals);
 
 	return 0;
 }
 
 static int config_set(struct config *conf, const char *key, const char *value)
 {
-	struct map *map = conf->defaults;
+	struct map *map = conf->current;
 
 	if (!map) {
 		if (!conf->globals) {
@@ -121,7 +103,7 @@ static int config_ini_property_cb(char *key, char *value, void *data)
 	return config_set(data, key, value);
 }
 
-static int config_ini_read(struct config *conf, int fd)
+static int config_read(struct config *conf, int fd)
 {
 	int err;
 
@@ -133,90 +115,65 @@ static int config_ini_read(struct config *conf, int fd)
 	return config_finalize(conf);
 }
 
-static struct bar *config_read(int fd)
+static int config_open(struct config *conf, const char *path)
 {
-	struct config conf = { 0 };
-	int err;
-
-	conf.bar = calloc(1, sizeof(struct bar));
-	if (!conf.bar)
-		return NULL;
-
-	err = config_ini_read(&conf, fd);
-	if (err) {
-		free(conf.bar->blocks);
-		free(conf.bar);
-		return NULL;
-	}
-
-	return conf.bar;
-}
-
-static struct bar *config_open(const char *path, bool *found)
-{
-	struct bar *bar = NULL;
-	bool noent = false;
 	int err;
 	int fd;
 
 	debug("try file %s", path);
 
 	err = sys_open(path, &fd);
-	if (err) {
-		if (err == -ENOENT && found)
-			noent = true;
-	} else {
-		bar = config_read(fd);
-		err = sys_close(fd);
-		if (err)
-			debug("closing \"%s\" failed", path);
-	}
+	if (err)
+		return err;
 
-	if (found)
-		*found = !noent;
+	err = config_read(conf, fd);
+	sys_close(fd);
 
-	return bar;
+	return err;
 }
 
-struct bar *
-config_load(const char *inifile)
+int config_load(const char *path, config_cb_t *cb, void *data)
 {
 	const char * const home = sys_getenv("HOME");
 	const char * const xdg_home = sys_getenv("XDG_CONFIG_HOME");
 	const char * const xdg_dirs = sys_getenv("XDG_CONFIG_DIRS");
+	struct config conf = {
+		.data = data,
+		.cb = cb,
+	};
 	char buf[PATH_MAX];
-	struct bar *bar;
-	bool found;
+	int err;
+
 
 	/* command line config file? */
-	if (inifile)
-		return config_open(inifile, NULL);
+	if (path)
+		return config_open(&conf, path);
 
 	/* user config file? */
 	if (home) {
 		if (xdg_home)
-			snprintf(buf, PATH_MAX, "%s/i3blocks/config", xdg_home);
+			snprintf(buf, sizeof(buf), "%s/i3blocks/config", xdg_home);
 		else
-			snprintf(buf, PATH_MAX, "%s/.config/i3blocks/config", home);
-		bar = config_open(buf, &found);
-		if (found)
-			return bar;
+			snprintf(buf, sizeof(buf), "%s/.config/i3blocks/config", home);
+		err = config_open(&conf, buf);
+		if (err != -ENOENT)
+			return err;
 
-		snprintf(buf, PATH_MAX, "%s/.i3blocks.conf", home);
-		bar = config_open(buf, &found);
-		if (found)
-			return bar;
+		snprintf(buf, sizeof(buf), "%s/.i3blocks.conf", home);
+		err = config_open(&conf, buf);
+		if (err != -ENOENT)
+			return err;
 	}
 
 	/* system config file? */
 	if (xdg_dirs)
-		snprintf(buf, PATH_MAX, "%s/i3blocks/config", xdg_dirs);
+		snprintf(buf, sizeof(buf), "%s/i3blocks/config", xdg_dirs);
 	else
-		snprintf(buf, PATH_MAX, "%s/xdg/i3blocks/config", SYSCONFDIR);
-	bar = config_open(buf, &found);
-	if (found)
-		return bar;
+		snprintf(buf, sizeof(buf), "%s/xdg/i3blocks/config", SYSCONFDIR);
+	err = config_open(&conf, buf);
+	if (err != -ENOENT)
+		return err;
 
-	snprintf(buf, PATH_MAX, "%s/i3blocks.conf", SYSCONFDIR);
-	return config_open(buf, NULL);
+	snprintf(buf, sizeof(buf), "%s/i3blocks.conf", SYSCONFDIR);
+	return config_open(&conf, buf);
 }
