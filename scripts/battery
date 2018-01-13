@@ -15,6 +15,7 @@
 use strict;
 use warnings;
 use utf8;
+use Desktop::Notify;
 
 my $acpi;
 my $status;
@@ -83,6 +84,15 @@ if ($status eq 'Discharging') {
 
 	if ($percent < 5) {
 		exit(33);
+	}
+	if ($percent < 15) {
+		my $notify = new Desktop::Notify;
+		my $notification = $notify->create(
+			summary => "Low Battery ($percent)\n",
+			body => "You must plug in your adapter",
+			timeout => 2000,
+		);
+		$notification->show();
 	}
 }
 
