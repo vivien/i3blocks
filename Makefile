@@ -28,6 +28,7 @@ PROGRAM = i3blocks
 CPPFLAGS += -DSYSCONFDIR=\"$(SYSCONFDIR)\"
 CPPFLAGS += -DVERSION=\"${VERSION}\"
 CFLAGS += -std=gnu99 -Iinclude -Wall -Werror=format-security
+LDFLAGS += -lrt
 
 OBJS := $(sort $(wildcard src/*.c))
 OBJS := $(OBJS:.c=.o)
@@ -43,7 +44,7 @@ debug: CFLAGS += -g
 debug: $(PROGRAM)
 
 $(PROGRAM): ${OBJS}
-	$(CC) $(LDFLAGS) -o $@ $^
+	$(CC) -o $@ $^ $(LDFLAGS)
 	@echo " LD $@"
 
 man: $(PROGRAM).1

@@ -76,7 +76,7 @@ struct block {
 	unsigned format;
 
 	/* Runtime info */
-	unsigned long timestamp;
+	struct timespec timestamp;
 	pid_t pid;
 	int out, err;
 };
