@@ -446,6 +446,17 @@ static void block_debug(const struct block *block)
 	block_for_each(block, block_debug_value, NULL);
 }
 
+static int str_to_seconds(const char *str)
+{
+	int factor = 1;
+	char suffix = str[strlen(str)-1];
+	if (suffix == 'm')
+		factor = 60;
+	else if (suffix == 'h')
+		factor = 3600;
+	return factor * atoi(str);
+}
+
 static int block_default(const char *key, const char *value, void *data)
 {
 	struct block *block = data;
@@ -461,7 +472,7 @@ static int block_default(const char *key, const char *value, void *data)
 		else if (value && strcmp(value, "persist") == 0)
 			block->interval = INTER_PERSIST;
 		else if (value)
-			block->interval = atoi(value);
+			block->interval = str_to_seconds(value);
 		else
 			block->interval = 0;
 	} else if (strcmp(key, "format") == 0) {
