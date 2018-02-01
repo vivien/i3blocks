@@ -51,7 +51,7 @@ Here is an example config file:
 
     [weather]
     command=~/bin/weather.pl
-    interval=1800
+    interval=30m
 
     [time]
     command=date +%T
@@ -109,6 +109,8 @@ The following keys are specific to **i3blocks**.
 `interval`
 :    If it is a positive integer, then the block is spawned on startup and the
 	 value is used as a time interval in seconds to schedule future updates.
+	 The number may be suffixed with `m` or `h` to specify minutes or hours
+	 instead of seconds.
 	 If unspecified or 0, the block won't be executed on startup (which is
 	 useful to simulate buttons).
 
