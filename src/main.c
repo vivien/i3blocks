@@ -30,9 +30,9 @@
 unsigned log_level = LOG_NORMAL;
 
 static void
-start(void)
+start(char *header)
 {
-	fprintf(stdout, "{\"version\":1,\"click_events\":true}\n[[]\n");
+	fprintf(stdout, "%s\n[[]\n", header);
 	fflush(stdout);
 }
 
@@ -40,19 +40,23 @@ int
 main(int argc, char *argv[])
 {
 	char *inifile = NULL;
+	char *header = "{\"version\":1,\"click_events\":true}";
 	struct bar *bar;
 	int c;
 
-	while (c = getopt(argc, argv, "c:vhV"), c != -1) {
+	while (c = getopt(argc, argv, "c:H:vhV"), c != -1) {
 		switch (c) {
 		case 'c':
 			inifile = optarg;
+			break;
+		case 'H':
+			header = optarg;
 			break;
 		case 'v':
 			log_level++;
 			break;
 		case 'h':
-			printf("Usage: %s [-c <configfile>] [-h] [-V]\n", argv[0]);
+			printf("Usage: %s [-c <configfile>] [-H <headerblock>] [-h] [-V]\n", argv[0]);
 			return 0;
 		case 'V':
 			printf("i3blocks " VERSION " © 2014 Vivien Didelot and contributors\n");
@@ -74,7 +78,7 @@ main(int argc, char *argv[])
 	if (sched_init(bar))
 		return 1;
 
-	start();
+	start(header);
 	sched_start(bar);
 
 	//stop();
