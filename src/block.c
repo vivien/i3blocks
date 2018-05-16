@@ -50,6 +50,10 @@ child_setup_env(struct block *block, struct click *click)
 	child_setenv(block, "BLOCK_BUTTON", click ? click->button : "");
 	child_setenv(block, "BLOCK_X", click ? click->x : "");
 	child_setenv(block, "BLOCK_Y", click ? click->y : "");
+	child_setenv(block, "BLOCK_RELATIVE_X", click ? click->relative_x : "");
+	child_setenv(block, "BLOCK_RELATIVE_Y", click ? click->relative_y : "");
+	child_setenv(block, "BLOCK_WIDTH", click ? click->width : "");
+	child_setenv(block, "BLOCK_HEIGHT", click ? click->height : "");
 }
 
 static void

@@ -180,6 +180,13 @@ eventually an empty string as the value.
 `BLOCK_X` and `BLOCK_Y`
 :   Coordinates where the click occurred, if the block was clicked.
 
+`BLOCK_RELATIVE_X` and `BLOCK_RELATIVE_Y`
+:   Coordinates where the click occurred, with respect to the top left corner
+    of the block.
+
+`BLOCK_WIDTH` and `BLOCK_HEIGHT`
+:   Width and height (in px) of the block.
+
 Here is an example using the environment:
 
     [block]
