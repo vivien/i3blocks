@@ -23,9 +23,12 @@
 /*
  * Parse a click, previous read from stdin.
  *
- * A click looks like this ("name" and "instance" can be absent):
+ * A click looks like this:
  *
- *     ',{"name":"foo","instance":"bar","button":1,"x":1186,"y":13}\n'
+ *     ',{"name":"foo","instance":"bar","button":1,"x":1186,"y":13,"relative_x":12,"relative_y":8,"width":50,"height":22}\n'
+ *
+ * "name" and "instance" can be absent.
+ * "relative_x", "relative_y", "width", and "height" introduced in i3 v4.15.
  *
  * Note that this function is non-idempotent. We need to parse from right to
  * left. It's ok since the JSON layout is known and fixed.
@@ -38,7 +41,15 @@ click_parse(char *json, struct click *click)
 	int bst, blen;
 	int xst, xlen;
 	int yst, ylen;
+	int rxst, rxlen;
+	int ryst, rylen;
+	int wst, wlen;
+	int hst, hlen;
 
+	json_parse(json, "height", &hst, &hlen);
+	json_parse(json, "width", &wst, &wlen);
+	json_parse(json, "relative_y", &ryst, &rylen);
+	json_parse(json, "relative_x", &rxst, &rxlen);
 	json_parse(json, "y", &yst, &ylen);
 	json_parse(json, "x", &xst, &xlen);
 	json_parse(json, "button", &bst, &blen);
@@ -54,13 +65,27 @@ click_parse(char *json, struct click *click)
 	click->button = json + bst;
 	*(click->button + blen) = '\0';
 
-	click->y = json + yst;
-	*(click->y + ylen) = '\0';
-
 	click->x = json + xst;
 	*(click->x + xlen) = '\0';
 
-	debug("parsed click: name=%s instance=%s button=%s x=%s y=%s",
+	click->y = json + yst;
+	*(click->y + ylen) = '\0';
+
+	click->relative_x = json + rxst;
+	*(click->relative_x + rxlen) = '\0';
+
+	click->relative_y = json + ryst;
+	*(click->relative_y + rylen) = '\0';
+
+	click->width = json + wst;
+	*(click->width + wlen) = '\0';
+
+	click->height = json + hst;
+	*(click->height + hlen) = '\0';
+
+	debug("parsed click: name=%s instance=%s button=%s x=%s y=%s relative_x=%s relative_y=%s width=%s height=%s",
 			click->name, click->instance,
-			click->button, click->x, click->y);
+			click->button, click->x, click->y,
+			click->relative_x, click->relative_y,
+			click->width, click->height);
 }

@@ -25,6 +25,10 @@ struct click {
 	char *button;
 	char *x;
 	char *y;
+	char *relative_x;
+	char *relative_y;
+	char *width;
+	char *height;
 };
 
 void click_parse(char *, struct click *);
