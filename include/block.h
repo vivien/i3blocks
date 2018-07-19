@@ -78,7 +78,7 @@ struct block {
 	/* Runtime info */
 	unsigned long timestamp;
 	pid_t pid;
-	int out, err;
+	int in, out, err;
 };
 
 /* Shortcuts to config */
@@ -102,6 +102,7 @@ struct block {
 
 void block_setup(struct block *);
 void block_spawn(struct block *, struct click *);
+void block_send(struct block *, struct click *);
 void block_reap(struct block *);
 void block_update(struct block *);
 

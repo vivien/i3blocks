@@ -93,6 +93,29 @@ child_redirect_write(struct block *block, int pipe[2], int fd)
 }
 
 static void
+child_redirect_read(struct block *block, int pipe[2], int fd)
+{
+	if (close(pipe[1]) == -1) {
+		berrorx(block, "close pipe write end");
+		_exit(EXIT_ERR_INTERNAL);
+	}
+
+	/* Defensive check */
+	if (pipe[1] == fd)
+		return;
+
+	if (dup2(pipe[0], fd) == -1) {
+		berrorx(block, "dup pipe read end");
+		_exit(EXIT_ERR_INTERNAL);
+	}
+
+	if (close(pipe[0]) == -1) {
+		berrorx(block, "close pipe read end");
+		_exit(EXIT_ERR_INTERNAL);
+	}
+}
+
+static void
 child_exec(struct block *block)
 {
 	static const char * const shell = "/bin/sh";
@@ -235,7 +258,7 @@ void
 block_spawn(struct block *block, struct click *click)
 {
 	const unsigned long now = time(NULL);
-	int out[2], err[2];
+	int in[2], out[2], err[2];
 
 	if (!*COMMAND(block)) {
 		bdebug(block, "no command, skipping");
@@ -247,7 +270,7 @@ block_spawn(struct block *block, struct click *click)
 		return;
 	}
 
-	if (pipe(out) == -1 || pipe(err) == -1) {
+	if (pipe(in) == -1 || pipe(out) == -1 || pipe(err) == -1) {
 		berrorx(block, "pipe");
 		return mark_as_failed(block, strerror(errno));
 	}
@@ -268,6 +291,7 @@ block_spawn(struct block *block, struct click *click)
 		/* Error messages are merged into the parent's stderr... */
 		child_setup_env(block, click);
 		child_reset_signals(block);
+		child_redirect_read(block, in, STDIN_FILENO);
 		child_redirect_write(block, out, STDOUT_FILENO);
 		child_redirect_write(block, err, STDERR_FILENO);
 		/* ... until here */
@@ -281,11 +305,14 @@ block_spawn(struct block *block, struct click *click)
 	 */
 
 	/* Parent */
+	if (close(in[0]) == -1)
+		berrorx(block, "close stdin");
 	if (close(out[1]) == -1)
 		berrorx(block, "close stdout");
 	if (close(err[1]) == -1)
 		berrorx(block, "close stderr");
 
+	block->in = in[1];
 	block->out = out[0];
 	block->err = err[0];
 
@@ -293,6 +320,21 @@ block_spawn(struct block *block, struct click *click)
 		block->timestamp = now;
 
 	bdebug(block, "forked child %d at %ld", block->pid, now);
+}
+
+void
+block_send(struct block *block, struct click *click)
+{
+	if (!*COMMAND(block)) {
+		bdebug(block, "no command, skipping");
+		return;
+	}
+
+	if (block->pid == 0) {
+		bdebug(block, "process not spawned");
+		return;
+	}
+	json_print_click(click, block->in);
 }
 
 void
