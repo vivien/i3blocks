@@ -85,7 +85,7 @@ print_block(struct block *block)
 #define PRINT(_name, _size, _flags) \
 	print_prop(#_name, block->updated_props._name, _flags); \
 
-	fprintf(stdout, ",{\"\":\"\"");
+	fprintf(stdout, "{\"\":\"\"");
 	PROPERTIES(PRINT);
 	fprintf(stdout, "}");
 
@@ -137,7 +137,8 @@ json_parse(const char *json, const char *name, int *start, int *len)
 void
 json_print_bar(struct bar *bar)
 {
-	fprintf(stdout, ",[{\"full_text\":\"\"}");
+	bool first = true;
+	fprintf(stdout, ",[");
 
 	for (int i = 0; i < bar->num; ++i) {
 		struct block *block = bar->blocks + i;
@@ -148,6 +149,8 @@ json_print_bar(struct bar *bar)
 			continue;
 		}
 
+		if (!first) fprintf(stdout, ",");
+		else first = false;
 		print_block(block);
 	}
 
