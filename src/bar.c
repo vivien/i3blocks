@@ -60,7 +60,10 @@ bar_poll_clicked(struct bar *bar)
 
 			if (strcmp(NAME(block), click.name) == 0 && strcmp(INSTANCE(block), click.instance) == 0) {
 				bdebug(block, "clicked");
-				block_spawn(block, &click);
+				if (block->interval == INTER_PERSIST)
+					block_send(block, &click);
+				else
+					block_spawn(block, &click);
 				break; /* Unlikely to click several blocks */
 			}
 		}

@@ -154,3 +154,15 @@ json_print_bar(struct bar *bar)
 	fprintf(stdout, "]\n");
 	fflush(stdout);
 }
+
+void
+json_print_click(struct click *click, int out)
+{
+	dprintf(out, "{");
+	dprintf(out, "\"%s\":\"%s\",", "name", click->name);
+	dprintf(out, "\"%s\":\"%s\",", "instance", click->instance);
+	dprintf(out, "\"%s\":%s,", "button", click->button);
+	dprintf(out, "\"%s\":%s,", "x", click->x);
+	dprintf(out, "\"%s\":%s", "y", click->y);
+	dprintf(out, "}\n");
+}

@@ -24,6 +24,7 @@
 
 void json_parse(const char *json, const char *name, int *start, int *len);
 void json_print_bar(struct bar *);
+void json_print_click(struct click *, int fd);
 
 #endif /* _JSON_H */
 

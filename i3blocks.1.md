@@ -120,6 +120,10 @@ The following keys are specific to **i3blocks**.
 
 	 If "*persist*" (or -3), the block will be executed only on startup, and
 	 updated as soon as it outputs a line. Thus limited to single line updates.
+	 Clicks are passed to the block through stdin in i3bar's json format
+	 instead of as environment variables.  See section 2.3 of
+	 [the i3bar protocol](https://i3wm.org.com/docs/i3bar-protocol.html)
+	 for more details.
 
 `signal`
 :	 The signal number used to update the block. All the real-time (think
