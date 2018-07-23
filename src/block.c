@@ -18,6 +18,7 @@
 
 #include <errno.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -259,6 +260,7 @@ block_spawn(struct block *block, struct click *click)
 {
 	const unsigned long now = time(NULL);
 	int in[2], out[2], err[2];
+	bool persist = block->interval == INTER_PERSIST;
 
 	if (!*COMMAND(block)) {
 		bdebug(block, "no command, skipping");
@@ -270,12 +272,12 @@ block_spawn(struct block *block, struct click *click)
 		return;
 	}
 
-	if (pipe(in) == -1 || pipe(out) == -1 || pipe(err) == -1) {
+	if ((persist && pipe(in) == -1) || pipe(out) == -1 || pipe(err) == -1) {
 		berrorx(block, "pipe");
 		return mark_as_failed(block, strerror(errno));
 	}
 
-	if (block->interval == INTER_PERSIST) {
+	if (persist) {
 		if (io_signal(out[0], SIGRTMIN))
 			return mark_as_failed(block, "event I/O impossible");
 	}
@@ -291,7 +293,7 @@ block_spawn(struct block *block, struct click *click)
 		/* Error messages are merged into the parent's stderr... */
 		child_setup_env(block, click);
 		child_reset_signals(block);
-		child_redirect_read(block, in, STDIN_FILENO);
+		if (persist) child_redirect_read(block, in, STDIN_FILENO);
 		child_redirect_write(block, out, STDOUT_FILENO);
 		child_redirect_write(block, err, STDERR_FILENO);
 		/* ... until here */
@@ -305,14 +307,15 @@ block_spawn(struct block *block, struct click *click)
 	 */
 
 	/* Parent */
-	if (close(in[0]) == -1)
+	if (persist && close(in[0]) == -1)
 		berrorx(block, "close stdin");
 	if (close(out[1]) == -1)
 		berrorx(block, "close stdout");
 	if (close(err[1]) == -1)
 		berrorx(block, "close stderr");
 
-	block->in = in[1];
+	if (persist) block->in = in[1];
+	else block->in = -1;
 	block->out = out[0];
 	block->err = err[0];
 
