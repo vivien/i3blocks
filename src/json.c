@@ -23,8 +23,8 @@
 
 #include "bar.h"
 #include "block.h"
-#include "io.h"
 #include "json.h"
+#include "line.h"
 #include "log.h"
 #include "sys.h"
 
@@ -329,5 +329,5 @@ int json_read(int fd, size_t count, json_pair_cb_t *pair_cb, void *data)
 		.data = data,
 	};
 
-	return io_readlines(fd, count, json_parse_line, &json);
+	return line_read(fd, count, json_parse_line, &json);
 }

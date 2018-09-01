@@ -1,5 +1,5 @@
 /*
- * io.c - non-blocking I/O operations
+ * line.c - generic line parser
  * Copyright (C) 2015  Vivien Didelot
  *
  * This program is free software: you can redistribute it and/or modify
@@ -16,18 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "io.h"
+#include "line.h"
 #include "log.h"
 #include "sys.h"
 
 /* Read a single character and return a negative error code if none was read */
-static int io_getchar(int fd, char *c)
+static int line_getc(int fd, char *c)
 {
 	return sys_read(fd, c, 1, NULL);
 }
 
 /* Read a line including the newline character and return its positive length */
-static ssize_t io_getline(int fd, char *buf, size_t size)
+static ssize_t line_gets(int fd, char *buf, size_t size)
 {
 	size_t len = 0;
 	int err;
@@ -36,7 +36,7 @@ static ssize_t io_getline(int fd, char *buf, size_t size)
 		if (len == size)
 			return -ENOSPC;
 
-		err = io_getchar(fd, buf + len);
+		err = line_getc(fd, buf + len);
 		if (err)
 			return err;
 
@@ -49,13 +49,13 @@ static ssize_t io_getline(int fd, char *buf, size_t size)
 }
 
 /* Read a line excluding the newline character */
-static int io_readline(int fd, io_line_cb *cb, size_t num, void *data)
+static int line_parse(int fd, line_cb_t *cb, size_t num, void *data)
 {
 	char buf[BUFSIZ];
 	ssize_t len;
 	int err;
 
-	len = io_getline(fd, buf, sizeof(buf));
+	len = line_gets(fd, buf, sizeof(buf));
 	if (len < 0)
 		return len;
 
@@ -72,13 +72,13 @@ static int io_readline(int fd, io_line_cb *cb, size_t num, void *data)
 }
 
 /* Read up to count lines excluding their newline character */
-int io_readlines(int fd, size_t count, io_line_cb *cb, void *data)
+int line_read(int fd, size_t count, line_cb_t *cb, void *data)
 {
 	size_t lines = 0;
 	int err;
 
 	while (count--) {
-		err = io_readline(fd, cb, lines++, data);
+		err = line_parse(fd, cb, lines++, data);
 		if (err) {
 			if (err == -EAGAIN)
 				break;

@@ -22,8 +22,8 @@
 
 #include "block.h"
 #include "click.h"
-#include "io.h"
 #include "json.h"
+#include "line.h"
 #include "log.h"
 #include "sys.h"
 
@@ -139,7 +139,7 @@ static int block_stdout(struct block *block)
 	if (block->format == FORMAT_JSON)
 		return json_read(out, count, block_update_json, block);
 	else
-		return io_readlines(out, count, block_update_plain_text, block);
+		return line_read(out, count, block_update_plain_text, block);
 }
 
 int block_update(struct block *block)
@@ -383,7 +383,7 @@ static int block_stderr_line(char *line, size_t num, void *data)
 
 static int block_stderr(struct block *block)
 {
-	return io_readlines(block->err[0], -1, block_stderr_line, block);
+	return line_read(block->err[0], -1, block_stderr_line, block);
 }
 
 int block_reap(struct block *block)

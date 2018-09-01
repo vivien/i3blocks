@@ -19,9 +19,9 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "io.h"
-#include "log.h"
 #include "ini.h"
+#include "line.h"
+#include "log.h"
 
 struct ini {
 	ini_sec_cb_t *sec_cb;
@@ -102,5 +102,5 @@ int ini_read(int fd, size_t count, ini_sec_cb_t *sec_cb, ini_prop_cb_t *prop_cb,
 		.data = data,
 	};
 
-	return io_readlines(fd, count, ini_parse_line, &ini);
+	return line_read(fd, count, ini_parse_line, &ini);
 }

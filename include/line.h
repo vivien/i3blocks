@@ -1,5 +1,5 @@
 /*
- * io.h - header for non-blocking I/O operations
+ * line.h - generic line parsing header
  * Copyright (C) 2015  Vivien Didelot
  *
  * This program is free software: you can redistribute it and/or modify
@@ -21,7 +21,7 @@
 
 #include <unistd.h>
 
-typedef int io_line_cb(char *buf, size_t num, void *data);
-int io_readlines(int fd, size_t count, io_line_cb *cb, void *data);
+typedef int line_cb_t(char *line, size_t num, void *data);
+int line_read(int fd, size_t count, line_cb_t *cb, void *data);
 
 #endif /* _IO_H */

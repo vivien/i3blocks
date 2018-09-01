@@ -22,7 +22,6 @@
 
 #include "bar.h"
 #include "block.h"
-#include "io.h"
 #include "json.h"
 #include "log.h"
 #include "sys.h"
