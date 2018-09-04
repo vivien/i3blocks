@@ -13,9 +13,6 @@ endif
 ifndef DATAROOTDIR
   DATAROOTDIR=$(PREFIX)/share
 endif
-ifndef LIBEXECDIR
-  LIBEXECDIR=$(PREFIX)/libexec
-endif
 ifndef VERSION
   VERSION = $(shell git describe --tags --always 2> /dev/null)
   ifeq ($(strip $(VERSION)),)
@@ -56,12 +53,7 @@ clean:
 
 install: all
 	install -m 755 -d $(DESTDIR)$(PREFIX)/bin
-	install -m 755 -d $(DESTDIR)$(SYSCONFDIR)
-	install -m 755 -d $(DESTDIR)$(LIBEXECDIR)/$(PROGRAM)
 	install -m 755 $(PROGRAM) $(DESTDIR)$(PREFIX)/bin/$(PROGRAM)
-	sed 's,$$SCRIPT_DIR,$(LIBEXECDIR)/$(PROGRAM),' $(PROGRAM).conf > $(DESTDIR)$(SYSCONFDIR)/$(PROGRAM).conf
-	chmod 644 $(DESTDIR)$(SYSCONFDIR)/$(PROGRAM).conf
-	install -m 755 scripts/* $(DESTDIR)$(LIBEXECDIR)/$(PROGRAM)/
 
 install-man: man
 	install -m 755 -d $(DESTDIR)$(DATAROOTDIR)/man/man1
@@ -69,8 +61,6 @@ install-man: man
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/$(PROGRAM)
-	rm -f $(DESTDIR)$(SYSCONFDIR)/$(PROGRAM).conf
-	rm -rf $(DESTDIR)$(LIBEXECDIR)/$(PROGRAM)
 
 uninstall-man:
 	rm -f $(DESTDIR)$(DATAROOTDIR)/man/man1/$(PROGRAM).1
