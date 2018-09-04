@@ -24,9 +24,9 @@ PROGRAM = i3blocks
 
 CPPFLAGS += -DSYSCONFDIR=\"$(SYSCONFDIR)\"
 CPPFLAGS += -DVERSION=\"${VERSION}\"
-CFLAGS += -std=gnu99 -Iinclude -Wall -Werror=format-security
+CFLAGS += -std=gnu99 -I. -Wall -Werror=format-security
 
-OBJS := $(sort $(wildcard src/*.c))
+OBJS := $(sort $(wildcard *.c))
 OBJS := $(OBJS:.c=.o)
 
 %.o: %.c %.h
@@ -49,7 +49,7 @@ $(PROGRAM).1: $(PROGRAM).1.md
 	pandoc --to man --standalone --output $@ $<
 
 clean:
-	rm -f src/*.o $(PROGRAM)
+	rm -f *.o $(PROGRAM)
 
 install: all
 	install -m 755 -d $(DESTDIR)$(PREFIX)/bin
