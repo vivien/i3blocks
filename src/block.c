@@ -84,28 +84,6 @@ static int block_child_env(struct block *block)
 	return block_for_each(block, block_setenv, NULL);
 }
 
-static void
-mark_as_failed(struct block *block, const char *reason)
-{
-	char short_text[BUFSIZ];
-	char full_text[BUFSIZ];
-	const char *name;
-
-	if (log_level < LOG_ERROR)
-		return;
-
-	block_reset(block);
-
-	name = block_get(block, "name") ? : "";
-	snprintf(full_text, sizeof(full_text), "[%s] %s", name, reason);
-	snprintf(short_text, sizeof(short_text), "[%s] ERROR", name);
-
-	block_set(block, "full_text", full_text);
-	block_set(block, "short_text", short_text);
-	block_set(block, "color", "#FF0000");
-	block_set(block, "urgent", "true");
-}
-
 static int block_update_plain_text(char *line, size_t num, void *data)
 {
 	struct block *block = data;
@@ -402,7 +380,7 @@ int block_reap(struct block *block)
 		if (err == -EAGAIN)
 			return 0;
 
-		mark_as_failed(block, "internal error");
+		block_error(block, "Internal error");
 		return err;
 	}
 
@@ -410,11 +388,17 @@ int block_reap(struct block *block)
 	if (err)
 		goto close;
 
-	if (block->code != 0 && block->code != EXIT_URGENT) {
-		char reason[32];
-
-		sprintf(reason, "bad exit code %d", block->code);
-		mark_as_failed(block, reason);
+	switch (block->code) {
+	case 0:
+	case EXIT_URGENT:
+		break;
+	case 127:
+		block_error(block, "Command '%s' not found or missing dependency",
+			    block->command);
+		break;
+	default:
+		block_error(block, "Command '%s' exited unexpectedly with code %d",
+			    block->command, block->code);
 		goto close;
 	}
 
@@ -424,7 +408,7 @@ int block_reap(struct block *block)
 
 	err = block_update(block);
 	if (err)
-		mark_as_failed(block, "failed to update");
+		block_error(block, "Failed to update");
 close:
 	/* Invalidate descriptors to avoid misdetection after reassignment */
 	block_close(block);
