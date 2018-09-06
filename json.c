@@ -210,9 +210,9 @@ static int json_parse_line(char *line, size_t num, void *data)
 	int err;
 
 	for (;;) {
-		/* only support a flat object at the moment */
-		while (*line == '}' || *line == ',' || *line == '{' ||
-		       isspace(*line))
+		/* Only support flat objects per line at the moment */
+		while (*line == '[' || *line == ']' || *line == ',' ||
+		       *line == '{' || *line == '}' || isspace(*line))
 			line++;
 
 		if (*line == '\0')
