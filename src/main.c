@@ -22,7 +22,6 @@
 
 #include "bar.h"
 #include "log.h"
-#include "sched.h"
 
 #ifndef VERSION
 #define VERSION "unknown"
@@ -31,13 +30,6 @@
 log_handle_t log_handle = NULL;
 int log_level = LOG_FATAL;
 void *log_data = NULL;
-
-static void
-start(void)
-{
-	fprintf(stdout, "{\"version\":1,\"click_events\":true}\n[[]\n");
-	fflush(stdout);
-}
 
 int
 main(int argc, char *argv[])
@@ -66,21 +58,15 @@ main(int argc, char *argv[])
 		}
 	}
 
-	debug("log level %u", log_level);
-
-	bar = calloc(1, sizeof(struct bar));
+	bar = bar_create();
 	if (!bar)
 		return EXIT_FAILURE;
 
-	start();
-
 	bar_load(bar, path);
 
-	if (sched_init(bar))
-		return 1;
+	bar_schedule(bar);
 
-	sched_start(bar);
+	bar_destroy(bar);
 
-	//stop();
 	return EXIT_SUCCESS;
 }

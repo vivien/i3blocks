@@ -24,7 +24,10 @@ struct bar {
 	unsigned int num;
 };
 
+struct bar *bar_create(void);
+void bar_destroy(struct bar *bar);
 void bar_load(struct bar *bar, const char *path);
+void bar_schedule(struct bar *bar);
 void bar_poll_timed(struct bar *);
 void bar_poll_clicked(struct bar *);
 void bar_poll_outdated(struct bar *);

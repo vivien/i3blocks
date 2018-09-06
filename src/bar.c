@@ -24,7 +24,20 @@
 #include "click.h"
 #include "config.h"
 #include "log.h"
+#include "sched.h"
 #include "sys.h"
+
+static void i3bar_start(struct bar *bar)
+{
+	fprintf(stdout, "{\"version\":1,\"click_events\":true}\n[[]\n");
+	fflush(stdout);
+}
+
+static void i3bar_stop(struct bar *bar)
+{
+	fprintf(stdout, "]\n");
+	fflush(stdout);
+}
 
 void
 bar_poll_timed(struct bar *bar)
@@ -191,4 +204,36 @@ void bar_load(struct bar *bar, const char *path)
 	err = config_load(path, bar_config_cb, bar);
 	if (err)
 		fatal("Failed to load bar configuration file");
+}
+
+void bar_schedule(struct bar *bar)
+{
+	int err;
+
+	err = sched_init(bar);
+	if (err)
+		fatal("Failed to initialize scheduler");
+
+	sched_start(bar);
+}
+
+void bar_destroy(struct bar *bar)
+{
+	i3bar_stop(bar);
+
+	/* TODO free blocks */
+	free(bar);
+}
+
+struct bar *bar_create(void)
+{
+	struct bar *bar;
+
+	bar = calloc(1, sizeof(struct bar));
+	if (!bar)
+		return NULL;
+
+	i3bar_start(bar);
+
+	return bar;
 }
