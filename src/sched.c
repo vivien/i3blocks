@@ -22,7 +22,6 @@
 
 #include "bar.h"
 #include "block.h"
-#include "json.h"
 #include "log.h"
 #include "sys.h"
 
@@ -170,7 +169,7 @@ sched_start(struct bar *bar)
 	 * Initial display (for static blocks and loading labels),
 	 * and first forks (for commands with an interval).
 	 */
-	json_print_bar(bar);
+	bar_dump(bar);
 	bar_poll_timed(bar);
 
 	while (1) {
@@ -194,7 +193,7 @@ sched_start(struct bar *bar)
 		/* Child(ren) dead? */
 		} else if (sig == SIGCHLD) {
 			bar_poll_exited(bar);
-			json_print_bar(bar);
+			bar_dump(bar);
 
 		/* Block clicked? */
 		} else if (sig == SIGIO) {
@@ -203,7 +202,7 @@ sched_start(struct bar *bar)
 		/* Persistent block ready to be read? */
 		} else if (sig == SIGRTMIN) {
 			bar_poll_readable(bar, fd);
-			json_print_bar(bar);
+			bar_dump(bar);
 
 		/* Blocks signaled? */
 		} else if (sig > SIGRTMIN && sig <= SIGRTMAX) {

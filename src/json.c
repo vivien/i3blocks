@@ -21,8 +21,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "bar.h"
-#include "block.h"
 #include "json.h"
 #include "line.h"
 #include "log.h"
@@ -36,86 +34,6 @@ struct json {
 	json_pair_cb_t *pair_cb;
 	void *data;
 };
-
-
-static inline bool
-is_number(const char *str)
-{
-	char *end;
-
-	strtoul(str, &end, 10);
-
-	/* not a valid number if end is not a null character */
-	return !(*str == 0 || *end != 0);
-}
-
-static inline void
-escape(const char *str)
-{
-	fprintf(stdout, "\"");
-
-	while (*str) {
-		switch (*str) {
-		case '"':
-		case '\\':
-			fprintf(stdout, "\\%c", *str);
-			break;
-		default:
-			fprintf(stdout, "%c", *str);
-		}
-
-		str++;
-	}
-
-	fprintf(stdout, "\"");
-}
-
-static int print_prop(const char *key, const char *value, void *data)
-{
-	if (!*value)
-		return 0;
-
-	fprintf(stdout, ",\"%s\":", key);
-
-	/* Print JSON values as-is, escape them otherwise */
-	if (strcmp(value, "true") == 0 || strcmp(value, "false") == 0 ||
-	    strcmp(value, "null") == 0 || is_number(value) || *value == '\"')
-		fprintf(stdout, "%s", value);
-	else
-		escape(value);
-
-	return 0;
-}
-
-static void
-print_block(struct block *block)
-{
-	fprintf(stdout, ",{\"\":\"\"");
-	block_for_each(block, print_prop, NULL);
-	fprintf(stdout, "}");
-}
-
-void
-json_print_bar(struct bar *bar)
-{
-	fprintf(stdout, ",[{\"full_text\":\"\"}");
-
-	for (int i = 0; i < bar->num; ++i) {
-		struct block *block = bar->blocks + i;
-		const char *full_text = block_get(block, "full_text") ? : "";
-
-		/* full_text is the only mandatory key, skip if empty */
-		if (!*full_text) {
-			block_debug(block, "no text to display, skipping");
-			continue;
-		}
-
-		print_block(block);
-	}
-
-	fprintf(stdout, "]\n");
-	fflush(stdout);
-}
 
 static int json_pair(struct json *json)
 {
@@ -330,4 +248,47 @@ int json_read(int fd, size_t count, json_pair_cb_t *pair_cb, void *data)
 	};
 
 	return line_read(fd, count, json_parse_line, &json);
+}
+
+bool json_is_string(const char *str)
+{
+	/* Lazy check beginning quote only */
+	return *str == '\"';
+}
+
+bool json_is_number(const char *str)
+{
+	char *end;
+
+	strtoul(str, &end, 10);
+
+	/* not a valid number if end is not a null character */
+	return !(*str == 0 || *end != 0);
+}
+
+bool json_is_literal(const char *str)
+{
+	return strcmp(str, "true") == 0 || strcmp(str, "false") == 0 ||
+		strcmp(str, "null") == 0;
+}
+
+int json_escape(const char *str, char *buf, size_t size)
+{
+	/* FIXME check size */
+	snprintf(buf++, size--, "%c", '"');
+
+	while (*str) {
+		switch (*str) {
+		case '"':
+		case '\\':
+			snprintf(buf++, size--, "%c", '\\');
+			/* Fall through... */
+		default:
+			snprintf(buf++, size--, "%c", *str++);
+		}
+	}
+
+	snprintf(buf++, size--, "%c", '"');
+
+	return 0;
 }

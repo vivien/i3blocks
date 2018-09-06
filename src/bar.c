@@ -23,9 +23,107 @@
 #include "block.h"
 #include "click.h"
 #include "config.h"
+#include "json.h"
 #include "log.h"
 #include "sched.h"
 #include "sys.h"
+
+/* See https://i3wm.org/docs/i3bar-protocol.html for details */
+
+static struct {
+	const char * const key;
+	bool string;
+} i3bar_keys[] = {
+	{ "full_text", true },
+	{ "short_text", true },
+	{ "color", true },
+	{ "background", true },
+	{ "border", true },
+	{ "min_width", false }, /* can also be a number */
+	{ "align", true },
+	{ "name", true },
+	{ "instance", true },
+	{ "urgent", false },
+	{ "separator", false },
+	{ "separator_block_width", false },
+	{ "markup", true },
+};
+
+static bool i3bar_is_string(const char *key)
+{
+	int i;
+
+	for (i = 0; i < sizeof(i3bar_keys) / sizeof(i3bar_keys[0]); i++)
+		if (strcmp(i3bar_keys[i].key, key) == 0)
+			return i3bar_keys[i].string;
+
+	return false;
+}
+
+static int i3bar_dump_key(const char *key, const char *value, void *data)
+{
+	char buf[BUFSIZ];
+	bool escape;
+	int err;
+
+	if (!*value)
+		return 0;
+
+	if (i3bar_is_string(key)) {
+		if (json_is_string(value))
+			escape = false; /* Expected string already quoted */
+		else
+			escape = true; /* Enforce the string type */
+	} else {
+		if (json_is_literal(value) || json_is_number(value) ||
+		    json_is_string(value))
+			escape = false; /* Already valid JSON */
+		else
+			escape = true; /* Unquoted string */
+	}
+
+	if (escape) {
+		err = json_escape(value, buf, sizeof(buf));
+		if (err)
+			return err;
+
+		value = buf;
+	}
+
+	fprintf(stdout, ",\"%s\":%s", key, value);
+
+	return 0;
+}
+
+static void i3bar_dump_block(struct block *block)
+{
+	fprintf(stdout, ",{\"\":\"\"");
+	block_for_each(block, i3bar_dump_key, NULL);
+	fprintf(stdout, "}");
+}
+
+static void i3bar_dump(struct bar *bar)
+{
+	int i;
+
+	fprintf(stdout, ",[{\"full_text\":\"\"}");
+
+	for (i = 0; i < bar->num; ++i) {
+		struct block *block = bar->blocks + i;
+		const char *full_text = block_get(block, "full_text") ? : "";
+
+		/* full_text is the only mandatory key, skip if empty */
+		if (!*full_text) {
+			block_debug(block, "no text to display, skipping");
+			continue;
+		}
+
+		i3bar_dump_block(block);
+	}
+
+	fprintf(stdout, "]\n");
+	fflush(stdout);
+}
 
 static void i3bar_start(struct bar *bar)
 {
@@ -166,6 +264,11 @@ bar_poll_readable(struct bar *bar, const int fd)
 			break;
 		}
 	}
+}
+
+void bar_dump(struct bar *bar)
+{
+	i3bar_dump(bar);
 }
 
 static struct block *bar_add_block(struct bar *bar)
