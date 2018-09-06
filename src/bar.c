@@ -125,14 +125,90 @@ static void i3bar_dump(struct bar *bar)
 	fflush(stdout);
 }
 
+static void bar_freeze(struct bar *bar)
+{
+	bar->frozen = true;
+}
+
+static bool bar_unfreeze(struct bar *bar)
+{
+	if (bar->frozen) {
+		bar->frozen = false;
+		return true;
+	}
+
+	return false;
+}
+
+static bool bar_frozen(struct bar *bar)
+{
+	return bar->frozen;
+}
+
+static void i3bar_log(int lvl, const char *fmt, ...)
+{
+	const char *color, *urgent, *prefix;
+	struct bar *bar = log_data;
+	char buf[BUFSIZ];
+	va_list ap;
+
+	/* Ignore messages above defined log level and errors */
+	if (log_level < lvl || lvl > LOG_ERROR)
+		return;
+
+	switch (lvl) {
+	case LOG_FATAL:
+		prefix = "Fatal! ";
+		color = "#FF0000";
+		urgent = "true";
+		break;
+	case LOG_ERROR:
+		prefix = "Error: ";
+		color = "#FF8000";
+		urgent = "true";
+		break;
+	default:
+		prefix = "";
+		color = "#FFFFFF";
+		urgent = "true";
+		break;
+	}
+
+	va_start(ap, fmt);
+	vsnprintf(buf, sizeof(buf), fmt, ap);
+	va_end(ap);
+
+	/* TODO json escape text */
+	fprintf(stdout, ",[{");
+	fprintf(stdout, "\"full_text\":\"%s%s. Increase log level and/or check stderr for details.\"", prefix, buf);
+	fprintf(stdout, ",");
+	fprintf(stdout, "\"short_text\":\"%s%s\"", prefix, buf);
+	fprintf(stdout, ",");
+	fprintf(stdout, "\"urgent\":\"%s\"", urgent);
+	fprintf(stdout, ",");
+	fprintf(stdout, "\"color\":\"%s\"", color);
+	fprintf(stdout, "}]\n");
+	fflush(stdout);
+
+	bar_freeze(bar);
+}
+
 static void i3bar_start(struct bar *bar)
 {
 	fprintf(stdout, "{\"version\":1,\"click_events\":true}\n[[]\n");
 	fflush(stdout);
+
+	/* From now on the bar can handle log messages */
+	log_data = bar;
+	log_handle = i3bar_log;
 }
 
 static void i3bar_stop(struct bar *bar)
 {
+	/* From now on the bar can handle log messages */
+	log_handle = NULL;
+	log_data = NULL;
+
 	fprintf(stdout, "]\n");
 	fflush(stdout);
 }
@@ -181,6 +257,9 @@ void
 bar_poll_clicked(struct bar *bar)
 {
 	int err;
+
+	if (bar_unfreeze(bar))
+		bar_dump(bar);
 
 	err = click_read(bar_poll_click, bar);
 	if (err)
@@ -268,6 +347,11 @@ bar_poll_readable(struct bar *bar, const int fd)
 
 void bar_dump(struct bar *bar)
 {
+	if (bar_frozen(bar)) {
+		debug("bar frozen, skipping");
+		return;
+	}
+
 	i3bar_dump(bar);
 }
 

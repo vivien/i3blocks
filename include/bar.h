@@ -19,9 +19,12 @@
 #ifndef _BAR_H
 #define _BAR_H
 
+#include <stdbool.h>
+
 struct bar {
 	struct block *blocks;
 	unsigned int num;
+	bool frozen;
 };
 
 struct bar *bar_create(void);
