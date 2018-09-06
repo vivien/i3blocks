@@ -62,6 +62,8 @@ static int line_parse(int fd, line_cb_t *cb, size_t num, void *data)
 	/* replace newline with terminating null byte */
 	buf[len - 1] = '\0';
 
+	debug("%s", buf);
+
 	if (cb) {
 		err = cb(buf, num, data);
 		if (err)
