@@ -274,21 +274,35 @@ bool json_is_literal(const char *str)
 
 int json_escape(const char *str, char *buf, size_t size)
 {
-	/* FIXME check size */
-	snprintf(buf++, size--, "%c", '"');
+	size_t null = strlen(str) + 1;
+	char c = '\0';
+	int len;
 
-	while (*str) {
-		switch (*str) {
-		case '"':
+	do {
+		switch (c) {
+		case '\0':
+			len = snprintf(buf, size, "\"");
+			break;
 		case '\\':
-			snprintf(buf++, size--, "%c", '\\');
-			/* Fall through... */
+			len = snprintf(buf, size, "\\\\");
+			break;
+		case '"':
+			len = snprintf(buf, size, "\\\"");
+			break;
 		default:
-			snprintf(buf++, size--, "%c", *str++);
+			len = snprintf(buf, size, "%c", c);
+			break;
 		}
-	}
 
-	snprintf(buf++, size--, "%c", '"');
+		/* Ensure the result was not truncated */
+		if (len < 0 || len >= size)
+			return -ENOSPC;
+
+		size -= len;
+		buf += len;
+
+		c = *str++;
+	} while (null--);
 
 	return 0;
 }
