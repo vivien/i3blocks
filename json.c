@@ -283,6 +283,21 @@ int json_escape(const char *str, char *buf, size_t size)
 		case '\0':
 			len = snprintf(buf, size, "\"");
 			break;
+		case '\b':
+			len = snprintf(buf, size, "\\b");
+			break;
+		case '\f':
+			len = snprintf(buf, size, "\\f");
+			break;
+		case '\n':
+			len = snprintf(buf, size, "\\n");
+			break;
+		case '\r':
+			len = snprintf(buf, size, "\\r");
+			break;
+		case '\t':
+			len = snprintf(buf, size, "\\t");
+			break;
 		case '\\':
 			len = snprintf(buf, size, "\\\\");
 			break;
