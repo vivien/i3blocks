@@ -251,12 +251,6 @@ static int block_parent(struct block *block)
 {
 	int err;
 
-	/*
-	 * Note: for non-persistent blocks, no need to set the pipe read end as
-	 * non-blocking, since it is meant to be read once the child has exited
-	 * (and thus the write end is closed and read is available).
-	 */
-
 	/* Close write end of stdout pipe */
 	err = sys_close(block->out[1]);
 	if (err)
