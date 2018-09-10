@@ -29,26 +29,26 @@
 
 const char *block_get(const struct block *block, const char *key)
 {
-	return map_get(block->customs, key);
+	return map_get(block->env, key);
 }
 
 static int block_set(struct block *block, const char *key, const char *value)
 {
-	return map_set(block->customs, key, value);
+	return map_set(block->env, key, value);
 }
 
 static int block_reset(struct block *block)
 {
-	map_clear(block->customs);
+	map_clear(block->env);
 
-	return map_copy(block->customs, block->defaults);
+	return map_copy(block->env, block->config);
 }
 
 int block_for_each(const struct block *block,
 		   int (*func)(const char *key, const char *value, void *data),
 		   void *data)
 {
-	return map_for_each(block->customs, func, data);
+	return map_for_each(block->env, func, data);
 }
 
 static int block_setenv(const char *name, const char *value, void *data)
@@ -434,13 +434,13 @@ int block_setup(struct block *block)
 {
 	int err;
 
-	err = map_for_each(block->defaults, block_default, block);
+	err = map_for_each(block->config, block_default, block);
 	if (err)
 		return err;
 
 	/* First update (for static blocks and loading labels) */
-	block->customs = map_create();
-	if (!block->customs)
+	block->env = map_create();
+	if (!block->env)
 		return -ENOMEM;
 
 	block_reset(block);

@@ -379,7 +379,7 @@ static int bar_config_cb(struct map *map, void *data)
 	if (!block)
 		return -ENOMEM;
 
-	block->defaults = map;
+	block->config = map;
 
 	return block_setup(block);
 }
