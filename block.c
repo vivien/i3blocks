@@ -130,8 +130,6 @@ static int block_stdout(struct block *block)
 
 int block_update(struct block *block)
 {
-	const char *full_text;
-	const char *label;
 	int err;
 
 	/* Reset properties to default before updating from output */
@@ -142,18 +140,6 @@ int block_update(struct block *block)
 	err = block_stdout(block);
 	if (err)
 		return err;
-
-	full_text = block_get(block, "full_text") ? : "";
-	label = block_get(block, "label") ? : "";
-
-	if (*full_text && *label) {
-		const size_t sz = strlen(full_text) + strlen(label) + 2;
-		char concat[sz];
-		snprintf(concat, sz, "%s %s", label, full_text);
-		err = block_set(block, "full_text", concat);
-		if (err)
-			return err;
-	}
 
 	/* Exit code takes precedence over the output */
 	if (block->code == EXIT_URGENT) {
