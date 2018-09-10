@@ -16,16 +16,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "i3blocks-config.h"
+#endif
+
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "bar.h"
 #include "log.h"
-
-#ifndef VERSION
-#define VERSION "unknown"
-#endif
 
 log_handle_t log_handle = NULL;
 int log_level = LOG_FATAL;
@@ -50,7 +50,7 @@ main(int argc, char *argv[])
 			printf("Usage: %s [-c <configfile>] [-h] [-V]\n", argv[0]);
 			return 0;
 		case 'V':
-			printf("i3blocks " VERSION " © 2014 Vivien Didelot and contributors\n");
+			printf(PACKAGE_STRING " © 2014 Vivien Didelot and contributors\n");
 			return 0;
 		default:
 			error("Try '%s -h' for more information.", argv[0]);
