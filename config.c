@@ -31,8 +31,8 @@
 #endif
 
 struct config {
-	struct map *globals;
-	struct map *current;
+	struct map *section;
+	struct map *global;
 	config_cb_t *cb;
 	void *data;
 };
@@ -41,14 +41,14 @@ static int config_finalize(struct config *conf)
 {
 	int err;
 
-	if (conf->current) {
+	if (conf->section) {
 		if (conf->cb) {
-			err = conf->cb(conf->current, conf->data);
+			err = conf->cb(conf->section, conf->data);
 			if (err)
 				return err;
 		}
 
-		conf->current = NULL;
+		conf->section = NULL;
 	}
 
 	return 0;
@@ -56,28 +56,28 @@ static int config_finalize(struct config *conf)
 
 static int config_reset(struct config *conf)
 {
-	conf->current = map_create();
-	if (!conf->current)
+	conf->section = map_create();
+	if (!conf->section)
 		return -ENOMEM;
 
-	if (conf->globals)
-		return map_copy(conf->current, conf->globals);
+	if (conf->global)
+		return map_copy(conf->section, conf->global);
 
 	return 0;
 }
 
 static int config_set(struct config *conf, const char *key, const char *value)
 {
-	struct map *map = conf->current;
+	struct map *map = conf->section;
 
 	if (!map) {
-		if (!conf->globals) {
-			conf->globals = map_create();
-			if (!conf->globals)
+		if (!conf->global) {
+			conf->global = map_create();
+			if (!conf->global)
 				return -ENOMEM;
 		}
 
-		map = conf->globals;
+		map = conf->global;
 	}
 
 	return map_set(map, key, value);
