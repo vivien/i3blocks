@@ -91,6 +91,7 @@ static int block_update_plain_text(char *line, size_t num, void *data)
 		"full_text",
 		"short_text",
 		"color",
+		"background",
 	};
 	const char *key;
 
