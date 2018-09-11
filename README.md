@@ -98,8 +98,15 @@ common distributions as `pandoc`.
           status_command i3blocks
         }
 
-  * For customization, copy the default i3blocks.conf into ~/.i3blocks.conf
-    (e.g. `cp /etc/i3blocks.conf ~/.i3blocks.conf`)
+  * For customization, copy the default i3blocks.conf into one of the configuration paths:<br />
+    (e.g. `cp /etc/i3blocks.conf ~/.config/i3blocks/config`)
+    * $XDG_CONFIG_HOME/i3blocks/config
+    * $HOME/.config/i3blocks/config
+    * $HOME/.i3blocks.conf
+    * $XDG_CONFIG_DIRS/i3blocks/config
+    * /etc/xdg/i3blocks/config
+    * /etc/i3blocks.conf
+
   * Restart i3 (e.g. `i3-msg restart`)
 
 ## Copying
