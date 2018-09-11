@@ -35,10 +35,21 @@
 #define sys_errno(msg, ...) \
 	debug(msg ": %s", ##__VA_ARGS__, strerror(errno))
 
-unsigned long sys_time(void)
+int sys_gettime(unsigned long *interval)
 {
-	/* Cannot fail with a NULL argument */
-	return time(NULL);
+	struct timespec ts;
+	int rc;
+
+	rc = clock_gettime(CLOCK_MONOTONIC, &ts);
+	if (rc == -1) {
+		sys_errno("clock_gettime(CLOCK_MONOTONIC)");
+		rc = -errno;
+		return rc;
+	}
+
+	*interval = ts.tv_sec;
+
+	return 0;
 }
 
 int sys_setitimer(unsigned long interval)

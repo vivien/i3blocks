@@ -273,8 +273,13 @@ bar_poll_outdated(struct bar *bar)
 		struct block *block = bar->blocks + i;
 
 		if (block->interval > 0) {
-			const unsigned long now = sys_time();
 			const unsigned long next_update = block->timestamp + block->interval;
+			unsigned long now;
+			int err;
+
+			err = sys_gettime(&now);
+			if (err)
+				return;
 
 			if (((long) (next_update - now)) <= 0) {
 				block_debug(block, "outdated");
@@ -302,6 +307,7 @@ bar_poll_signaled(struct bar *bar, int sig)
 void
 bar_poll_exited(struct bar *bar)
 {
+	unsigned long now;
 	pid_t pid;
 	int err;
 
@@ -318,7 +324,10 @@ bar_poll_exited(struct bar *bar)
 				block_debug(block, "exited");
 				block_reap(block);
 				if (block->interval == INTER_REPEAT) {
-					if (block->timestamp == sys_time())
+					err = sys_gettime(&now);
+					if (err)
+						break;
+					if (block->timestamp == now)
 						block_error(block, "loop too fast");
 					block_spawn(block);
 					block_touch(block);

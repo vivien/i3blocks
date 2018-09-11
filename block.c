@@ -170,7 +170,11 @@ int block_click(struct block *block, const struct click *click)
 
 void block_touch(struct block *block)
 {
-	block->timestamp = sys_time();
+	int err;
+
+	err = sys_gettime(&block->timestamp);
+	if (err)
+		block_error(block, "failed to touch block");
 }
 
 static int block_child_sig(struct block *block)

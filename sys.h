@@ -22,7 +22,7 @@
 #include <signal.h>
 #include <unistd.h>
 
-unsigned long sys_time(void);
+int sys_gettime(unsigned long *interval);
 int sys_setitimer(unsigned long interval);
 
 int sys_waitid(pid_t *pid);
