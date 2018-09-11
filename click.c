@@ -79,9 +79,6 @@ int click_read(click_cb_t *cb, void *data)
 		debug("read click: name=%s instance=%s button=%s x=%s y=%s",
 		      c.name, c.instance, c.button, c.x, c.y);
 
-		if (*c.name == '\0' && *c.instance == '\0')
-			break;
-
 		if (cb) {
 			err = cb(&c, data);
 			if (err)
