@@ -197,7 +197,7 @@ sched_start(struct bar *bar)
 
 		/* Block clicked? */
 		} else if (sig == SIGIO) {
-			bar_poll_clicked(bar);
+			bar_click(bar);
 
 		/* Persistent block ready to be read? */
 		} else if (sig == SIGRTMIN) {

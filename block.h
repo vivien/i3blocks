@@ -21,7 +21,6 @@
 
 #include <sys/types.h>
 
-#include "click.h"
 #include "log.h"
 #include "map.h"
 
@@ -55,6 +54,7 @@ struct block {
 };
 
 const char *block_get(const struct block *block, const char *key);
+int block_set(struct block *block, const char *key, const char *value);
 
 static inline const char *block_name(const struct block *block)
 {
@@ -72,7 +72,7 @@ int block_for_each(const struct block *block,
 	error("[%s] " msg, block_name(block), ##__VA_ARGS__)
 
 int block_setup(struct block *block);
-int block_click(struct block *block, const struct click *click);
+int block_click(struct block *block);
 int block_spawn(struct block *block);
 void block_touch(struct block *block);
 int block_reap(struct block *block);

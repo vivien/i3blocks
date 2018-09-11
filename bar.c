@@ -21,7 +21,6 @@
 
 #include "bar.h"
 #include "block.h"
-#include "click.h"
 #include "config.h"
 #include "json.h"
 #include "log.h"
@@ -227,43 +226,97 @@ bar_poll_timed(struct bar *bar)
 	}
 }
 
-static int bar_poll_click(struct click *click, void *data)
+static struct block *bar_find(struct bar *bar, const struct map *map)
 {
-	struct bar *bar = data;
+	const char *block_name, *block_instance;
+	const char *map_name, *map_instance;
 	struct block *block;
-	const char *instance;
-	const char *name;
 	int i;
 
-	/* find the corresponding block */
-	for (i = 0; i < bar->num; ++i) {
-		block = bar->blocks + i;
-		name = block_get(block, "name") ? : "";
-		instance = block_get(block, "instance") ? : "";
+	/* "name" and "instance" are the only identifiers provided by i3bar */
+	map_name = map_get(map, "name") ? : "";
+	map_instance = map_get(map, "instance") ? : "";
 
-		if (strcmp(name, click->name) == 0 &&
-		    strcmp(instance, click->instance) == 0) {
-			block_debug(block, "clicked");
-			block_click(block, click);
-			block_spawn(block);
-			break; /* Unlikely to click several blocks */
-		}
+	for (i = 0; i < bar->num; i++) {
+		block = bar->blocks + i;
+		block_name = block_get(block, "name") ? : "";
+		block_instance = block_get(block, "instance") ? : "";
+
+		if (strcmp(block_name, map_name) == 0 &&
+		    strcmp(block_instance, map_instance) == 0)
+			return block;
 	}
 
-	return 0;
+	return NULL;
 }
 
-void
-bar_poll_clicked(struct bar *bar)
+static int bar_click_copy_cb(const char *key, const char *value, void *data)
 {
+	/* No need to override them again */
+	if (strcmp(key, "name") == 0 || strcmp(key, "instance") == 0)
+		return 0;
+
+	return block_set(data, key, value);
+}
+
+static int bar_click_json_cb(char *name, char *value, void *data)
+{
+	char *end;
+
+	/* Ugly string unquoting */
+	if (*value == '"') {
+		end = strchr(value, '\0');
+		if (!end)
+			return -EINVAL; /* Unlikely */
+
+		*--end = '\0';
+		value++;
+	}
+
+	return map_set(data, name, value);
+}
+
+int bar_click(struct bar *bar)
+{
+	struct block *block;
+	struct map *click;
 	int err;
 
 	if (bar_unfreeze(bar))
 		bar_dump(bar);
 
-	err = click_read(bar_poll_click, bar);
-	if (err)
-		error("failed to read clicks");
+	click = map_create();
+	if (!click)
+		return -ENOMEM;
+
+	for (;;) {
+		/* Each click is one JSON object per line */
+		err = json_read(STDIN_FILENO, 1, bar_click_json_cb, click);
+		if (err) {
+			if (err == -EAGAIN)
+				err = 0;
+
+			break;
+		}
+
+		/* Look for the corresponding block */
+		block = bar_find(bar, click);
+		if (block) {
+			err = map_for_each(click, bar_click_copy_cb, block);
+			if (err)
+				break;
+
+			err = block_click(block);
+			if (err)
+				break;
+		}
+
+		map_clear(click);
+	}
+
+	map_destroy(click);
+
+	return err;
 }
 
 void

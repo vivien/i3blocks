@@ -4,8 +4,6 @@ i3blocks_SOURCES = \
 	bar.h \
 	block.c \
 	block.h \
-	click.c \
-	click.h \
 	config.c \
 	config.h \
 	ini.c \

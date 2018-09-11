@@ -21,7 +21,6 @@
 #include <string.h>
 
 #include "block.h"
-#include "click.h"
 #include "json.h"
 #include "line.h"
 #include "log.h"
@@ -32,7 +31,7 @@ const char *block_get(const struct block *block, const char *key)
 	return map_get(block->env, key);
 }
 
-static int block_set(struct block *block, const char *key, const char *value)
+int block_set(struct block *block, const char *key, const char *value)
 {
 	return map_set(block->env, key, value);
 }
@@ -159,19 +158,11 @@ int block_update(struct block *block)
 	return 0;
 }
 
-int block_click(struct block *block, const struct click *click)
+int block_click(struct block *block)
 {
-	int err;
+	block_debug(block, "clicked");
 
-	err = block_set(block, "button", click->button);
-	if (err)
-		return err;
-
-	err = block_set(block, "x", click->x);
-	if (err)
-		return err;
-
-	return block_set(block, "y", click->y);
+	return block_spawn(block);
 }
 
 void block_touch(struct block *block)
