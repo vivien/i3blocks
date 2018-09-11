@@ -116,6 +116,7 @@ static int block_stdout(struct block *block)
 {
 	int out = block->out[0];
 	size_t count;
+	int err;
 
 	if (block->interval == INTER_PERSIST)
 		count = 1;
@@ -123,9 +124,14 @@ static int block_stdout(struct block *block)
 		count = -1; /* SIZE_MAX */
 
 	if (block->format == FORMAT_JSON)
-		return json_read(out, count, block_update_json, block);
+		err = json_read(out, count, block_update_json, block);
 	else
-		return line_read(out, count, block_update_plain_text, block);
+		err = line_read(out, count, block_update_plain_text, block);
+
+	if (err && err != -EAGAIN)
+		return err;
+
+	return 0;
 }
 
 int block_update(struct block *block)
@@ -346,14 +352,20 @@ static int block_stderr_line(char *line, size_t num, void *data)
 {
 	struct block *block = data;
 
-	block_debug(block, "{stderr} %s", line);
+	block_debug(block, "&stderr:%02d: %s", num, line);
 
 	return 0;
 }
 
 static int block_stderr(struct block *block)
 {
-	return line_read(block->err[0], -1, block_stderr_line, block);
+	int err;
+
+	err = line_read(block->err[0], -1, block_stderr_line, block);
+	if (err && err != -EAGAIN)
+		return err;
+
+	return 0;
 }
 
 int block_reap(struct block *block)

@@ -58,12 +58,12 @@ static int ini_parse_line(char *line, size_t num, void *data)
 		closing = strchr(line, ']');
 		if (!closing) {
 			error("malformated section \"%s\"", line);
-			return -1;
+			return -EINVAL;
 		}
 
 		if (*(closing + 1) != '\0') {
 			error("trailing characters \"%s\"", closing);
-			return -1;
+			return -EINVAL;
 		}
 
 		section = line + 1;
@@ -79,7 +79,7 @@ static int ini_parse_line(char *line, size_t num, void *data)
 		equals = strchr(line, '=');
 		if (!equals) {
 			error("malformated property, should be a key=value pair");
-			return -1;
+			return -EINVAL;
 		}
 
 		*equals = '\0';
@@ -90,7 +90,7 @@ static int ini_parse_line(char *line, size_t num, void *data)
 	}
 
 	error("invalid INI syntax for line: \"%s\"", line);
-	return -1;
+	return -EINVAL;
 }
 
 int ini_read(int fd, size_t count, ini_sec_cb_t *sec_cb, ini_prop_cb_t *prop_cb,

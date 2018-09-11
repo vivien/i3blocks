@@ -109,7 +109,7 @@ static int config_read(struct config *conf, int fd)
 
 	err = ini_read(fd, -1, config_ini_section_cb, config_ini_property_cb,
 		       conf);
-	if (err)
+	if (err && err != -EAGAIN)
 		return err;
 
 	return config_finalize(conf);

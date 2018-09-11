@@ -62,7 +62,7 @@ static int line_parse(int fd, line_cb_t *cb, size_t num, void *data)
 	/* replace newline with terminating null byte */
 	buf[len - 1] = '\0';
 
-	debug("%s", buf);
+	debug("&%d:%.3d: %s", fd, num, buf);
 
 	if (cb) {
 		err = cb(buf, num, data);
@@ -81,12 +81,8 @@ int line_read(int fd, size_t count, line_cb_t *cb, void *data)
 
 	while (count--) {
 		err = line_parse(fd, cb, lines++, data);
-		if (err) {
-			if (err == -EAGAIN)
-				break;
-
+		if (err)
 			return err;
-		}
 	}
 
 	return 0;
