@@ -27,7 +27,7 @@ label=Volume:
 command=amixer get Master | grep -E -o '[0-9]{1,3}?%' | head -1
 interval=once
 signal=1
-# use 'pkill -RTMIN+1 i3blocks' after changing the volume
+# use 'pkill -RTMIN+10 i3blocks' after changing the volume
 
 [time]
 command=date '+%D %T'
