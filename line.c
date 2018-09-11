@@ -85,10 +85,6 @@ int line_read(int fd, size_t count, line_cb_t *cb, void *data)
 			if (err == -EAGAIN)
 				break;
 
-			/* support end-of-file as well */
-			if (err == -EPIPE)
-				break;
-
 			return err;
 		}
 	}

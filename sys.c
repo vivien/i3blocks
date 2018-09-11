@@ -274,9 +274,9 @@ int sys_read(int fd, char *buf, size_t size, size_t *count)
 		return rc;
 	}
 
-	/* Return -EPIPE for end-of-pipe or end-of-file */
+	/* End of file or pipe */
 	if (rc == 0)
-		return -EPIPE;
+		return -EAGAIN;
 
 	if (count)
 		*count = rc;
