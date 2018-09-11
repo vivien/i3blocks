@@ -1,0 +1,145 @@
+#!/bin/bash
+# Originally written by Roberto Santalla <roobre@roobre.es>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#------------------------------------------------------------------------
+
+usage() {
+    echo "Usage: $0 [-d down] [-n \"no ip\"] [-c FF0000] [-C 00FF00] [-e] [-p] [-s] [-6]
+    -d down: Placeholder text if the specified interface is down. If set to an empty string,
+       the entire block is hidden (useful to save space on small screens).
+    -n \"no ip\": Placeholder text to display when the interface is up but it does not
+       have any ip address.
+    -c FF0000: Text color when interface is down.
+    -C 00FF00: Text color when interface is up.
+    -e: Show interface even if it does not exist (useful for tun/tap).
+    -p: Include CIDR prefix.
+    -s: Include link speed (ethernet only).
+    -6: Use ipv6 address insead of v4." 1>&2
+    exit 1; 
+}
+
+# Default options
+downText="down"
+noipText="no ip"
+colorDown="FF0000"
+colorUp="00FF00"
+inet="inet"
+e=0
+p=0
+s=0
+
+while getopts "d:n:c:C:esp6" opt; do
+    case "${opt}" in
+        d)
+            downText=${OPTARG}
+            ;;
+        d)
+            noipText=${OPTARG}
+            ;;
+        c)
+            colorDown=${OPTARG}
+            ;;
+        C)
+            colorUp=${OPTARG}
+            ;;
+        e)
+            e=1
+            ;;
+        p)
+            p=1
+            ;;
+        s)
+            s=1
+            ;;
+        6)
+            inet="inet6"
+            ;;
+        *)
+            usage
+            ;;
+        esac
+done
+
+# Use the provided interface, otherwise the device used for the default route.
+if [[ -n $BLOCK_INSTANCE ]]; then
+    IF=$BLOCK_INSTANCE
+else
+    IF=$(ip route | awk '/^default/ { print $5 ; exit }')
+fi
+
+#------------------------------------------------------------------------
+
+if [[ ! -d /sys/class/net/${IF} ]]; then
+    if [[ $e -eq 1 ]]; then
+        echo $downText # full text
+        echo $downText # short text
+        echo "#$colorDown" # color
+    fi
+
+    exit
+fi
+
+
+#------------------------------------------------------------------------
+
+if [[ "$(cat /sys/class/net/$IF/operstate)" = 'down' ]]; then
+    if [[ $downText = '' ]]; then
+        exit
+    fi
+    echo $downText # full text
+    echo $downText # short text
+    echo "#$colorDown" # color
+    exit
+fi
+
+regex=" +inet6? ("
+
+if [[ $inet = "inet6" ]]; then
+    regex="$regex([a-fA-F0-9]{0,4}:?){2,8}"
+else
+    regex="$regex([0-9]+\.?){4}"
+fi
+
+if [[ $p -eq 1 ]]; then
+    regex="$regex(\/[0-9]+)?"
+else
+    regex="$regex"
+fi
+
+regex="$regex).*"
+
+IPADDR=$(ip addr show dev $IF | grep "$inet " | sed -r "s/$regex/\1/")
+
+
+if [[ $IPADDR = '' ]]; then
+    IPADDR=$noipText
+fi
+
+if [[ $s -eq 1 ]]; then
+    speed=" ($(cat /sys/class/net/$IF/speed) Mbps)"
+else
+    speed=""
+fi
+
+case $BLOCK_BUTTON in
+  3) echo -n "$IPADDR" | xclip -q -se c ;;
+esac
+
+#------------------------------------------------------------------------
+
+echo "$IPADDR$speed" # full text
+echo "$IPADDR" # short text
+echo "#$colorUp"
