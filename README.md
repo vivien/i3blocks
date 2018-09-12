@@ -84,7 +84,8 @@ Or you may install i3blocks from source:
 
     $ git clone git://github.com/vivien/i3blocks
     $ cd i3blocks
-    $ make clean debug # or make clean all
+    $ autoreconf --install
+    $ make
     # make install
 
 Note: the generation of the manpage requires the `pandoc` utility, packaged in
