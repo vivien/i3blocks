@@ -24,7 +24,7 @@ the volume updated only when i3blocks receives a SIGRTMIN+1, and click events.
 ```` ini
 [volume]
 label=Volume:
-command=amixer get Master | grep -E -o '[0-9]{1,3}?%' | head -1
+command=echo -n "$label  "; amixer get Master | grep -E -o '[0-9]{1,3}?%' | head -1
 interval=once
 signal=1
 # use 'pkill -RTMIN+1 i3blocks' after changing the volume
@@ -82,9 +82,11 @@ i3blocks may already be packaged for your distribution:
 
 Or you may install i3blocks from source:
 
-    $ git clone git://github.com/vivien/i3blocks
+    $ git clone https://github.com/vivien/i3blocks
     $ cd i3blocks
-    $ make clean debug # or make clean all
+    $ ./autogen.sh
+    $ ./configure
+    $ make
     # make install
 
 Note: the generation of the manpage requires the `pandoc` utility, packaged in
