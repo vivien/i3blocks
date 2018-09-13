@@ -137,6 +137,7 @@ setup_signals(void)
 int
 sched_init(struct bar *bar)
 {
+	int flags;
 	int err;
 
 	err = setup_signals();
@@ -144,6 +145,10 @@ sched_init(struct bar *bar)
 		return err;
 
 	err = setup_timer(bar);
+	if (err)
+		return err;
+
+	err = sys_cloexec(STDIN_FILENO);
 	if (err)
 		return err;
 

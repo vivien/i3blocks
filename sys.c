@@ -332,6 +332,36 @@ static int sys_setown(int fd, pid_t pid)
 	return 0;
 }
 
+static int sys_getfd(int fd, int *flags)
+{
+	int rc;
+
+	rc = fcntl(fd, F_GETFD);
+	if (rc == -1) {
+		sys_errno("fcntl(%d, F_GETFD)", fd);
+		rc = -errno;
+		return rc;
+	}
+
+	*flags = rc;
+
+	return 0;
+}
+
+static int sys_setfd(int fd, int flags)
+{
+	int rc;
+
+	rc = fcntl(fd, F_SETFD, flags);
+	if (rc == -1) {
+		sys_errno("fcntl(%d, F_SETFD, %d)", fd, flags);
+		rc = -errno;
+		return rc;
+	}
+
+	return 0;
+}
+
 static int sys_getfl(int fd, int *flags)
 {
 	int rc;
@@ -360,6 +390,18 @@ static int sys_setfl(int fd, int flags)
 	}
 
 	return 0;
+}
+
+int sys_cloexec(int fd)
+{
+	int flags;
+	int err;
+
+	err = sys_getfd(fd, &flags);
+	if (err)
+		return err;
+
+	return sys_setfd(fd, flags | FD_CLOEXEC);
 }
 
 /* Enable signal-driven I/O, formerly known as asynchronous I/O */
