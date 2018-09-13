@@ -187,6 +187,21 @@ static int block_child_sig(struct block *block)
 	return sys_sigunblock(&set);
 }
 
+static int block_child_stdin(struct block *block)
+{
+	int fd, err;
+
+	err = sys_open("/dev/null", &fd);
+	if (err)
+		return err;
+
+	err = sys_dup(fd, STDIN_FILENO);
+	if (err)
+		return err;
+
+	return sys_close(fd);
+}
+
 static int block_child_stdout(struct block *block)
 {
 	int err;
@@ -232,6 +247,10 @@ static int block_child(struct block *block)
 		return err;
 
 	err = block_child_sig(block);
+	if (err)
+		return err;
+
+	err = block_child_stdin(block);
 	if (err)
 		return err;
 
