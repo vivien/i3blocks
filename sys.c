@@ -33,7 +33,7 @@
 #include "log.h"
 
 #define sys_errno(msg, ...) \
-	debug(msg ": %s", ##__VA_ARGS__, strerror(errno))
+	trace(msg ": %s", ##__VA_ARGS__, strerror(errno))
 
 int sys_gettime(unsigned long *interval)
 {
@@ -180,7 +180,7 @@ int sys_sigaddset(sigset_t *set, int sig)
 
 	rc = sigaddset(set, sig);
 	if (rc == -1) {
-		sys_errno("sigaddset(%d \"%s\")", sig, strsignal(sig));
+		sys_errno("sigaddset(%d (%s))", sig, strsignal(sig));
 		rc = -errno;
 		return rc;
 	}
@@ -309,7 +309,7 @@ static int sys_setsig(int fd, int sig)
 
 	rc = fcntl(fd, F_SETSIG, sig);
 	if (rc == -1) {
-		sys_errno("fcntl(%d, F_SETSIG, %d \"%s\")", fd, sig,
+		sys_errno("fcntl(%d, F_SETSIG, %d (%s))", fd, sig,
 			  strsignal(sig));
 		rc = -errno;
 		return rc;

@@ -30,6 +30,7 @@ enum {
 	LOG_FATAL,
 	LOG_ERROR,
 	LOG_DEBUG,
+	LOG_TRACE,
 };
 
 extern log_handle_t log_handle;
@@ -54,6 +55,9 @@ static inline void log_printf(int lvl, const char *fmt, ...)
 		break;
 	case LOG_DEBUG:
 		fprintf(stderr, "DEBUG ");
+		break;
+	case LOG_TRACE:
+		fprintf(stderr, "TRACE ");
 		break;
 	}
 
@@ -80,5 +84,8 @@ static inline void log_printf(int lvl, const char *fmt, ...)
 
 #define debug(...) \
 	log(LOG_DEBUG, ##__VA_ARGS__)
+
+#define trace(...) \
+	log(LOG_TRACE, ##__VA_ARGS__)
 
 #endif /* _LOG_H */
