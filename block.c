@@ -187,22 +187,34 @@ static int block_child_sig(struct block *block)
 	return sys_sigunblock(&set);
 }
 
-static int block_child_pipe(int *pipe, int fd)
+static int block_child_stdout(struct block *block)
 {
 	int err;
 
-	/* Close read end of the pipe */
-	err = sys_close(pipe[0]);
+	err = sys_close(block->out[0]);
 	if (err)
 		return err;
 
-	/* Rebound write end of the pipe to fd */
-	err = sys_dup(pipe[1], fd);
+	err = sys_dup(block->out[1], STDOUT_FILENO);
 	if (err)
 		return err;
 
-	/* Close the superfluous descriptor */
-	return sys_close(pipe[1]);
+	return sys_close(block->out[1]);
+}
+
+static int block_child_stderr(struct block *block)
+{
+	int err;
+
+	err = sys_close(block->err[0]);
+	if (err)
+		return err;
+
+	err = sys_dup(block->err[1], STDERR_FILENO);
+	if (err)
+		return err;
+
+	return sys_close(block->err[1]);
 }
 
 static int block_child_exec(struct block *block)
@@ -223,11 +235,11 @@ static int block_child(struct block *block)
 	if (err)
 		return err;
 
-	err = block_child_pipe(block->out, STDOUT_FILENO);
+	err = block_child_stdout(block);
 	if (err)
 		return err;
 
-	err = block_child_pipe(block->err, STDERR_FILENO);
+	err = block_child_stderr(block);
 	if (err)
 		return err;
 
