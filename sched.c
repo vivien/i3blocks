@@ -148,15 +148,7 @@ sched_init(struct bar *bar)
 		return err;
 
 	/* Setup event I/O for stdin (clicks) */
-	err = sys_isatty(STDIN_FILENO);
-	if (err) {
-		if (err == -ENOTTY)
-			return sys_async(STDIN_FILENO, SIGIO);
-
-		return err;
-	}
-
-	return 0;
+	return sys_async(STDIN_FILENO, SIGIO);
 }
 
 void
