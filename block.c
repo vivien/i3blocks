@@ -50,6 +50,11 @@ int block_for_each(const struct block *block,
 	return map_for_each(block->env, func, data);
 }
 
+static bool block_is_spawned(struct block *block)
+{
+	return block->pid > 0;
+}
+
 static int block_setenv(const char *name, const char *value, void *data)
 {
 	int err;
@@ -307,7 +312,7 @@ int block_spawn(struct block *block)
 		return 0;
 	}
 
-	if (block->pid > 0) {
+	if (block_is_spawned(block)) {
 		block_debug(block, "process already spawned");
 		return 0;
 	}
