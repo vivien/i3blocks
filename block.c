@@ -277,8 +277,17 @@ static int block_child(struct block *block)
 
 static int block_parent_stdout(struct block *block)
 {
+	int err;
+
 	/* Close write end of stdout pipe */
-	return sys_close(block->out[1]);
+	err = sys_close(block->out[1]);
+	if (err)
+		return err;
+
+	if (block->interval == INTER_PERSIST)
+		return sys_async(block->out[0], SIGRTMIN);
+
+	return 0;
 }
 
 static int block_parent_stderr(struct block *block)
@@ -342,12 +351,6 @@ int block_spawn(struct block *block)
 	err = sys_pipe(block->err);
 	if (err)
 		return err;
-
-	if (block->interval == INTER_PERSIST) {
-		err = sys_async(block->out[0], SIGRTMIN);
-		if (err)
-			return err;
-	}
 
 	return block_fork(block);
 }
