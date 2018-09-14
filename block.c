@@ -275,17 +275,33 @@ static int block_child(struct block *block)
 	return block_child_exec(block);
 }
 
+static int block_parent_stdout(struct block *block)
+{
+	/* Close write end of stdout pipe */
+	return sys_close(block->out[1]);
+}
+
+static int block_parent_stderr(struct block *block)
+{
+	/* Close write end of stderr pipe */
+	return sys_close(block->err[1]);
+}
+
 static int block_parent(struct block *block)
 {
 	int err;
 
-	/* Close write end of stdout pipe */
-	err = sys_close(block->out[1]);
+	err = block_parent_stdout(block);
 	if (err)
 		return err;
 
-	/* Close write end of stderr pipe */
-	return sys_close(block->err[1]);
+	err = block_parent_stderr(block);
+	if (err)
+		return err;
+
+	block_debug(block, "forked child %d", block->pid);
+
+	return 0;
 }
 
 static int block_fork(struct block *block)
@@ -301,8 +317,6 @@ static int block_fork(struct block *block)
 		if (err)
 			sys_exit(EXIT_ERR_INTERNAL);
 	}
-
-	block_debug(block, "forked child %d", block->pid);
 
 	return block_parent(block);
 }
