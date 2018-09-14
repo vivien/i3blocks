@@ -65,8 +65,8 @@ static int i3bar_dump_key(const char *key, const char *value, void *data)
 	bool escape;
 	int err;
 
-	if (!*value)
-		return 0;
+	if (!value)
+		value = "null";
 
 	if (i3bar_is_string(key)) {
 		if (json_is_string(value))
@@ -108,10 +108,9 @@ static void i3bar_dump(struct bar *bar)
 
 	for (i = 0; i < bar->num; ++i) {
 		struct block *block = bar->blocks + i;
-		const char *full_text = block_get(block, "full_text") ? : "";
 
-		/* full_text is the only mandatory key, skip if empty */
-		if (!*full_text) {
+		/* full_text is the only mandatory key */
+		if (!block_get(block, "full_text")) {
 			block_debug(block, "no text to display, skipping");
 			continue;
 		}
