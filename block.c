@@ -198,17 +198,23 @@ static int block_child_sig(struct block *block)
 
 static int block_child_stdin(struct block *block)
 {
-	int fd, err;
+	int err;
 
-	err = sys_open("/dev/null", &fd);
+	if (block->interval == INTER_PERSIST) {
+		err = sys_close(block->in[1]);
+		if (err)
+			return err;
+	} else {
+		err = sys_open("/dev/null", &block->in[0]);
+		if (err)
+			return err;
+	}
+
+	err = sys_dup(block->in[0], STDIN_FILENO);
 	if (err)
 		return err;
 
-	err = sys_dup(fd, STDIN_FILENO);
-	if (err)
-		return err;
-
-	return sys_close(fd);
+	return sys_close(block->in[0]);
 }
 
 static int block_child_stdout(struct block *block)
@@ -275,6 +281,15 @@ static int block_child(struct block *block)
 	return block_child_exec(block);
 }
 
+static int block_parent_stdin(struct block *block)
+{
+	/* Close read end of stdin pipe */
+	if (block->interval == INTER_PERSIST)
+		return sys_close(block->in[0]);
+
+	return 0;
+}
+
 static int block_parent_stdout(struct block *block)
 {
 	int err;
@@ -299,6 +314,10 @@ static int block_parent_stderr(struct block *block)
 static int block_parent(struct block *block)
 {
 	int err;
+
+	err = block_parent_stdin(block);
+	if (err)
+		return err;
 
 	err = block_parent_stdout(block);
 	if (err)
@@ -344,6 +363,12 @@ int block_spawn(struct block *block)
 		return 0;
 	}
 
+	if (block->interval == INTER_PERSIST) {
+		err = sys_pipe(block->in);
+		if (err)
+			return err;
+	}
+
 	err = sys_pipe(block->out);
 	if (err)
 		return err;
@@ -383,15 +408,23 @@ static void block_close(struct block *block)
 {
 	int err;
 
+	if (block->interval == INTER_PERSIST) {
+		err = sys_close(block->in[1]);
+		if (err)
+			block_error(block, "failed to close stdin");
+
+		block->in[1] = -1;
+	}
+
 	err = sys_close(block->out[0]);
 	if (err)
-		block_debug(block, "failed to close stdout");
+		block_error(block, "failed to close stdout");
 
 	block->out[0] = -1;
 
 	err = sys_close(block->err[0]);
 	if (err)
-		block_debug(block, "failed to close stderr");
+		block_error(block, "failed to close stderr");
 
 	block->err[0] = -1;
 }

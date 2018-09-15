@@ -47,6 +47,7 @@ struct block {
 
 	/* Runtime info */
 	unsigned long timestamp;
+	int in[2];
 	int out[2];
 	int err[2];
 	int code;
