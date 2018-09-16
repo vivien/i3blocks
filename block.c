@@ -113,6 +113,10 @@ static int block_update_json(char *name, char *value, void *data)
 {
 	struct block *block = data;
 
+	/* Do not update i3bar identifiers */
+	if (strcmp(name, "name") == 0 || strcmp(name, "instance") == 0)
+		return 0;
+
 	return block_set(block, name, value);
 }
 
