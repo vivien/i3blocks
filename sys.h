@@ -41,7 +41,7 @@ int sys_sigwaitinfo(sigset_t *set, int *sig, int *fd);
 
 int sys_open(const char *path, int *fd);
 int sys_close(int fd);
-int sys_read(int fd, char *buf, size_t size, size_t *count);
+int sys_read(int fd, void *buf, size_t size, size_t *count);
 int sys_dup(int fd1, int fd2);
 int sys_cloexec(int fd);
 int sys_async(int fd, int sig);

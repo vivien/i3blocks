@@ -261,7 +261,7 @@ int sys_close(int fd)
 }
 
 /* Read up to size bytes and store the positive count on success */
-int sys_read(int fd, char *buf, size_t size, size_t *count)
+int sys_read(int fd, void *buf, size_t size, size_t *count)
 {
 	ssize_t rc;
 
