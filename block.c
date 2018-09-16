@@ -435,53 +435,47 @@ close:
 	return err;
 }
 
-static int block_default(const char *key, const char *value, void *data)
-{
-	struct block *block = data;
-
-	if (strcmp(key, "command") == 0) {
-		if (value && *value != '\0')
-			block->command = value;
-	} if (strcmp(key, "interval") == 0) {
-		if (value && strcmp(value, "once") == 0)
-			block->interval = INTER_ONCE;
-		else if (value && strcmp(value, "repeat") == 0)
-			block->interval = INTER_REPEAT;
-		else if (value && strcmp(value, "persist") == 0)
-			block->interval = INTER_PERSIST;
-		else if (value)
-			block->interval = atoi(value);
-		else
-			block->interval = 0;
-	} else if (strcmp(key, "format") == 0) {
-		if (value && strcmp(value, "json") == 0)
-			block->format = FORMAT_JSON;
-		else
-			block->format = FORMAT_PLAIN;
-	} else if (strcmp(key, "signal") == 0) {
-		if (value)
-			block->signal = atoi(value);
-		else
-			block->signal = 0;
-	}
-
-	return 0;
-}
-
 int block_setup(struct block *block)
 {
+	const struct map *config = block->config;
+	const char *value;
 	int err;
 
-	err = map_for_each(block->config, block_default, block);
-	if (err)
-		return err;
+	value = map_get(config, "command");
+	if (value && *value != '\0')
+		block->command = value;
 
-	/* First update (for static blocks and loading labels) */
+	value = map_get(config, "interval");
+	if (!value)
+		block->interval = 0;
+	else if (strcmp(value, "once") == 0)
+		block->interval = INTER_ONCE;
+	else if (strcmp(value, "repeat") == 0)
+		block->interval = INTER_REPEAT;
+	else if (strcmp(value, "persist") == 0)
+		block->interval = INTER_PERSIST;
+	else
+		block->interval = atoi(value);
+
+	value = map_get(config, "format");
+	if (value && strcmp(value, "json") == 0)
+		block->format = FORMAT_JSON;
+	else
+		block->format = FORMAT_PLAIN;
+
+	value = map_get(config, "signal");
+	if (!value)
+		block->signal = 0;
+	else
+		block->signal = atoi(value);
+
 	block->env = map_create();
 	if (!block->env)
 		return -ENOMEM;
 
-	block_reset(block);
+	err = block_reset(block);
+	if (err)
+		return err;
 
 	block_debug(block, "new block");
 
