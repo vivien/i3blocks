@@ -74,8 +74,7 @@ static int i3bar_dump_key(const char *key, const char *value, void *data)
 		else
 			escape = true; /* Enforce the string type */
 	} else {
-		if (json_is_literal(value) || json_is_number(value) ||
-		    json_is_string(value))
+		if (json_is_valid(value))
 			escape = false; /* Already valid JSON */
 		else
 			escape = true; /* Unquoted string */

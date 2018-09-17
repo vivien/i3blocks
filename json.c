@@ -256,7 +256,7 @@ bool json_is_string(const char *str)
 	return *str == '\"';
 }
 
-bool json_is_number(const char *str)
+static bool json_is_number(const char *str)
 {
 	char *end;
 
@@ -266,10 +266,16 @@ bool json_is_number(const char *str)
 	return !(*str == 0 || *end != 0);
 }
 
-bool json_is_literal(const char *str)
+static bool json_is_literal(const char *str)
 {
 	return strcmp(str, "true") == 0 || strcmp(str, "false") == 0 ||
 		strcmp(str, "null") == 0;
+}
+
+bool json_is_valid(const char *str)
+{
+	return json_is_string(str) || json_is_number(str) ||
+		json_is_literal(str);
 }
 
 int json_escape(const char *str, char *buf, size_t size)
