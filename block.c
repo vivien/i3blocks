@@ -167,9 +167,61 @@ int block_update(struct block *block)
 	return 0;
 }
 
+static int block_send_key(const char *key, const char *value, void *data)
+{
+	struct block *block = data;
+	char buf[BUFSIZ];
+	int err;
+
+	if (!json_is_valid(value)) {
+		err = json_escape(value, buf, sizeof(buf));
+		if (err)
+			return err;
+
+		value = buf;
+	}
+
+	dprintf(block->in[1], ",\"%s\":%s", key, value);
+
+	return 0;
+}
+
+static int block_send_json(struct block *block)
+{
+	dprintf(block->in[1], "{\"\":\"\"");
+	block_for_each(block, block_send_key, block);
+	dprintf(block->in[1], "}\n");
+}
+
+/* Push data to forked process through the open stdin pipe */
+static int block_send(struct block *block)
+{
+	const char *button = block_get(block, "button");
+
+	if (!button) {
+		block_error(block, "no click data to send");
+		return -EINVAL;
+	}
+
+	if (!block_is_spawned(block)) {
+		block_debug(block, "process not spawned");
+		return 0;
+	}
+
+	if (block->format == FORMAT_JSON)
+		block_send_json(block);
+	else
+		dprintf(block->in[1], "%s\n", button);
+
+	return 0;
+}
+
 int block_click(struct block *block)
 {
 	block_debug(block, "clicked");
+
+	if (block->interval == INTER_PERSIST)
+		return block_send(block);
 
 	return block_spawn(block);
 }
