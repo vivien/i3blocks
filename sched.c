@@ -162,11 +162,7 @@ sched_start(struct bar *bar)
 	int sig, fd;
 	int err;
 
-	/*
-	 * Initial display (for static blocks and loading labels),
-	 * and first forks (for commands with an interval).
-	 */
-	bar_dump(bar);
+	/* First forks (for commands with an interval) */
 	bar_poll_timed(bar);
 
 	while (1) {

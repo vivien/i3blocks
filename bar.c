@@ -458,6 +458,9 @@ void bar_schedule(struct bar *bar)
 {
 	int err;
 
+	/* Initial display (for static blocks and loading labels) */
+	bar_dump(bar);
+
 	err = sched_init(bar);
 	if (err)
 		fatal("Failed to initialize scheduler");
