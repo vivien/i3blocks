@@ -33,10 +33,5 @@ void bar_load(struct bar *bar, const char *path);
 void bar_schedule(struct bar *bar);
 void bar_dump(struct bar *bar);
 int bar_click(struct bar *bar);
-void bar_poll_timed(struct bar *);
-void bar_poll_outdated(struct bar *);
-void bar_poll_signaled(struct bar *, int);
-void bar_poll_exited(struct bar *);
-void bar_poll_readable(struct bar *, int);
 
 #endif /* _BAR_H */

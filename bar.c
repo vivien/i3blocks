@@ -211,20 +211,6 @@ static void i3bar_stop(struct bar *bar)
 	fflush(stdout);
 }
 
-void
-bar_poll_timed(struct bar *bar)
-{
-	for (int i = 0; i < bar->num; ++i) {
-		struct block *block = bar->blocks + i;
-
-		/* spawn unless it is only meant for click or signal */
-		if (block->interval != 0) {
-			block_spawn(block);
-			block_touch(block);
-		}
-	}
-}
-
 static struct block *bar_find(struct bar *bar, const struct map *map)
 {
 	const char *block_name, *block_instance;
@@ -316,94 +302,6 @@ int bar_click(struct bar *bar)
 	map_destroy(click);
 
 	return err;
-}
-
-void
-bar_poll_outdated(struct bar *bar)
-{
-	for (int i = 0; i < bar->num; ++i) {
-		struct block *block = bar->blocks + i;
-
-		if (block->interval > 0) {
-			const unsigned long next_update = block->timestamp + block->interval;
-			unsigned long now;
-			int err;
-
-			err = sys_gettime(&now);
-			if (err)
-				return;
-
-			if (((long) (next_update - now)) <= 0) {
-				block_debug(block, "outdated");
-				block_spawn(block);
-				block_touch(block);
-			}
-		}
-	}
-}
-
-void
-bar_poll_signaled(struct bar *bar, int sig)
-{
-	for (int i = 0; i < bar->num; ++i) {
-		struct block *block = bar->blocks + i;
-
-		if (block->signal == sig) {
-			block_debug(block, "signaled");
-			block_spawn(block);
-			block_touch(block);
-		}
-	}
-}
-
-void
-bar_poll_exited(struct bar *bar)
-{
-	unsigned long now;
-	pid_t pid;
-	int err;
-
-	for (;;) {
-		err = sys_waitid(&pid);
-		if (err)
-			break;
-
-		/* Find the dead process */
-		for (int i = 0; i < bar->num; ++i) {
-			struct block *block = bar->blocks + i;
-
-			if (block->pid == pid) {
-				block_debug(block, "exited");
-				block_reap(block);
-				if (block->interval == INTER_REPEAT) {
-					err = sys_gettime(&now);
-					if (err)
-						break;
-					if (block->timestamp == now)
-						block_error(block, "loop too fast");
-					block_spawn(block);
-					block_touch(block);
-				} else if (block->interval == INTER_PERSIST) {
-					block_debug(block, "unexpected exit?");
-				}
-				break;
-			}
-		}
-	}
-}
-
-void
-bar_poll_readable(struct bar *bar, const int fd)
-{
-	for (int i = 0; i < bar->num; ++i) {
-		struct block *block = bar->blocks + i;
-
-		if (block->out[0] == fd) {
-			block_debug(block, "readable");
-			block_update(block);
-			break;
-		}
-	}
 }
 
 void bar_dump(struct bar *bar)

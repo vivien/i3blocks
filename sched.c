@@ -156,6 +156,111 @@ sched_init(struct bar *bar)
 	return sys_async(STDIN_FILENO, SIGIO);
 }
 
+static void sched_poll_timed(struct bar *bar)
+{
+	int i;
+
+	for (i = 0; i < bar->num; i++) {
+		struct block *block = bar->blocks + i;
+
+		/* spawn unless it is only meant for click or signal */
+		if (block->interval != 0) {
+			block_spawn(block);
+			block_touch(block);
+		}
+	}
+}
+
+static void sched_poll_expired(struct bar *bar)
+{
+	int i;
+
+	for (i = 0; i < bar->num; i++) {
+		struct block *block = bar->blocks + i;
+
+		if (block->interval > 0) {
+			const unsigned long next_update = block->timestamp + block->interval;
+			unsigned long now;
+			int err;
+
+			err = sys_gettime(&now);
+			if (err)
+				return;
+
+			if (((long) (next_update - now)) <= 0) {
+				block_debug(block, "expired");
+				block_spawn(block);
+				block_touch(block);
+			}
+		}
+	}
+}
+
+static void sched_poll_signaled(struct bar *bar, int sig)
+{
+	int i;
+
+	for (i = 0; i < bar->num; i++) {
+		struct block *block = bar->blocks + i;
+
+		if (block->signal == sig) {
+			block_debug(block, "signaled");
+			block_spawn(block);
+			block_touch(block);
+		}
+	}
+}
+
+static void sched_poll_exited(struct bar *bar)
+{
+	unsigned long now;
+	pid_t pid;
+	int i, err;
+
+	for (;;) {
+		err = sys_waitid(&pid);
+		if (err)
+			break;
+
+		/* Find the dead process */
+		for (i = 0; i < bar->num; i++) {
+			struct block *block = bar->blocks + i;
+
+			if (block->pid == pid) {
+				block_debug(block, "exited");
+				block_reap(block);
+				if (block->interval == INTER_REPEAT) {
+					err = sys_gettime(&now);
+					if (err)
+						break;
+					if (block->timestamp == now)
+						block_error(block, "loop too fast");
+					block_spawn(block);
+					block_touch(block);
+				} else if (block->interval == INTER_PERSIST) {
+					block_debug(block, "unexpected exit?");
+				}
+				break;
+			}
+		}
+	}
+}
+
+static void sched_poll_readable(struct bar *bar, const int fd)
+{
+	int i;
+
+	for (i = 0; i < bar->num; i++) {
+		struct block *block = bar->blocks + i;
+
+		if (block->out[0] == fd) {
+			block_debug(block, "readable");
+			block_update(block);
+			break;
+		}
+	}
+}
+
 void
 sched_start(struct bar *bar)
 {
@@ -163,7 +268,7 @@ sched_start(struct bar *bar)
 	int err;
 
 	/* First forks (for commands with an interval) */
-	bar_poll_timed(bar);
+	sched_poll_timed(bar);
 
 	while (1) {
 		err = sys_sigwaitinfo(&set, &sig, &fd);
@@ -174,38 +279,51 @@ sched_start(struct bar *bar)
 			break;
 		}
 
-		debug("received signal %d (%s)", sig, strsignal(sig));
+		trace("received signal %d (%s), file descriptor %d", sig,
+		      strsignal(sig), fd);
 
 		if (sig == SIGTERM || sig == SIGINT)
 			break;
 
 		/* Interval tick? */
 		if (sig == SIGALRM) {
-			bar_poll_outdated(bar);
+			sched_poll_expired(bar);
+			continue;
+		}
 
 		/* Child(ren) dead? */
-		} else if (sig == SIGCHLD) {
-			bar_poll_exited(bar);
+		if (sig == SIGCHLD) {
+			sched_poll_exited(bar);
 			bar_dump(bar);
+			continue;
+		}
 
 		/* Block clicked? */
-		} else if (sig == SIGIO) {
+		if (sig == SIGIO) {
 			bar_click(bar);
+			continue;
+		}
 
 		/* Persistent block ready to be read? */
-		} else if (sig == SIGRTMIN) {
-			bar_poll_readable(bar, fd);
+		if (sig == SIGRTMIN) {
+			sched_poll_readable(bar, fd);
 			bar_dump(bar);
+			continue;
+		}
 
 		/* Blocks signaled? */
-		} else if (sig > SIGRTMIN && sig <= SIGRTMAX) {
-			bar_poll_signaled(bar, sig - SIGRTMIN);
+		if (sig > SIGRTMIN && sig <= SIGRTMAX) {
+			sched_poll_signaled(bar, sig - SIGRTMIN);
+			continue;
+		}
 
 		/* Deprecated signals? */
-		} else if (sig == SIGUSR1 || sig == SIGUSR2) {
+		if (sig == SIGUSR1 || sig == SIGUSR2) {
 			error("SIGUSR{1,2} are deprecated, ignoring.");
+			continue;
+		}
 
-		} else debug("unhandled signal %d", sig);
+		debug("unhandled signal %d", sig);
 	}
 
 	/*
