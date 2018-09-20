@@ -73,7 +73,7 @@ static int ini_parse_line(char *line, size_t num, void *data)
 	}
 
 	/* property? */
-	if (isalnum(*line)) {
+	if (isalpha(*line) || *line == '_') {
 		char *equals, *key, *value;
 
 		equals = strchr(line, '=');
