@@ -532,6 +532,10 @@ int block_reap(struct block *block)
 	case 0:
 	case EXIT_URGENT:
 		break;
+	case 126:
+		block_error(block, "Command '%s' not executable",
+			    block->command);
+		break;
 	case 127:
 		block_error(block, "Command '%s' not found or missing dependency",
 			    block->command);
