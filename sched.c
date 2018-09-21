@@ -213,7 +213,6 @@ static void sched_poll_signaled(struct bar *bar, int sig)
 
 static void sched_poll_exited(struct bar *bar)
 {
-	unsigned long now;
 	pid_t pid;
 	int i, err;
 
@@ -230,11 +229,6 @@ static void sched_poll_exited(struct bar *bar)
 				block_debug(block, "exited");
 				block_reap(block);
 				if (block->interval == INTER_REPEAT) {
-					err = sys_gettime(&now);
-					if (err)
-						break;
-					if (block->timestamp == now)
-						block_error(block, "loop too fast");
 					block_spawn(block);
 					block_touch(block);
 				} else if (block->interval == INTER_PERSIST) {

@@ -228,11 +228,21 @@ int block_click(struct block *block)
 
 void block_touch(struct block *block)
 {
+	unsigned long now;
 	int err;
 
-	err = sys_gettime(&block->timestamp);
-	if (err)
+	err = sys_gettime(&now);
+	if (err) {
 		block_error(block, "failed to touch block");
+		return;
+	}
+
+	if (block->timestamp == now) {
+		block_debug(block, "looping too fast");
+		return;
+	}
+
+	block->timestamp = now;
 }
 
 static int block_child_sig(struct block *block)
