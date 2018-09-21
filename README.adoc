@@ -366,18 +366,28 @@ ____
 Can I use my own variables?
 ____
 
-Yes, any variable defined in the block is exported in the environment of its command.
+Yes, any variable defined in the block is exported as is to the environment of its command.
 The `foo=bar` property can be accessed with `$foo` from a shell script, `ENV["foo"]` from Ruby, and so on.
 
-However note that the definitions in the configuration file are just raw data, {progname} does not do string interpolation of any sort.
-This means that `bar=$baz` defines a _bar_ variable equal to literally `$baz` (dollar sign + "baz").
+i3bar suggests to prefix your own keys with an underscore (`_`), but it might be more intuitive to use uppercase environment variables, so it is your call to define your own naming convention.
+
+[quote]
+____
+Why `$foo` doesn't work from the configuration file?
+____
+
+{progname} does not do string interpolation of any sort.
+The definitions found in the configuration file are just raw strings, this means that `bar=$baz` defines a _bar_ variable equal to literally `$baz` (a dollar sign followed by "baz").
+
+String interpolation does work in the _command_ property though, since it is interpreted by a shell which has access to the environment variables.
 
 [quote]
 ____
 How can I simulate a button?
 ____
 
-This is pretty straightforward actually. Just make sure not to override the _full_text_, for example:
+This is pretty straightforward actually.
+Just make sure not to override the _full_text_, for example:
 
 [source,ini]
 ----
