@@ -1,0 +1,507 @@
+:progname: i3blocks
+:toc:
+
+= {progname}
+
+A minimalist scheduler for your status line scripts
+
+{progname} executes your command lines and generates a status line from their output.
+Commands are scheduled at configured time intervals, upon signal reception or on clicks.
+
+The generated line is meant to be displayed by the link:https://i3wm.org[i3] window manager through its i3bar component, as an alternative to i3status.
+
+{progname} is meant to be highly flexible but intuitive.
+No library package is required, just output what your status bar expects, from your favorite programming language and your preferred format.
+
+== Example
+
+[source,ini]
+----
+[click]
+full_text=Click me!
+command=echo "Got clicked with button $button"
+color=#F79494
+
+# Guess the weather hourly
+[weather]
+command=curl -Ss 'https://wttr.in?0&T&Q' | cut -c 16- | head -2 | xargs echo
+interval=3600
+color=#A4C2F4
+
+# Query my default IP address only on startup
+[ip]
+command=hostname --ip-addresses | awk '{ print "IP:" $1 }'
+interval=once
+color=#91E78B
+
+# Update time every 5 seconds
+[time]
+command=date +%T
+interval=5
+----
+
+== Installation
+
+{progname} is already packaged for:
+
+* Archlinux: link:https://www.archlinux.org/packages/community/x86_64/i3blocks[i3blocks] in the community repository and link:https://aur.archlinux.org/packages/i3blocks-git[i3blocks-git] in the AUR
+* Gentoo: link:https://packages.gentoo.org/packages/x11-misc/i3blocks[x11-misc/i3blocks]
+* Debian: link:https://packages.debian.org/i3blocks[i3blocks]
+* Ubuntu: link:http://packages.ubuntu.com/i3blocks[i3blocks]
+
+Or can be installed from source with:
+
+[source]
+----
+git clone https://github.com/vivien/i3blocks
+cd i3blocks
+./autogen.sh
+./configure
+make
+make install
+----
+
+== Getting started
+
+In your i3 configuration file, define {progname} as the link:https://i3wm.org/docs/userguide.html#status_command[status line command] of a new bar block:
+
+[source]
+----
+bar {
+  status_command i3blocks
+}
+----
+
+For the lazy, you can start from 
+link:https://github.com/vivien/i3blocks-contrib[our collection of scripts], if you did not installed {progname} via your package manager:
+
+[source]
+----
+git clone https://github.com/vivien/i3blocks-contrib ~/.config/i3blocks
+cd !$
+cp config.example config
+----
+
+For the picky, you can start a configuration file in one of the following preferred paths:
+
+* `$XDG_CONFIG_HOME/i3blocks/config` (or `~/.config/i3blocks/config`);
+* `~/.i3blocks.conf`;
+* `$XDG_CONFIG_DIRS/i3blocks/config` (or `/etc/xdg/i3blocks/config`);
+* `/etc/i3blocks.conf`;
+* or any other path that you will specify using the `-c` option.
+
+NOTE: By default `/etc` is prefixed by `/usr/local` when you installed from source.
+
+Use the example above or dig in the configuration details below.
+
+Now restart i3 with `i3-msg restart` to apply your changes.
+
+== Blocks
+
+The configuration file uses a simplified INI file format:
+
+[source,ini]
+----
+# Properties not preceded by a section are considered global
+# and merged into every section declarations.
+foo=bar
+
+[block1]
+baz=qux
+
+# This is a comment
+[block2]
+quux= quuz
+----
+
+In this example, _block2_ contains a _foo_ property equal to _"bar"_ and a _quux_ property equal to _" quuz"_ (including the leading space).
+Everything after the equal sign will be part of the value, thus inline comments won't be stripped out.
+
+At runtime, these properties are simply variables, that are passed along to the status bar program when printing is necessary.
+However on startup, {progname} checks some optional properties to eventually setup the scheduling of a command.
+
+If a block specifies a command, then all of its properties are passed as environment variables at execution, which means that the _foo=bar_ property will be available from a shell script with `$foo`.
+The output of the command is used to update the values of these variables.
+The values are reset to default (as defined in the configuration file) before the update, so that blocks get a consistent behavior at each execution.
+
+== i3bar properties
+
+In order to use {progname} with i3, its status bar command _i3bar_ expects specific keys.
+To know how to customize the blocks of your status line, you must refer to the link:https://i3wm.org/docs/i3bar-protocol.html#_blocks_in_detail[i3bar protocol].
+
+NOTE: _full_text_ is the only mandatory key, the block will be skipped if this key is absent or empty.
+
+Unless overriden, the section name of the block defines the _name_ key.
+
+Below are examples of static blocks interacting with _i3bar_.
+
+[source,ini]
+----
+[simple]
+full_text=This is a looong white on red text
+short_text=Short white on red text
+background=#FF0000
+color=#FFFFFF
+
+# Block with a fixed width
+[aligned]
+full_text=Here.
+min_width=100
+align=center
+
+# Fancy text with multiple colors and shapes
+[funky]
+full_text=<span foreground="red" size="x-large">Roses</span> and <i><span color="#EE37B8">violets</span></i>!
+markup=pango
+----
+
+== {progname} properties
+
+These are some special properties checked by {progname} on startup.
+These will be considered as simple variables at runtime.
+
+=== command
+
+The optional _command_ property specifies a command line to be executed with `sh -c`.
+If the command outputs some text, it is used to update the block.
+
+An exit code of 0 means success.
+A special exit code of _33_ will set the _urgent_ i3bar key to true.
+Any other exit code will raise an error.
+
+[source,ini]
+----
+[pacman]
+full_text=c ·
+command=echo "· ${full_text~~}"
+color=#FFFF00
+----
+
+=== interval
+
+The optional _interval_ property specifies when the command must be scheduled.
+
+A positive value represents the number of seconds to wait between exectutions.
+
+[source,ini]
+----
+# Print seconds since 1970-01-01
+[epoch]
+command=date +%s
+interval=1
+----
+
+A value of _0_ (or undefined) means the command is not timed whatsoever and will not be executed on startup.
+This is useful to trigger the command only on user input (e.g. signal or click), not before.
+
+[source,ini]
+----
+# Restart i3 on click
+[restart]
+full_text=Restart
+command=i3-msg -q restart
+#interval=0
+----
+
+The interval value _once_ (or _-1_) will schedule the command only on startup.
+This tells {progname} not to schedule the command again on a time basis.
+But events such as signals and clicks will execute the command again of course.
+
+[source,ini]
+----
+# Fetch the public IP address only on startup
+[public-ip]
+command=wget -qO - icanhazip.com
+interval=once
+----
+
+The interval value _repeat_ (or _-2_) will respawn the command as soon as it terminates.
+This is useful for blocking programs which exit when the awaited event arises.
+
+[source,ini]
+----
+# Print the last command entered in Bash
+[history]
+command=inotifywait -qq -e close_write ~/.bash_history; tail -1 ~/.bash_history
+interval=repeat
+----
+
+The interval value _persist_ (or _-3_) expects the command to be an infinite loop.
+Each line of the output will trigger an update of the block.
+
+[source,ini]
+----
+[window]
+command=xtitle -s
+interval=persist
+----
+
+=== signal
+
+Blocks can be scheduled upon reception of a real-time signal (think prioritized and queueable).
+The range of available signal numbers is _1_ to _N_, where _SIGRTMIN+N = SIGRTMAX_.
+(Note: there are 31 real-time signals in Linux.)
+
+[source,ini]
+----
+[caps-lock]
+command=xset -q | grep Caps | awk '{ print $2, $3, $4 }'
+interval=once
+signal=10
+----
+
+This example block above will be scheduled once {progname} handles the _SIGRTMIN+10_ signal.
+This can be sent directly from an i3 binding on Caps Lock release with the following configuration:
+
+[source]
+----
+bindsym --release Caps_Lock exec pkill -SIGRTMIN+10 i3blocks
+----
+
+=== format
+
+There are several formats supported to specify which variables {progname} must update.
+Some favor simplicity over flexibility but thus can be limited.
+
+When undefined, a raw format is assumed.
+Each line of the output corresponds to an i3bar key, in the order of definition found in the link:https://i3wm.org/docs/i3bar-protocol.html#_blocks_in_detail[i3bar protocol]:
+
+* the 1st line updates the _full_text_;
+* the 2nd line updates the _short_text_;
+* the 3rd line updates the _color_;
+* the 4th line updates the _background_.
+
+Excess lines are considered an error.
+Below is an example of a simple battery script.
+
+.battery.sh
+[source,sh]
+----
+#!/bin/bash
+
+BAT=$(acpi -b | grep -E -o '[0-9][0-9]?%')
+
+# Full and short texts
+echo "Battery: $BAT"
+echo "BAT: $BAT"
+
+# Set urgent flag below 5% or use orange below 20%
+[ ${BAT%?} -le 5 ] && exit 33
+[ ${BAT%?} -le 20 ] && echo "#FF8000"
+
+exit 0
+----
+
+[source,ini]
+----
+[battery]
+command=battery.sh
+interval=10
+----
+
+The _json_ format can update any variable.
+
+[source,ini]
+----
+[counter]
+_count=0
+command=printf '{"full_text":"Counter: %s", "_count":%d}\n' $_count $((_count + 1))
+format=json
+interval=1
+----
+
+== Click
+
+When you click on a block, data such as the button number and coordinates are merged into the block variables.
+
+NOTE: _name_ and _instance_ are the two keys used by i3bar to identify a block.
+
+The data sent on click is detailed in the link:https://i3wm.org/docs/i3bar-protocol.html#_click_events[i3bar protocol].
+
+If the block command isn't already spawned, it is executed again.
+
+[source,ini]
+----
+# Print click data
+[clickme]
+align=center
+full_text=Click me!
+min_width=Button=? x=? y=?
+command=echo "Button=$button x=$x y=$y"
+----
+
+If the value of the block's interval is _persist_, then the data is written of the command standard input, one line per click.
+What gets written depends on the block's format.
+The raw format only gets the click button.
+The JSON format gets all block variables.
+
+[source,ini]
+----
+[click-loop]
+full_text=Click me!
+command=while read button; do echo "Got click $button"; done
+interval=persist
+
+[click-loop-json]
+full_text=Click me!
+command=ruby -r json -n -e '$_ = JSON.parse($_)' -e '$_["full_text"] = "Click %s at (%d,%d)" % $_.slice("button", "x", "y").values' -e 'puts JSON.dump($_)' -e 'STDOUT.flush'
+interval=persist
+format=json
+----
+
+== FAQ
+
+Frequently Asked Questions and Troubleshooting.
+
+[quote]
+____
+What is a blocklet?
+____
+
+A blocklet is the configuration of a single block, part of the status line.
+There are plenty in the link:https://github.com/vivien/i3blocks-contrib[contrib repository].
+
+[quote]
+____
+Can I use my own variables?
+____
+
+Yes, any variable defined in the block is exported in the environment of its command.
+The `foo=bar` property can be accessed with `$foo` from a shell script, `ENV["foo"]` from Ruby, and so on.
+
+However note that the definitions in the configuration file are just raw data, {progname} does not do string interpolation of any sort.
+This means that `bar=$baz` defines a _bar_ variable equal to literally `$baz` (dollar sign + "baz").
+
+[quote]
+____
+How can I simulate a button?
+____
+
+This is pretty straightforward actually. Just make sure not to override the _full_text_, for example:
+
+[source,ini]
+----
+[calc-button]
+full_text=Calculator
+command=gnome-calculator >/dev/null
+----
+
+[quote]
+____
+Can a block start a GUI application?
+____
+
+Sure.
+And if you do not wish your command to block until the application is closed, ask i3 to start it for you with `i3-msg -q exec myapp`.
+
+[quote]
+____
+Why Pango isn't working?
+____
+
+The Pango markup requires a Pango font.
+Make sure you configured link:https://i3wm.org/docs/userguide.html#_font[i3bar] to use a Pango font.
+For example:
+
+[source]
+----
+font pango:Inconsolata, Icons 12
+----
+
+[quote]
+____
+Why is the output from my persistent block not displayed?
+____
+
+Make sure to flush stdout, for example:
+
+[source,ini]
+----
+[ruby-loop]
+full_text=Click me
+command=ruby -p -e '$_.prepend("Got button ")' -e 'STDOUT.flush'
+interval=persist
+----
+
+[quote]
+____
+Can I use a time interval below 1 second?
+____
+
+No, the time unit for interval is the second.
+
+But even though I wouldn't recommend it, you can still update faster than that with loops:
+
+[source,ini]
+----
+[nano1]
+command=sleep .5; date +%N
+interval=repeat
+
+[nano2]
+command=while sleep .5; do date +%N; done
+interval=persist
+----
+
+[quote]
+____
+Can I change the block separator?
+____
+
+Not with {progname} itself, separators are drawn by i3bar.
+You can change the _separator_symbol_ in the link:https://i3wm.org/docs/userguide.html#_custom_separator_symbol[i3bar configuration].
+
+Alternatively, you can define static blocks as custom separators in your {progname} configuration.
+In the example below, we use the _"\xe3\x80\x89"_ UTF-8 character:
+
+[source,ini]
+----
+# Define the custom separator in global properties for boilerplate
+full_text=〉
+align=center
+color=#666666
+separator=false
+separator_block_width=7
+
+[time]
+instance=la
+TZ=America/Los_Angeles
+command=date +%T
+interval=5
+
+[separator]
+
+[time]
+instance=nc
+TZ=Pacific/Noumea
+command=date +%T
+interval=5
+
+[separator]
+
+[time]
+instance=mtl
+TZ=America/Montreal
+command=date +%T
+interval=5
+----
+
+== Debugging
+
+The log level can be increased with the `-v` option.
+For a complete log, it can be interesting to redirect the standard output and error streams like this:
+
+[source]
+----
+bar {
+  status_command 2>/tmp/i3blocks.err /path/to/i3blocks -vvv -c /path/to/config | tee /tmp/i3blocks.out
+}
+----
+
+And inspect the log with `tail -f /tmp/i3blocks.err`.
+
+== License
+
+{progname} is Copyright (C) Vivien Didelot
+
+See the file COPYING for information of licensing and distribution.
