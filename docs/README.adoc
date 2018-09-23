@@ -162,6 +162,7 @@ These will be considered as simple variables at runtime.
 === command
 
 The optional _command_ property specifies a command line to be executed with `sh -c`.
+The command can be relative to the configuration file where it is defined.
 If the command outputs some text, it is used to update the block.
 
 An exit code of 0 means success.

@@ -117,6 +117,9 @@ static int config_read(struct config *conf, int fd)
 
 static int config_open(struct config *conf, const char *path)
 {
+	size_t plen = strlen(path);
+	char pname[plen + 1];
+	char *dname;
 	int err;
 	int fd;
 
@@ -125,6 +128,16 @@ static int config_open(struct config *conf, const char *path)
 	err = sys_open(path, &fd);
 	if (err)
 		return err;
+
+	strcpy(pname, path);
+	dname = dirname(pname);
+	err = sys_chdir(dname);
+	if (err) {
+		error("failed to change directory to %s", dname);
+		return err;
+	}
+
+	debug("changed directory to %s", dname);
 
 	err = config_read(conf, fd);
 	sys_close(fd);

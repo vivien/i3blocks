@@ -62,6 +62,8 @@ The following properties are interpreted by **{progname}** to describe how the o
 
 The command line to be invoked with `sh -c`.
 
+It can be relative to the configuration file where it is defined.
+
 Data read from the standard output of the command is used to update the block properties.
 Data is interpreted depending of the specified _format_.
 

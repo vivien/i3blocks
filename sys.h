@@ -19,8 +19,11 @@
 #ifndef _SYS_H
 #define _SYS_H
 
+#include <libgen.h> /* for dirname(3) */
 #include <signal.h>
 #include <unistd.h>
+
+int sys_chdir(const char *path);
 
 int sys_gettime(unsigned long *interval);
 int sys_setitimer(unsigned long interval);

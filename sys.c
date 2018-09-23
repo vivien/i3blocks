@@ -35,6 +35,20 @@
 #define sys_errno(msg, ...) \
 	trace(msg ": %s", ##__VA_ARGS__, strerror(errno))
 
+int sys_chdir(const char *path)
+{
+	int rc;
+
+	rc = chdir(path);
+	if (rc == -1) {
+		sys_errno("chdir(%s)", path);
+		rc = -errno;
+		return rc;
+	}
+
+	return 0;
+}
+
 int sys_gettime(unsigned long *interval)
 {
 	struct timespec ts;
