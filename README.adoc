@@ -72,8 +72,7 @@ bar {
 }
 ----
 
-For the lazy, you can start from 
-link:https://github.com/vivien/i3blocks-contrib[our collection of scripts], if you did not installed {progname} via your package manager:
+For the lazy, you can start from link:https://github.com/vivien/i3blocks-contrib[our collection of scripts], if you did not installed {progname} via your package manager:
 
 [source]
 ----
