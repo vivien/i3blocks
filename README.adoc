@@ -352,42 +352,27 @@ format=json
 
 Frequently Asked Questions and Troubleshooting.
 
-[quote]
-____
-What is a blocklet?
-____
-
+[qanda]
+What is a blocklet?::
 A blocklet is the configuration of a single block, part of the status line.
 There are plenty in the link:https://github.com/vivien/i3blocks-contrib[contrib repository].
 
-[quote]
-____
-Can I use my own variables?
-____
-
+Can I use my own variables?::
 Yes, any variable defined in the block is exported as is to the environment of its command.
 The `foo=bar` property can be accessed with `$foo` from a shell script, `ENV["foo"]` from Ruby, and so on.
-
++
 i3bar suggests to prefix your own keys with an underscore (`_`), but it might be more intuitive to use uppercase environment variables, so it is your call to define your own naming convention.
 
-[quote]
-____
-Why `$foo` doesn't work from the configuration file?
-____
-
+Why `$foo` doesn't work from the configuration file?::
 {progname} does not do string interpolation of any sort.
 The definitions found in the configuration file are just raw strings, this means that `bar=$baz` defines a _bar_ variable equal to literally `$baz` (a dollar sign followed by "baz").
-
++
 String interpolation does work in the _command_ property though, since it is interpreted by a shell which has access to the environment variables.
 
-[quote]
-____
-How can I simulate a button?
-____
-
+How can I simulate a button?::
 This is pretty straightforward actually.
 Just make sure not to override the _full_text_, for example:
-
++
 [source,ini]
 ----
 [calc-button]
@@ -395,35 +380,23 @@ full_text=Calculator
 command=gnome-calculator >/dev/null
 ----
 
-[quote]
-____
-Can a block start a GUI application?
-____
-
+Can a block start a GUI application?::
 Sure.
 And if you do not wish your command to block until the application is closed, ask i3 to start it for you with `i3-msg -q exec myapp`.
 
-[quote]
-____
-Why Pango isn't working?
-____
-
+Why Pango isn't working?::
 The Pango markup requires a Pango font.
 Make sure you configured link:https://i3wm.org/docs/userguide.html#_font[i3bar] to use a Pango font.
 For example:
-
++
 [source]
 ----
 font pango:Inconsolata, Icons 12
 ----
 
-[quote]
-____
-Why is the output from my persistent block not displayed?
-____
-
+Why is the output from my persistent block not displayed?::
 Make sure to flush stdout, for example:
-
++
 [source,ini]
 ----
 [ruby-loop]
@@ -432,15 +405,11 @@ command=ruby -p -e '$_.prepend("Got button ")' -e 'STDOUT.flush'
 interval=persist
 ----
 
-[quote]
-____
-Can I use a time interval below 1 second?
-____
-
+Can I use a time interval below 1 second?::
 No, the time unit for interval is the second.
-
++
 But even though I wouldn't recommend it, you can still update faster than that with loops:
-
++
 [source,ini]
 ----
 [nano1]
@@ -452,17 +421,13 @@ command=while sleep .5; do date +%N; done
 interval=persist
 ----
 
-[quote]
-____
-Can I change the block separator?
-____
-
+Can I change the block separator?::
 Not with {progname} itself, separators are drawn by i3bar.
 You can change the _separator_symbol_ in the link:https://i3wm.org/docs/userguide.html#_custom_separator_symbol[i3bar configuration].
-
++
 Alternatively, you can define static blocks as custom separators in your {progname} configuration.
 In the example below, we use the _"\xe3\x80\x89"_ UTF-8 character:
-
++
 [source,ini]
 ----
 # Define the custom separator in global properties for boilerplate
