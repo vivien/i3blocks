@@ -474,6 +474,8 @@ bar {
 
 And inspect the log with `tail -f /tmp/i3blocks.err`.
 
+See the link:{progname}.1{outfilesuffix}[manpage] for details about the command line options and {progname} usage.
+
 == License
 
 {progname} is Copyright (C) Vivien Didelot

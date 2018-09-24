@@ -1,0 +1,125 @@
+:progname: i3blocks
+
+= {progname}(1)
+
+== NAME
+
+{progname} - A minimalist scheduler for your status line scripts
+
+== SYNOPSIS
+
+*{progname}* [_OPTION_]...
+
+== DESCRIPTION
+
+The {progname}(1) command generates a status line for i3bar(1).
+It schedules command lines described in a simple configuration file at specified time intervals, upon signal reception or on clicks.
+
+== OPTIONS
+
+*-h*::
+Show the help message and exit.
+
+*-c* _CONFIGFILE_::
+Specifies an alternate configuration file path.
+
+*-v*::
+Increase log level.
+This option is a cumulative.
+By default only fatal errors are shown in the status bar.
+Passing this option once will show error messages as well.
+Using *-vv* and more will show more debug output on standard error.
+
+== CONFIGURATION
+
+{progname} must be defined as the status line command of the *bar* block described in your i3(1) configuration file:
+
+[source]
+----
+bar {
+  status_command i3blocks
+}
+----
+
+By default, {progname} looks for a configuration file in the following order (note that /etc may be prefixed with /usr/local depending on the compilation flags):
+
+. _$XDG_CONFIG_HOME/i3blocks/config_ (or _~/.config/i3blocks/config_)
+. _~/.i3blocks.conf_
+. _$XDG_CONFIG_DIRS/i3blocks/config_ (or _/etc/xdg/i3blocks/config_)
+. _/etc/i3blocks.conf_
+
+The configuration file uses a simplified INI format.
+Each section describes a new block to be displayed in the status bar.
+A line beginning with a _#_ sign is a comment, and empty lines are ignored.
+A property is one _key=value_ pair per line, without spaces surrounding the equal sign.
+Properties declared outside a block (i.e. at the beginning of the file) describe global settings and are merged into every block definitions.
+
+You must refer to http://i3wm.org/docs/i3bar-protocol.html to know what properties are understood by i3bar(1).
+
+The following properties are interpreted by **{progname}** to describe how the optional command must be scheduled.
+
+=== command
+
+The command line to be invoked with `sh -c`.
+
+Data read from the standard output of the command is used to update the block properties.
+Data is interpreted depending of the specified _format_.
+
+=== interval
+
+If it is a positive integer, then the block is spawned on startup and the value is used as a time interval in seconds to schedule future updates.
+If undefined or 0, the block won't be executed on startup (which is useful to simulate buttons).
+
+If _once_ (or _-1_), the block will be scheduled only on startup (note that a click or signal will still trigger an update).
+
+If _repeat_ (or _-2_), the block will be scheduled on startup, and as soon as it terminates (useful to repeat blocking commands).
+
+If _persist_ (or _-3_), the block will be scheduled only on startup, and updated as soon as it outputs a line.
+Updates are thus limited to single lines.
+
+=== signal
+
+The signal number used to update the block.
+All the real-time (think prioritized and queueable) signals are available to the user.
+The number is valid between _1_ and _N_, where _SIGRTMIN+N=SIGRTMAX_.
+(Note that there are 31 real-time signals in Linux.)
+For instance, _signal=10_ means that this block will be updated when **{progname}** receives the _SIGRTMIN+10_ signal.
+
+=== format
+
+This property specifies the format of the output text.
+
+When undefined, the raw format is assumed.
+In this format, each non-empty line of the output is used to update an i3bar key, in the order of definition found in the i3bar protocol:
+
+. _full_text_
+. _short_text_
+. _color_
+. _background_
+
+Excess lines are considered an error.
+
+If _json_ (or _1_) is used, the block output is read as a JSON object and will be merged into the block properties.
+
+== SEE ALSO
+
+i3(1), i3bar(1), i3status(1)
+
+== AUTHORS
+
+{progname} is written by Vivien Didelot and other contributors.
+
+== RESOURCES
+
+*Project web site:* https://vivien.github.io/i3blocks
+
+*Git source repository and issue tracker:* https://github.com/vivien/i3blocks
+
+*Official collection of scripts for {progname}:* https://github.com/vivien/i3blocks-contrib
+
+*i3bar protocol:* http://i3wm.org/docs/i3bar-protocol.html
+
+== COPYING
+
+Copyright (C) Vivien Didelot.
+Free use of this software is granted under the terms of the _GPLv3+_ License.
