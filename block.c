@@ -555,14 +555,6 @@ int block_reap(struct block *block)
 		break;
 	}
 
-	/* Do not update unless it was meant to terminate */
-	if (block->interval == INTERVAL_PERSIST)
-		return 0;
-
-	err = block_update(block);
-	if (err)
-		block_error(block, "Failed to update");
-
 	return 0;
 }
 
