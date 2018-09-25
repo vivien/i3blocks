@@ -88,7 +88,7 @@ static int block_child_env(struct block *block)
 	return block_for_each(block, block_setenv, NULL);
 }
 
-static int block_update_plain_text(char *line, size_t num, void *data)
+static int block_update_raw(char *line, size_t num, void *data)
 {
 	struct block *block = data;
 	static const char * const keys[] = {
@@ -100,7 +100,7 @@ static int block_update_plain_text(char *line, size_t num, void *data)
 	const char *key;
 
 	if (num >= sizeof(keys) / sizeof(keys[0])) {
-		block_error(block, "too much lines for plain text update");
+		block_error(block, "too much lines for raw update");
 		return -EINVAL;
 	}
 
@@ -134,7 +134,7 @@ static int block_stdout(struct block *block)
 	if (block->format == FORMAT_JSON)
 		err = json_read(out, count, block_update_json, block);
 	else
-		err = line_read(out, count, block_update_plain_text, block);
+		err = line_read(out, count, block_update_raw, block);
 
 	if (err && err != -EAGAIN)
 		return err;
@@ -586,7 +586,7 @@ int block_setup(struct block *block)
 	if (value && strcmp(value, "json") == 0)
 		block->format = FORMAT_JSON;
 	else
-		block->format = FORMAT_PLAIN;
+		block->format = FORMAT_RAW;
 
 	value = map_get(config, "signal");
 	if (!value)

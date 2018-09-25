@@ -28,7 +28,7 @@
 #define INTER_REPEAT	-2
 #define INTER_PERSIST	-3
 
-#define FORMAT_PLAIN	0
+#define FORMAT_RAW	0
 #define FORMAT_JSON	1
 
 /* Block command exit codes */
