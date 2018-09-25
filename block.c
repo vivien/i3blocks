@@ -474,10 +474,11 @@ static int block_wait(struct block *block)
 	return 0;
 }
 
-static void block_close(struct block *block)
+void block_close(struct block *block)
 {
 	int err;
 
+	/* Invalidate descriptors to avoid misdetection after reassignment */
 	if (block->interval == INTERVAL_PERSIST) {
 		err = sys_close(block->in[1]);
 		if (err)
@@ -534,7 +535,7 @@ int block_reap(struct block *block)
 
 	err = block_stderr(block);
 	if (err)
-		goto close;
+		return err;
 
 	switch (block->code) {
 	case 0:
@@ -551,21 +552,18 @@ int block_reap(struct block *block)
 	default:
 		block_error(block, "Command '%s' exited unexpectedly with code %d",
 			    block->command, block->code);
-		goto close;
+		break;
 	}
 
 	/* Do not update unless it was meant to terminate */
 	if (block->interval == INTERVAL_PERSIST)
-		goto close;
+		return 0;
 
 	err = block_update(block);
 	if (err)
 		block_error(block, "Failed to update");
-close:
-	/* Invalidate descriptors to avoid misdetection after reassignment */
-	block_close(block);
 
-	return err;
+	return 0;
 }
 
 int block_setup(struct block *block)

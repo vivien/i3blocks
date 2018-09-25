@@ -78,5 +78,6 @@ int block_spawn(struct block *block);
 void block_touch(struct block *block);
 int block_reap(struct block *block);
 int block_update(struct block *block);
+void block_close(struct block *block);
 
 #endif /* _BLOCK_H */

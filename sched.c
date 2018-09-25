@@ -228,6 +228,7 @@ static void sched_poll_exited(struct bar *bar)
 			if (block->pid == pid) {
 				block_debug(block, "exited");
 				block_reap(block);
+				block_close(block);
 				if (block->interval == INTERVAL_REPEAT) {
 					block_spawn(block);
 					block_touch(block);
