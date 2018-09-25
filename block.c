@@ -126,7 +126,7 @@ static int block_stdout(struct block *block)
 	size_t count;
 	int err;
 
-	if (block->interval == INTER_PERSIST)
+	if (block->interval == INTERVAL_PERSIST)
 		count = 1;
 	else
 		count = -1; /* SIZE_MAX */
@@ -220,7 +220,7 @@ int block_click(struct block *block)
 {
 	block_debug(block, "clicked");
 
-	if (block->interval == INTER_PERSIST)
+	if (block->interval == INTERVAL_PERSIST)
 		return block_send(block);
 
 	return block_spawn(block);
@@ -262,7 +262,7 @@ static int block_child_stdin(struct block *block)
 {
 	int err;
 
-	if (block->interval == INTER_PERSIST) {
+	if (block->interval == INTERVAL_PERSIST) {
 		err = sys_close(block->in[1]);
 		if (err)
 			return err;
@@ -346,7 +346,7 @@ static int block_child(struct block *block)
 static int block_parent_stdin(struct block *block)
 {
 	/* Close read end of stdin pipe */
-	if (block->interval == INTER_PERSIST)
+	if (block->interval == INTERVAL_PERSIST)
 		return sys_close(block->in[0]);
 
 	return 0;
@@ -361,7 +361,7 @@ static int block_parent_stdout(struct block *block)
 	if (err)
 		return err;
 
-	if (block->interval == INTER_PERSIST)
+	if (block->interval == INTERVAL_PERSIST)
 		return sys_async(block->out[0], SIGRTMIN);
 
 	return 0;
@@ -425,7 +425,7 @@ int block_spawn(struct block *block)
 		return 0;
 	}
 
-	if (block->interval == INTER_PERSIST) {
+	if (block->interval == INTERVAL_PERSIST) {
 		err = sys_pipe(block->in);
 		if (err)
 			return err;
@@ -470,7 +470,7 @@ static void block_close(struct block *block)
 {
 	int err;
 
-	if (block->interval == INTER_PERSIST) {
+	if (block->interval == INTERVAL_PERSIST) {
 		err = sys_close(block->in[1]);
 		if (err)
 			block_error(block, "failed to close stdin");
@@ -547,7 +547,7 @@ int block_reap(struct block *block)
 	}
 
 	/* Do not update unless it was meant to terminate */
-	if (block->interval == INTER_PERSIST)
+	if (block->interval == INTERVAL_PERSIST)
 		goto close;
 
 	err = block_update(block);
@@ -574,11 +574,11 @@ int block_setup(struct block *block)
 	if (!value)
 		block->interval = 0;
 	else if (strcmp(value, "once") == 0)
-		block->interval = INTER_ONCE;
+		block->interval = INTERVAL_ONCE;
 	else if (strcmp(value, "repeat") == 0)
-		block->interval = INTER_REPEAT;
+		block->interval = INTERVAL_REPEAT;
 	else if (strcmp(value, "persist") == 0)
-		block->interval = INTER_PERSIST;
+		block->interval = INTERVAL_PERSIST;
 	else
 		block->interval = atoi(value);
 

@@ -24,9 +24,9 @@
 #include "log.h"
 #include "map.h"
 
-#define INTER_ONCE	-1
-#define INTER_REPEAT	-2
-#define INTER_PERSIST	-3
+#define INTERVAL_ONCE		-1
+#define INTERVAL_REPEAT		-2
+#define INTERVAL_PERSIST	-3
 
 #define FORMAT_RAW	0
 #define FORMAT_JSON	1
