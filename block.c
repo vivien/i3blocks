@@ -411,6 +411,24 @@ static int block_fork(struct block *block)
 	return block_parent(block);
 }
 
+static int block_open(struct block *block)
+{
+	int err;
+
+	err = sys_pipe(block->err);
+	if (err)
+		return err;
+
+	err = sys_pipe(block->out);
+	if (err)
+		return err;
+
+	if (block->interval == INTERVAL_PERSIST)
+		return sys_pipe(block->in);
+
+	return 0;
+}
+
 int block_spawn(struct block *block)
 {
 	int err;
@@ -425,17 +443,7 @@ int block_spawn(struct block *block)
 		return 0;
 	}
 
-	if (block->interval == INTERVAL_PERSIST) {
-		err = sys_pipe(block->in);
-		if (err)
-			return err;
-	}
-
-	err = sys_pipe(block->out);
-	if (err)
-		return err;
-
-	err = sys_pipe(block->err);
+	err = block_open(block);
 	if (err)
 		return err;
 
