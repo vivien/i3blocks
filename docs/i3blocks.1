@@ -1,0 +1,228 @@
+'\" t
+.\"     Title: i3blocks
+.\"    Author: [see the "AUTHOR(S)" section]
+.\" Generator: Asciidoctor 1.5.7.1
+.\"      Date: 2018-09-24
+.\"    Manual: \ \&
+.\"    Source: \ \&
+.\"  Language: English
+.\"
+.TH "I3BLOCKS" "1" "2018-09-24" "\ \&" "\ \&"
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.ss \n[.ss] 0
+.nh
+.ad l
+.de URL
+\fI\\$2\fP <\\$1>\\$3
+..
+.als MTO URL
+.if \n[.g] \{\
+.  mso www.tmac
+.  am URL
+.    ad l
+.  .
+.  am MTO
+.    ad l
+.  .
+.  LINKSTYLE blue R < >
+.\}
+.SH "NAME"
+i3blocks \- A minimalist scheduler for your status line scripts
+.SH "SYNOPSIS"
+.sp
+\fBi3blocks\fP [\fIOPTION\fP]...
+.SH "DESCRIPTION"
+.sp
+The i3blocks(1) command generates a status line for i3bar(1).
+It schedules command lines described in a simple configuration file at specified time intervals, upon signal reception or on clicks.
+.SH "OPTIONS"
+.sp
+\fB\-h\fP
+.RS 4
+Show the help message and exit.
+.RE
+.sp
+\fB\-c\fP \fICONFIGFILE\fP
+.RS 4
+Specifies an alternate configuration file path.
+.RE
+.sp
+\fB\-v\fP
+.RS 4
+Increase log level.
+This option is a cumulative.
+By default only fatal errors are shown in the status bar.
+Passing this option once will show error messages as well.
+Using \fB\-vv\fP and more will show more debug output on standard error.
+.RE
+.SH "CONFIGURATION"
+.sp
+i3blocks must be defined as the status line command of the \fBbar\fP block described in your i3(1) configuration file:
+.sp
+.if n .RS 4
+.nf
+bar {
+  status_command i3blocks
+}
+.fi
+.if n .RE
+.sp
+By default, i3blocks looks for a configuration file in the following order (note that /etc may be prefixed with /usr/local depending on the compilation flags):
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 1.\h'+01'\c
+.\}
+.el \{\
+.  sp -1
+.  IP " 1." 4.2
+.\}
+\fI$XDG_CONFIG_HOME/i3blocks/config\fP (or \fI~/.config/i3blocks/config\fP)
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 2.\h'+01'\c
+.\}
+.el \{\
+.  sp -1
+.  IP " 2." 4.2
+.\}
+\fI~/.i3blocks.conf\fP
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 3.\h'+01'\c
+.\}
+.el \{\
+.  sp -1
+.  IP " 3." 4.2
+.\}
+\fI$XDG_CONFIG_DIRS/i3blocks/config\fP (or \fI/etc/xdg/i3blocks/config\fP)
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 4.\h'+01'\c
+.\}
+.el \{\
+.  sp -1
+.  IP " 4." 4.2
+.\}
+\fI/etc/i3blocks.conf\fP
+.RE
+.sp
+The configuration file uses a simplified INI format.
+Each section describes a new block to be displayed in the status bar.
+A line beginning with a \fI#\fP sign is a comment, and empty lines are ignored.
+A property is one \fIkey=value\fP pair per line, without spaces surrounding the equal sign.
+Properties declared outside a block (i.e. at the beginning of the file) describe global settings and are merged into every block definitions.
+.sp
+You must refer to \c
+.URL "http://i3wm.org/docs/i3bar\-protocol.html" "" " "
+to know what properties are understood by i3bar(1).
+.sp
+The following properties are interpreted by \fBi3blocks\fP to describe how the optional command must be scheduled.
+.SS "command"
+.sp
+The command line to be invoked with \f(CRsh \-c\fP.
+.sp
+Data read from the standard output of the command is used to update the block properties.
+Data is interpreted depending of the specified \fIformat\fP.
+.SS "interval"
+.sp
+If it is a positive integer, then the block is spawned on startup and the value is used as a time interval in seconds to schedule future updates.
+If undefined or 0, the block won\(cqt be executed on startup (which is useful to simulate buttons).
+.sp
+If \fIonce\fP (or \fI\-1\fP), the block will be scheduled only on startup (note that a click or signal will still trigger an update).
+.sp
+If \fIrepeat\fP (or \fI\-2\fP), the block will be scheduled on startup, and as soon as it terminates (useful to repeat blocking commands).
+.sp
+If \fIpersist\fP (or \fI\-3\fP), the block will be scheduled only on startup, and updated as soon as it outputs a line.
+Updates are thus limited to single lines.
+.SS "signal"
+.sp
+The signal number used to update the block.
+All the real\-time (think prioritized and queueable) signals are available to the user.
+The number is valid between \fI1\fP and \fIN\fP, where \fISIGRTMIN+N=SIGRTMAX\fP.
+(Note that there are 31 real\-time signals in Linux.)
+For instance, \fIsignal=10\fP means that this block will be updated when \fBi3blocks\fP receives the \fISIGRTMIN+10\fP signal.
+.SS "format"
+.sp
+This property specifies the format of the output text.
+.sp
+When undefined, the raw format is assumed.
+In this format, each non\-empty line of the output is used to update an i3bar key, in the order of definition found in the i3bar protocol:
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 1.\h'+01'\c
+.\}
+.el \{\
+.  sp -1
+.  IP " 1." 4.2
+.\}
+\fIfull_text\fP
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 2.\h'+01'\c
+.\}
+.el \{\
+.  sp -1
+.  IP " 2." 4.2
+.\}
+\fIshort_text\fP
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 3.\h'+01'\c
+.\}
+.el \{\
+.  sp -1
+.  IP " 3." 4.2
+.\}
+\fIcolor\fP
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 4.\h'+01'\c
+.\}
+.el \{\
+.  sp -1
+.  IP " 4." 4.2
+.\}
+\fIbackground\fP
+.RE
+.sp
+Excess lines are considered an error.
+.sp
+If \fIjson\fP (or \fI1\fP) is used, the block output is read as a JSON object and will be merged into the block properties.
+.SH "SEE ALSO"
+.sp
+i3(1), i3bar(1), i3status(1)
+.SH "AUTHORS"
+.sp
+i3blocks is written by Vivien Didelot and other contributors.
+.SH "RESOURCES"
+.sp
+\fBProject web site:\fP \c
+.URL "https://vivien.github.io/i3blocks" "" ""
+.sp
+\fBGit source repository and issue tracker:\fP \c
+.URL "https://github.com/vivien/i3blocks" "" ""
+.sp
+\fBOfficial collection of scripts for i3blocks:\fP \c
+.URL "https://github.com/vivien/i3blocks\-contrib" "" ""
+.sp
+\fBi3bar protocol:\fP \c
+.URL "http://i3wm.org/docs/i3bar\-protocol.html" "" ""
+.SH "COPYING"
+.sp
+Copyright \(co Vivien Didelot.
+Free use of this software is granted under the terms of the \fIGPLv3+\fP License.

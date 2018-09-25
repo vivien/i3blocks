@@ -1,6 +1,5 @@
 *.o
 i3blocks
-i3blocks.1
 .deps/
 Makefile
 Makefile.in

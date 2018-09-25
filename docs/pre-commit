@@ -1,0 +1,26 @@
+#!/bin/sh
+
+set -e
+
+pushd docs >/dev/null
+
+if git diff --name-only --staged -- *.adoc | grep -q ^
+then
+  rake -v
+  echo "Documentation was regenerated."
+
+  if git diff --name-only -- *.adoc | grep -q ^
+  then
+    echo "Some documentation source files are unstaged,"
+    echo "stage and commit hunks yourself with:"
+    echo
+    echo "    git commit --no-verify --patch *.1 *.html"
+    echo
+
+    exit 1
+  fi
+
+  git add -v -u *.1 *.html
+fi
+
+popd >/dev/null
