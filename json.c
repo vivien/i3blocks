@@ -252,8 +252,13 @@ int json_read(int fd, size_t count, json_pair_cb_t *pair_cb, void *data)
 
 bool json_is_string(const char *str)
 {
-	/* Lazy check beginning quote only */
-	return *str == '\"';
+	size_t len;
+
+	len = json_parse_string(str);
+	if (!len || str[len] != '\0')
+		return false;
+
+	return true;
 }
 
 static bool json_is_number(const char *str)
