@@ -332,3 +332,67 @@ int json_escape(const char *str, char *buf, size_t size)
 
 	return 0;
 }
+
+int json_unescape(const char *str, char *buf, size_t size)
+{
+	bool escaped = false;
+	const char *end;
+	int len;
+	char c;
+
+	if (json_is_string(str)) {
+		end = strrchr(str, '"');
+		if (!end)
+			return -EINVAL; /* Unlikely */
+
+		while (++str < end) {
+			c = *str;
+
+			if (escaped) {
+				switch (c) {
+				case '\\':
+					c = '\\';
+					break;
+				case 'b':
+					c = '\b';
+					break;
+				case 'f':
+					c = '\f';
+					break;
+				case 'n':
+					c = '\n';
+					break;
+				case 'r':
+					c = '\r';
+					break;
+				case 't':
+					c = '\t';
+					break;
+				}
+
+				escaped = false;
+			} else if (*str == '\\') {
+				escaped = true;
+				continue;
+			}
+
+			len = snprintf(buf, size, "%c", c);
+			if (len < 0 || len >= size)
+				return -ENOSPC;
+
+			size -= len;
+			buf += len;
+		}
+
+		return 0;
+	}
+
+	if (json_is_number(str) || json_is_literal(str)) {
+		strncpy(buf, str, size);
+		if (buf[size - 1] != '\0')
+			return -ENOSPC;
+		return 0;
+	}
+
+	return -EINVAL;
+}

@@ -27,6 +27,7 @@ int json_read(int fd, size_t count, json_pair_cb_t *pair_cb, void *data);
 bool json_is_string(const char *str);
 bool json_is_valid(const char *str);
 int json_escape(const char *str, char *buf, size_t size);
+int json_unescape(const char *str, char *buf, size_t size);
 
 #endif /* _JSON_H */
 
