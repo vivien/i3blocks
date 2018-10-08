@@ -115,10 +115,6 @@ static int block_update_json(char *name, char *value, void *data)
 	char buf[BUFSIZ];
 	int err;
 
-	/* Do not update i3bar identifiers */
-	if (strcmp(name, "name") == 0 || strcmp(name, "instance") == 0)
-		return 0;
-
 	err = json_unescape(value, buf, sizeof(buf));
 	if (err)
 		return err;
