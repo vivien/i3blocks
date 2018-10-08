@@ -112,12 +112,18 @@ static int block_update_raw(char *line, size_t num, void *data)
 static int block_update_json(char *name, char *value, void *data)
 {
 	struct block *block = data;
+	char buf[BUFSIZ];
+	int err;
 
 	/* Do not update i3bar identifiers */
 	if (strcmp(name, "name") == 0 || strcmp(name, "instance") == 0)
 		return 0;
 
-	return block_set(block, name, value);
+	err = json_unescape(value, buf, sizeof(buf));
+	if (err)
+		return err;
+
+	return block_set(block, name, buf);
 }
 
 static int block_stdout(struct block *block)
