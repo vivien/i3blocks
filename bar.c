@@ -245,19 +245,15 @@ static int bar_click_copy_cb(const char *key, const char *value, void *data)
 
 static int bar_click_json_cb(char *name, char *value, void *data)
 {
+	char buf[BUFSIZ];
 	char *end;
+	int err;
 
-	/* Ugly string unquoting */
-	if (*value == '"') {
-		end = strchr(value, '\0');
-		if (!end)
-			return -EINVAL; /* Unlikely */
+	err = json_unescape(value, buf, sizeof(buf));
+	if (err)
+		return err;
 
-		*--end = '\0';
-		value++;
-	}
-
-	return map_set(data, name, value);
+	return map_set(data, name, buf);
 }
 
 int bar_click(struct bar *bar)
