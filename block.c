@@ -124,7 +124,9 @@ static int block_update_json(char *name, char *value, void *data)
 
 static int block_stdout(struct block *block)
 {
+	const char *label, *full_text;
 	int out = block->out[0];
+	char buf[BUFSIZ];
 	size_t count;
 	int err;
 
@@ -140,6 +142,16 @@ static int block_stdout(struct block *block)
 
 	if (err && err != -EAGAIN)
 		return err;
+
+	/* Deprecated label */
+	label = block_get(block, "label");
+	full_text = block_get(block, "full_text");
+	if (label && full_text) {
+		snprintf(buf, sizeof(buf), "%s%s", label, full_text);
+		err = block_set(block, "full_text", buf);
+		if (err)
+			return err;
+	}
 
 	return 0;
 }
