@@ -236,10 +236,6 @@ static struct block *bar_find(struct bar *bar, const struct map *map)
 
 static int bar_click_copy_cb(const char *key, const char *value, void *data)
 {
-	/* No need to override them again */
-	if (strcmp(key, "name") == 0 || strcmp(key, "instance") == 0)
-		return 0;
-
 	return block_set(data, key, value);
 }
 
