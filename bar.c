@@ -239,19 +239,6 @@ static int bar_click_copy_cb(const char *key, const char *value, void *data)
 	return block_set(data, key, value);
 }
 
-static int bar_click_json_cb(char *name, char *value, void *data)
-{
-	char buf[BUFSIZ];
-	char *end;
-	int err;
-
-	err = json_unescape(value, buf, sizeof(buf));
-	if (err)
-		return err;
-
-	return map_set(data, name, buf);
-}
-
 int bar_click(struct bar *bar)
 {
 	struct block *block;
@@ -267,7 +254,7 @@ int bar_click(struct bar *bar)
 
 	for (;;) {
 		/* Each click is one JSON object per line */
-		err = json_read(STDIN_FILENO, 1, bar_click_json_cb, click);
+		err = json_read(STDIN_FILENO, 1, click);
 		if (err) {
 			if (err == -EAGAIN)
 				err = 0;

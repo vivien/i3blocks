@@ -24,6 +24,7 @@
 #include "json.h"
 #include "line.h"
 #include "log.h"
+#include "map.h"
 #include "sys.h"
 
 struct json {
@@ -31,19 +32,32 @@ struct json {
 	size_t name_len;
 	char *value;
 	size_t value_len;
-	json_pair_cb_t *pair_cb;
-	void *data;
+
+	struct map *map;
 };
 
 static int json_pair(struct json *json)
 {
-	if (!json->pair_cb || !json->name || !json->value)
+	char uname[BUFSIZ];
+	char uval[BUFSIZ];
+	int err;
+
+	if (!json->map || !json->name || !json->value)
 		return 0;
 
 	*(json->name + json->name_len) = '\0';
+
+	err = json_unescape(json->name, uname, sizeof(uname));
+	if (err)
+		return err;
+
 	*(json->value + json->value_len) = '\0';
 
-	return json->pair_cb(json->name, json->value, json->data);
+	err = json_unescape(json->value, uval, sizeof(uval));
+	if (err)
+		return err;
+
+	return map_set(json->map, uname, uval);
 }
 
 /* Return the length of the parsed string, 0 if it is invalid */
@@ -200,7 +214,7 @@ static size_t json_parse_colon(const char *line)
 	return len;
 }
 
-/* Parse and store (unquoted) the name string */
+/* Parse and store the name string */
 static size_t json_parse_name(struct json *json, char *line)
 {
 	size_t len;
@@ -209,8 +223,8 @@ static size_t json_parse_name(struct json *json, char *line)
 	if (!len)
 		return 0;
 
-	json->name = line + 1;
-	json->name_len = len - 2;
+	json->name = line;
+	json->name_len = len;
 
 	return len;
 }
@@ -280,11 +294,10 @@ static int json_parse_line(char *line, size_t num, void *data)
 	return 0;
 }
 
-int json_read(int fd, size_t count, json_pair_cb_t *pair_cb, void *data)
+int json_read(int fd, size_t count, struct map *map)
 {
 	struct json json = {
-		.pair_cb = pair_cb,
-		.data = data,
+		.map = map,
 	};
 
 	return line_read(fd, count, json_parse_line, &json);

@@ -109,19 +109,6 @@ static int block_update_raw(char *line, size_t num, void *data)
 	return block_set(block, key, line);
 }
 
-static int block_update_json(char *name, char *value, void *data)
-{
-	struct block *block = data;
-	char buf[BUFSIZ];
-	int err;
-
-	err = json_unescape(value, buf, sizeof(buf));
-	if (err)
-		return err;
-
-	return block_set(block, name, buf);
-}
-
 static int block_stdout(struct block *block)
 {
 	const char *label, *full_text;
@@ -136,7 +123,7 @@ static int block_stdout(struct block *block)
 		count = -1; /* SIZE_MAX */
 
 	if (block->format == FORMAT_JSON)
-		err = json_read(out, count, block_update_json, block);
+		err = json_read(out, count, block->env);
 	else
 		err = line_read(out, count, block_update_raw, block);
 

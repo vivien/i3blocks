@@ -21,8 +21,9 @@
 
 #include <stdbool.h>
 
-typedef int json_pair_cb_t(char *name, char *value, void *data);
-int json_read(int fd, size_t count, json_pair_cb_t *pair_cb, void *data);
+struct map;
+
+int json_read(int fd, size_t count, struct map *map);
 
 bool json_is_string(const char *str);
 bool json_is_valid(const char *str);
