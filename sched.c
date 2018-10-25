@@ -40,6 +40,7 @@ static unsigned int
 longest_sleep(struct bar *bar)
 {
 	unsigned int time = 0;
+	int i;
 
 	if (bar->num > 0 && bar->blocks->interval > 0)
 		time = bar->blocks->interval; /* first block's interval */
@@ -48,7 +49,7 @@ longest_sleep(struct bar *bar)
 		return time;
 
 	/* The maximum sleep time is actually the GCD between all block intervals */
-	for (int i = 1; i < bar->num; ++i)
+	for (i = 1; i < bar->num; ++i)
 		if ((bar->blocks + i)->interval > 0)
 			time = gcd(time, (bar->blocks + i)->interval);
 
