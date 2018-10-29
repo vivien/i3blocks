@@ -1,0 +1,59 @@
+.card-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-gap: 30px;
+}
+
+.card {
+  display: grid;
+  grid-template-columns: 1fr 3fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  grid-gap: 8px;
+  grid-template-areas:
+  "top-left top-center top-right"
+  "bottom bottom bottom";
+}
+
+.card-top-left {
+  grid-area: top-left;
+}
+
+.card-top-center {
+  grid-area: top-center;
+}
+
+.card-top-right {
+  grid-area: top-right;
+}
+
+.card-bottom {
+  grid-area: bottom;
+}
+
+.repo {
+  width: 400px;
+  height: 150px;
+  border-radius: 5px;
+  border: 1px solid #d3d3d3;
+  padding: 8px;
+  color: #555;
+}
+
+.repo p {
+  margin: 0;
+}
+
+.repo-owner-avatar {
+  height: 64px;
+  width: 64px;
+}
+
+.repo-stars,
+.repo-language,
+.repo-last-update {
+  font-size: 12px;
+}
+
+.repo-stars span {
+  font-size: 24px;
+}

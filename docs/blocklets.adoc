@@ -1,0 +1,13 @@
+= Blocklets
+:docinfo:
+
+This page lists blocklets found in community projects.
+
+TIP: Have your blocklet(s) shown in that list! +
+Your repository will be included in the page automatically if it has both the **i3blocks** and **blocklet** topics. +
+Data is fetch from link:https://github.com/search?q=topic:i3blocks+topic:blocklet[the official Github search page].
+
+IMPORTANT: This page needs some front-end love 💔
+
+[pass]
+<div id="repos" class="card-container"></div>

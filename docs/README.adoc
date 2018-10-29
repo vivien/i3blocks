@@ -356,7 +356,7 @@ Frequently Asked Questions and Troubleshooting.
 [qanda]
 What is a blocklet?::
 A blocklet is the configuration of a single block, part of the status line.
-There are plenty in the link:https://github.com/vivien/i3blocks-contrib[contrib repository].
+There are plenty listed in the link:https://vivien.github.io/i3blocks/blocklets[blocklets page].
 
 Can I use my own variables?::
 Yes, any variable defined in the block is exported as is to the environment of its command.
