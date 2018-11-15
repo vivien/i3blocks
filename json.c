@@ -112,6 +112,7 @@ static size_t json_parse_literal(const char *line, const char *literal)
 /* A value can be a string, number, object, array, true, false, or null */
 static size_t json_parse_value(struct json *json, char *line)
 {
+	int i;
 	json->value = line;
 
 	json->value_len = json_parse_string(line);
@@ -134,7 +135,18 @@ static size_t json_parse_value(struct json *json, char *line)
 	if (json->value_len)
 		return json->value_len;
 
-	/* nested arrays or objects are not supported */
+	/* ugly hack to support modifiers in i3wm 4.16 */
+	if (*line == '[') {
+		/* find end of JSON array and calculate length to skip */
+		for (i = 2; *(++line) != ']'; i++) {}
+		/* set pair value to empty string */
+		*(json->value) = '"';
+		*(json->value + 1) = '"';
+		json->value_len = 2;
+		return i;
+	}
+
+	/* nested objects are not supported */
 	json->value = NULL;
 
 	return 0;
