@@ -37,7 +37,7 @@ struct json {
 
 static int json_pair(struct json *json)
 {
-	if (!json->pair_cb)
+	if (!json->pair_cb || !json->name || !json->value)
 		return 0;
 
 	*(json->name + json->name_len) = '\0';
@@ -84,6 +84,22 @@ static size_t json_parse_string(const char *line)
 			return 0;
 		}
 	}
+
+	return ++end - line;
+}
+
+/* Return the length of the parsed array, 0 if it is invalid */
+static size_t json_parse_array(const char *line)
+{
+	const char *end = line;
+
+	if (*line != '[')
+		return 0;
+
+	while (*++end != ']')
+		/* control character or end-of-line? */
+		if (iscntrl(*end) || *end == '\0')
+			return 0;
 
 	return ++end - line;
 }
@@ -136,8 +152,8 @@ static size_t json_parse_value(struct json *json, char *line)
 
 	/* nested arrays or objects are not supported */
 	json->value = NULL;
-
-	return 0;
+	json->value_len = json_parse_array(line);
+	return json->value_len;
 }
 
 /* Return the length of ':' optionally enclosed by whitespaces, 0 otherwise */
