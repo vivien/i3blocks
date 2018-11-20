@@ -88,20 +88,32 @@ static size_t json_parse_string(const char *line)
 	return ++end - line;
 }
 
-/* Return the length of the parsed array, 0 if it is invalid */
-static size_t json_parse_array(const char *line)
+/* Return the length of the parsed non scalar (with open/close delimiter), 0 if it is invalid */
+static size_t json_parse_non_scalar(const char *line, char open_delimiter, char close_delimiter)
 {
 	const char *end = line;
 
-	if (*line != '[')
+	if (*line != open_delimiter)
 		return 0;
 
-	while (*++end != ']')
+	while (*++end != close_delimiter)
 		/* control character or end-of-line? */
 		if (iscntrl(*end) || *end == '\0')
 			return 0;
 
 	return ++end - line;
+}
+
+/* Return the length of the parsed array, 0 if it is invalid */
+static size_t json_parse_array(const char *line)
+{
+	return json_parse_non_scalar(line, '[', ']');
+}
+
+/* Return the length of the parsed object, 0 if it is invalid */
+static size_t json_parse_object(const char *line)
+{
+	return json_parse_non_scalar(line, '{', '}');
 }
 
 /* Return the length of the parsed number, 0 if it is invalid */
@@ -153,6 +165,8 @@ static size_t json_parse_value(struct json *json, char *line)
 	/* nested arrays or objects are not supported */
 	json->value = NULL;
 	json->value_len = json_parse_array(line);
+	if (!json->value_len)
+		json->value_len = json_parse_object(line);
 	return json->value_len;
 }
 
