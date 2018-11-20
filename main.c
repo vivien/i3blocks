@@ -47,7 +47,7 @@ main(int argc, char *argv[])
 			log_level++;
 			break;
 		case 'h':
-			printf("Usage: %s [-c <configfile>] [-h] [-V]\n", argv[0]);
+			printf("Usage: %s [-c <configfile>] [-v] [-h] [-V]\n", argv[0]);
 			return 0;
 		case 'V':
 			printf(PACKAGE_STRING " © 2014 Vivien Didelot and contributors\n");
