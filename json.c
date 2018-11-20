@@ -88,15 +88,16 @@ static size_t json_parse_string(const char *line)
 	return ++end - line;
 }
 
-/* Return the length of the parsed array, 0 if it is invalid */
-static size_t json_parse_array(const char *line)
+/* Return the length of the parsed array or object, 0 if it is invalid */
+static size_t json_parse_array_or_object(const char *line)
 {
 	const char *end = line;
+	char delim = *line;
 
-	if (*line != '[')
+	if (delim != '[' && delim != '{')
 		return 0;
 
-	while (*++end != ']')
+	while (*++end != delim+2)
 		/* control character or end-of-line? */
 		if (iscntrl(*end) || *end == '\0')
 			return 0;
@@ -152,7 +153,7 @@ static size_t json_parse_value(struct json *json, char *line)
 
 	/* nested arrays or objects are not supported */
 	json->value = NULL;
-	json->value_len = json_parse_array(line);
+	json->value_len = json_parse_array_or_object(line);
 	return json->value_len;
 }
 
