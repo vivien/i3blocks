@@ -301,15 +301,16 @@ bool json_is_valid(const char *str)
 
 int json_escape(const char *str, char *buf, size_t size)
 {
-	size_t null = strlen(str) + 1;
-	char c = '\0';
 	int len;
 
-	do {
-		switch (c) {
-		case '\0':
-			len = snprintf(buf, size, "\"");
-			break;
+	/* open quote */
+	*buf++ = '\"';
+	size--;
+	if (!size)
+		return -ENOSPC;
+
+	while (*str) {
+		switch (*str) {
 		case '\b':
 			len = snprintf(buf, size, "\\b");
 			break;
@@ -332,7 +333,7 @@ int json_escape(const char *str, char *buf, size_t size)
 			len = snprintf(buf, size, "\\\"");
 			break;
 		default:
-			len = snprintf(buf, size, "%c", c);
+			len = snprintf(buf, size, "%c", *str);
 			break;
 		}
 
@@ -342,9 +343,16 @@ int json_escape(const char *str, char *buf, size_t size)
 
 		size -= len;
 		buf += len;
+		str++;
+	}
 
-		c = *str++;
-	} while (null--);
+	/* close quote */
+	*buf++ = '\"';
+	size--;
+	if (!size)
+		return -ENOSPC;
+
+	*buf++ = '\0';
 
 	return 0;
 }
