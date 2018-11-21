@@ -343,7 +343,9 @@ int json_escape(const char *str, char *buf, size_t size)
 		size -= len;
 		buf += len;
 
-		c = *str++;
+		c = *str;
+		if (c)
+			str++;
 	} while (null--);
 
 	return 0;
