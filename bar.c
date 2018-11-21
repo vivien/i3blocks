@@ -314,6 +314,7 @@ static struct block *bar_add_block(struct bar *bar)
 	if (reloc) {
 		bar->blocks = reloc;
 		block = bar->blocks + bar->num;
+		memset(block, 0, sizeof(*block));
 		bar->num++;
 	}
 
