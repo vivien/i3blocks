@@ -92,14 +92,24 @@ static size_t json_parse_string(const char *line)
 static size_t json_parse_non_scalar(const char *line, char open_delimiter, char close_delimiter)
 {
 	const char *end = line;
+	int nested;
 
 	if (*line != open_delimiter)
 		return 0;
 
-	while (*++end != close_delimiter)
+	nested = 1;
+	while (nested) {
+		++end;
+
 		/* control character or end-of-line? */
 		if (iscntrl(*end) || *end == '\0')
 			return 0;
+
+		if (*end == open_delimiter)
+			nested++;
+		else if (*end == close_delimiter)
+			nested--;
+	}
 
 	return ++end - line;
 }
