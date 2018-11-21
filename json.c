@@ -93,14 +93,24 @@ static size_t json_parse_array_or_object(const char *line)
 {
 	const char *end = line;
 	char delim = *line;
+	int nested;
 
 	if (delim != '[' && delim != '{')
 		return 0;
 
-	while (*++end != delim+2)
+	nested = 1;
+	while (nested) {
+		++end;
+
 		/* control character or end-of-line? */
 		if (iscntrl(*end) || *end == '\0')
 			return 0;
+
+		if (*end == delim)
+			nested++;
+		else if (*end == delim+2)
+			nested--;
+	}
 
 	return ++end - line;
 }
