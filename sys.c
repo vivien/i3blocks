@@ -431,7 +431,7 @@ int sys_async(int fd, int sig)
 		return err;
 
 	/* Set calling process as owner, that is to receive the signal */
-	err = sys_setown(fd, getpid());
+	err = sys_setown(fd, sig ? getpid() : -1);
 	if (err)
 		return err;
 
@@ -439,8 +439,12 @@ int sys_async(int fd, int sig)
 	if (err)
 		return err;
 
-	/* Enable nonblocking I/O and signal-driven I/O */
-	return sys_setfl(fd, flags | O_ASYNC | O_NONBLOCK);
+	/* Enable/disable nonblocking I/O and signal-driven I/O */
+	if (sig)
+		flags |= (O_ASYNC | O_NONBLOCK);
+	else
+		flags &= ~(O_ASYNC | O_NONBLOCK);
+	return sys_setfl(fd, flags);
 }
 
 int sys_pipe(int *fds)

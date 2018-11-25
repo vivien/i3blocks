@@ -281,8 +281,20 @@ sched_start(struct bar *bar)
 		trace("received signal %d (%s), file descriptor %d", sig,
 		      strsignal(sig), fd);
 
-		if (sig == SIGTERM || sig == SIGINT)
+		if (sig == SIGTERM || sig == SIGINT) {
+			/* Disable event I/O for blocks (persistent) */
+			int i;
+			for (i = 0; i < bar->num; i++) {
+				struct block *block = bar->blocks + i;
+
+				if (block->interval == INTERVAL_PERSIST)
+					sys_async(block->out[0], 0);
+			}
+			
+			/* Disable event I/O for stdin (clicks) */
+			sys_async(STDIN_FILENO, 0);
 			break;
+		}
 
 		/* Interval tick? */
 		if (sig == SIGALRM) {
