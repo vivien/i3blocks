@@ -263,7 +263,8 @@ static void sched_poll_readable(struct bar *bar, const int fd)
 void
 sched_start(struct bar *bar)
 {
-	int sig, fd;
+	struct block *block;
+	int i, sig, fd;
 	int err;
 
 	/* First forks (for commands with an interval) */
@@ -324,6 +325,17 @@ sched_start(struct bar *bar)
 
 		debug("unhandled signal %d", sig);
 	}
+
+	/* Disable event I/O for blocks (persistent) */
+	for (i = 0; i < bar->num; i++) {
+		block = bar->blocks + i;
+
+		if (block->interval == INTERVAL_PERSIST)
+			sys_async(block->out[0], 0);
+	}
+	
+	/* Disable event I/O for stdin (clicks) */
+	sys_async(STDIN_FILENO, 0);
 
 	/*
 	 * Unblock signals (so subsequent syscall can be interrupted)
