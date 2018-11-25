@@ -360,9 +360,15 @@ void bar_schedule(struct bar *bar)
 
 void bar_destroy(struct bar *bar)
 {
+	int i;
+
 	i3bar_stop(bar);
 
-	/* TODO free blocks */
+	for (i = 0; i < bar->num; i++) {
+		map_destroy(bar->blocks[i].env);
+		map_destroy(bar->blocks[i].config);
+	}
+	free(bar->blocks);
 	free(bar);
 }
 
