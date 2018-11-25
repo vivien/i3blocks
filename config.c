@@ -142,6 +142,9 @@ static int config_open(struct config *conf, const char *path)
 	err = config_read(conf, fd);
 	sys_close(fd);
 
+	if (conf->global)
+		map_destroy(conf->global);
+
 	return err;
 }
 
