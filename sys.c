@@ -120,7 +120,8 @@ int sys_waitpid(pid_t pid, int *code)
 	if (rc == 0)
 		return -ECHILD;
 
-	*code = WEXITSTATUS(status);
+	if (code)
+		*code = WEXITSTATUS(status);
 
 	return 0;
 }
