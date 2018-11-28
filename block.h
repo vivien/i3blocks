@@ -36,7 +36,7 @@
 #define EXIT_ERR_INTERNAL	66
 
 struct block {
-	const struct map *config;
+	struct map *config;
 	struct map *env;
 
 	/* Shortcuts */
