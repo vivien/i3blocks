@@ -366,7 +366,7 @@ void bar_destroy(struct bar *bar)
 
 	for (i = 0; i < bar->num; i++) {
 		map_destroy(bar->blocks[i].env);
-		map_destroy(bar->blocks[i].config);
+		map_destroy((struct map *)bar->blocks[i].config);
 	}
 	free(bar->blocks);
 	free(bar);
