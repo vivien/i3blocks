@@ -151,7 +151,6 @@ static size_t json_parse_value(struct json *json, char *line)
 		return json->value_len;
 
 	/* nested arrays or objects are not supported */
-	json->value = NULL;
 	json->value_len = json_parse_array(line);
 	return json->value_len;
 }
@@ -293,6 +292,17 @@ static bool json_is_literal(const char *str)
 		strcmp(str, "null") == 0;
 }
 
+static bool json_is_array(const char *str)
+{
+	size_t len;
+
+	len = json_parse_array(str);
+	if (!len || str[len] != '\0')
+		return false;
+
+	return true;
+}
+
 bool json_is_valid(const char *str)
 {
 	return json_is_string(str) || json_is_number(str) ||
@@ -349,10 +359,66 @@ int json_escape(const char *str, char *buf, size_t size)
 	return 0;
 }
 
-int json_unescape(const char *str, char *buf, size_t size)
+int json_unescape_string(const char *str, char *buf, size_t size)
 {
 	bool escaped = false;
 	const char *end;
+	int len;
+	char c;
+
+	if (*str != '"')
+		return -EINVAL;
+
+	len = 0;
+	while (*++str != '"' || escaped) {
+		c = *str;
+
+		if (!c)
+			return -EINVAL;
+
+		if (escaped) {
+			switch (c) {
+			case '\\':
+				c = '\\';
+				break;
+			case 'b':
+				c = '\b';
+				break;
+			case 'f':
+				c = '\f';
+				break;
+			case 'n':
+				c = '\n';
+				break;
+			case 'r':
+				c = '\r';
+				break;
+			case 't':
+				c = '\t';
+				break;
+			}
+
+			escaped = false;
+		} else if (*str == '\\') {
+			escaped = true;
+			continue;
+		}
+
+		*buf = c;
+
+		size--;
+		len++;
+		buf++;
+	}
+
+	buf[len] = 0;
+	return len;
+}
+
+int json_unescape(const char *str, char *buf, size_t size)
+{
+	bool escaped = false;
+	const char *end;	
 	int len;
 	char c;
 
@@ -407,6 +473,33 @@ int json_unescape(const char *str, char *buf, size_t size)
 		strncpy(buf, str, size);
 		if (buf[size - 1] != '\0')
 			return -ENOSPC;
+		return 0;
+	}
+
+	if (json_is_array(str)) {
+		end = strrchr(str, ']');
+		if (!end)
+			return -EINVAL; /* Unlikely */
+
+		while (size && *str++ != ']') { /* skip [ or , */
+			len = json_unescape_string(str, buf, size);
+			if (len < 0)
+				return -EINVAL;
+
+			size -= len;
+			buf += len;
+			str += len + 2; /* skip both " */
+
+			if (size && *str == ',') {
+				*buf++ = ' ';
+				*buf = 0;
+				size--;
+			}
+		}
+
+		if (!size && !*str)
+			return -ENOSPC;
+
 		return 0;
 	}
 
