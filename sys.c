@@ -422,8 +422,21 @@ int sys_cloexec(int fd)
 /* Enable signal-driven I/O, formerly known as asynchronous I/O */
 int sys_async(int fd, int sig)
 {
+	pid_t pid;
 	int flags;
 	int err;
+
+	err = sys_getfl(fd, &flags);
+	if (err)
+		return err;
+
+	if (sig) {
+    		pid = getpid();
+		flags |= (O_ASYNC | O_NONBLOCK);
+	} else {
+    		pid = 0;
+		flags &= ~(O_ASYNC | O_NONBLOCK);
+	}
 
 	/* Establish a handler for the signal */
 	err = sys_setsig(fd, sig);
@@ -431,16 +444,12 @@ int sys_async(int fd, int sig)
 		return err;
 
 	/* Set calling process as owner, that is to receive the signal */
-	err = sys_setown(fd, getpid());
+	err = sys_setown(fd, pid);
 	if (err)
 		return err;
 
-	err = sys_getfl(fd, &flags);
-	if (err)
-		return err;
-
-	/* Enable nonblocking I/O and signal-driven I/O */
-	return sys_setfl(fd, flags | O_ASYNC | O_NONBLOCK);
+	/* Enable/disable nonblocking I/O and signal-driven I/O */
+	return sys_setfl(fd, flags);
 }
 
 int sys_pipe(int *fds)
