@@ -332,7 +332,10 @@ int json_escape(const char *str, char *buf, size_t size)
 			len = snprintf(buf, size, "\\\"");
 			break;
 		default:
-			len = snprintf(buf, size, "%c", c);
+			if (iscntrl(c))
+				len = snprintf(buf, size, "\\u%04x", c);
+			else
+				len = snprintf(buf, size, "%c", c);
 			break;
 		}
 
