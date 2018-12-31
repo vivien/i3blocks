@@ -18,6 +18,7 @@
 
 #include <ctype.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -27,88 +28,147 @@
 #include "map.h"
 #include "sys.h"
 
-struct json {
-	char *name;
-	size_t name_len;
-	char *value;
-	size_t value_len;
-
-	struct map *map;
-};
-
-static int json_pair(struct json *json)
+/* Return the number of UTF-8 bytes on success, 0 if it is invalid */
+static size_t json_parse_codepoint(const char *str, char *buf, size_t size)
 {
-	char uname[BUFSIZ];
-	char uval[BUFSIZ];
-	int err;
+	uint16_t codepoint = 0;
+	char utf8[3];
+	size_t len;
+	int hex;
+	char c;
+	int i;
 
-	if (!json->map || !json->name || !json->value)
-		return 0;
+	for (i = 0; i < 4; i++) {
+		c = str[i];
 
-	*(json->name + json->name_len) = '\0';
+		if (!isxdigit(c))
+			return 0;
 
-	err = json_unescape(json->name, uname, sizeof(uname));
-	if (err)
-		return err;
+		if (c >= '0' && c <= '9')
+			hex = c - '0';
+		else if (c >= 'a' && c <= 'f')
+			hex = c - 'a' + 10;
+		else
+			hex = c - 'A' + 10;
 
-	*(json->value + json->value_len) = '\0';
+		codepoint |= hex << (12 - i * 4);
+	}
 
-	err = json_unescape(json->value, uval, sizeof(uval));
-	if (err)
-		return err;
+	/* Support Only a single surrogate at the moment */
+	if (codepoint <= 0x7f) {
+		len = 1;
+		utf8[0] = codepoint;
+	} else if (codepoint <= 0x7ff) {
+		len = 2;
+		utf8[0] = 0xc0 | (codepoint >> 6);
+		utf8[1] = 0x80 | (codepoint & 0x3f);
+	} else {
+		len = 3;
+		utf8[0] = (0xe0 | (codepoint >> 12));
+		utf8[1] = (0x80 | ((codepoint >> 6) & 0x3f));
+		utf8[2] = (0x80 | (codepoint & 0x3f));
+	}
 
-	return map_set(json->map, uname, uval);
+	if (buf) {
+		if (size < len)
+			return 0;
+
+		memcpy(buf, utf8, len);
+	}
+
+	return len;
 }
 
 /* Return the length of the parsed string, 0 if it is invalid */
-static size_t json_parse_string(const char *line)
+static size_t json_parse_string(const char *str, char *buf, size_t size)
 {
-	const char *end = line;
-	int hex;
+	const char *end = str;
+	size_t len;
+	char c;
 
-	if (*line != '"')
+	if (*end != '"')
 		return 0;
 
-	while (*++end != '"') {
-		/* control character or end-of-line? */
-		if (iscntrl(*end) || *end == '\0')
-			return 0;
+	do {
+		len = 0;
 
-		/* any Unicode character except " or \ or control character? */
-		if (*end != '\\')
-			continue;
-
-		/* backslash escape */
 		switch (*++end) {
+		case '\0':
+			return 0;
 		case '"':
-		case '\\':
-		case '/':
-		case 'b':
-		case 'f':
-		case 'n':
-		case 'r':
-		case 't':
+			c = '\0';
 			break;
-		case 'u':
-			for (hex = 0; hex < 4; hex++)
-				if (!isxdigit(*++end))
+		case '\\':
+			switch (*++end) {
+			case '"':
+				c = '"';
+				break;
+			case '\\':
+				c = '\\';
+				break;
+			case '/':
+				c = '/';
+				break;
+			case 'b':
+				c = '\b';
+				break;
+			case 'f':
+				c = '\f';
+				break;
+			case 'n':
+				c = '\n';
+				break;
+			case 'r':
+				c = '\r';
+				break;
+			case 't':
+				c = '\t';
+				break;
+			case 'u':
+				len = json_parse_codepoint(++end, buf, size);
+				if (!len)
 					return 0;
+
+				end += 3; /* jump to last hex digit */
+				break;
+			default:
+				return 0;
+			}
 			break;
 		default:
-			return 0;
-		}
-	}
+			if (iscntrl(*end))
+				return 0;
 
-	return ++end - line;
+			c = *end;
+			break;
+		}
+
+		if (buf) {
+			if (!len) {
+				if (size < 1)
+					return 0;
+
+				*buf = c;
+				len = 1;
+			}
+
+			buf += len;
+			size -= len;
+		}
+	} while (c);
+
+	return ++end - str;
 }
 
 /* Return the length of the parsed non scalar (with open/close delimiter), 0 if it is invalid */
-static size_t json_parse_non_scalar(const char *line, char open_delimiter, char close_delimiter)
+static size_t json_parse_nested_struct(const char *str, char open, char close,
+				       char *buf, size_t size)
 {
-	const char *end = line;
+	const char *end = str;
+	size_t len;
 	int nested;
 
-	if (*line != open_delimiter)
+	if (*str != open)
 		return 0;
 
 	nested = 1;
@@ -119,137 +179,158 @@ static size_t json_parse_non_scalar(const char *line, char open_delimiter, char 
 		if (iscntrl(*end) || *end == '\0')
 			return 0;
 
-		if (*end == open_delimiter)
+		if (*end == open)
 			nested++;
-		else if (*end == close_delimiter)
+		else if (*end == close)
 			nested--;
 	}
 
-	return ++end - line;
+	len = ++end - str;
+	if (!len)
+		return 0;
+
+	if (buf) {
+		if (size <= len)
+			return 0;
+
+		strncpy(buf, str, len);
+		buf[len] = '\0';
+	}
+
+	return len;
 }
 
 /* Return the length of the parsed array, 0 if it is invalid */
-static size_t json_parse_array(const char *line)
+static size_t json_parse_nested_array(const char *str, char *buf, size_t size)
 {
-	return json_parse_non_scalar(line, '[', ']');
+	return json_parse_nested_struct(str, '[', ']', buf, size);
 }
 
 /* Return the length of the parsed object, 0 if it is invalid */
-static size_t json_parse_object(const char *line)
+static size_t json_parse_nested_object(const char *str, char *buf, size_t size)
 {
-	return json_parse_non_scalar(line, '{', '}');
+	return json_parse_nested_struct(str, '{', '}', buf, size);
 }
 
 /* Return the length of the parsed number, 0 if it is invalid */
-static size_t json_parse_number(const char *line)
+static size_t json_parse_number(const char *str, char *buf, size_t size)
 {
+	size_t len;
 	char *end;
 
-	strtoul(line, &end, 10);
+	strtoul(str, &end, 10);
 
-	return end - line;
+	len = end - str;
+	if (!len)
+		return 0;
+
+	if (buf) {
+		if (size <= len)
+			return 0;
+
+		strncpy(buf, str, len);
+		buf[len] = '\0';
+	}
+
+	return len;
 }
 
 /* Return the length of the parsed literal, 0 if it is invalid */
-static size_t json_parse_literal(const char *line, const char *literal)
+static size_t json_parse_literal(const char *str, const char *literal,
+				 char *buf, size_t size)
 {
 	const size_t len = strlen(literal);
 
-	if (strncmp(line, literal, len) != 0)
+	if (strncmp(str, literal, len) != 0)
 		return 0;
+
+	if (buf) {
+		strncpy(buf, literal, size);
+		if (buf[size - 1] != '\0')
+			return 0;
+	}
 
 	return len;
 }
 
 /* A value can be a string, number, object, array, true, false, or null */
-static size_t json_parse_value(struct json *json, char *line)
-{
-	json->value = line;
-
-	json->value_len = json_parse_string(line);
-	if (json->value_len)
-		return json->value_len;
-
-	json->value_len = json_parse_number(line);
-	if (json->value_len)
-		return json->value_len;
-
-	json->value_len = json_parse_literal(line, "true");
-	if (json->value_len)
-		return json->value_len;
-
-	json->value_len = json_parse_literal(line, "false");
-	if (json->value_len)
-		return json->value_len;
-
-	json->value_len = json_parse_literal(line, "null");
-	if (json->value_len)
-		return json->value_len;
-
-	/* nested arrays or objects are not supported */
-	json->value = NULL;
-	json->value_len = json_parse_array(line);
-	if (!json->value_len)
-		json->value_len = json_parse_object(line);
-	return json->value_len;
-}
-
-/* Return the length of ':' optionally enclosed by whitespaces, 0 otherwise */
-static size_t json_parse_colon(const char *line)
-{
-	size_t len = 0;
-
-	while (isspace(*line))
-		line++, len++;
-
-	if (*line != ':')
-		return 0;
-
-	line++;
-	len++;
-
-	while (isspace(*line))
-		line++, len++;
-
-	return len;
-}
-
-/* Parse and store the name string */
-static size_t json_parse_name(struct json *json, char *line)
+static size_t json_parse_value(const char *str, char *buf, size_t size)
 {
 	size_t len;
 
-	len = json_parse_string(line);
-	if (!len)
+	len = json_parse_string(str, buf, size);
+	if (len)
+		return len;
+
+	len = json_parse_number(str, buf, size);
+	if (len)
+		return len;
+
+	len = json_parse_nested_object(str, buf, size);
+	if (len)
+		return len;
+
+	len = json_parse_nested_array(str, buf, size);
+	if (len)
+		return len;
+
+	len = json_parse_literal(str, "true", buf, size);
+	if (len)
+		return len;
+
+	len = json_parse_literal(str, "false", buf, size);
+	if (len)
+		return len;
+
+	len = json_parse_literal(str, "null", buf, size);
+	if (len)
+		return len;
+
+	return 0;
+}
+
+/* Return the length of a separator optionally enclosed by whitespaces, 0 otherwise */
+static size_t json_parse_sep(const char *str, char sep)
+{
+	size_t len = 0;
+
+	while (isspace(*str))
+		str++, len++;
+
+	if (*str != sep)
 		return 0;
 
-	json->name = line;
-	json->name_len = len;
+	str++;
+	len++;
+
+	while (isspace(*str))
+		str++, len++;
 
 	return len;
 }
 
 /* Parse an inline ["name"][\s+:\s+][value] name-value pair */
-static size_t json_parse_pair(struct json *json, char *line)
+static size_t json_parse_pair(const char *str, char *name, size_t namesiz,
+			      char *val, size_t valsiz)
 {
 	size_t pair_len = 0;
 	size_t len;
 
-	len = json_parse_name(json, line);
+	len = json_parse_string(str, name, namesiz);
 	if (!len)
 		return 0;
 
 	pair_len += len;
-	line += len;
+	str += len;
 
-	len = json_parse_colon(line);
+	len = json_parse_sep(str, ':');
 	if (!len)
 		return 0;
 
 	pair_len += len;
-	line += len;
+	str += len;
 
-	len = json_parse_value(json, line);
+	len = json_parse_value(str, val, valsiz);
 	if (!len)
 		return 0;
 
@@ -258,13 +339,16 @@ static size_t json_parse_pair(struct json *json, char *line)
 	return pair_len;
 }
 
-static int json_parse_line(char *line, size_t num, void *data)
+static int json_line_cb(char *line, size_t num, void *data)
 {
+	struct map *map = data;
+	char name[BUFSIZ];
+	char val[BUFSIZ];
 	size_t len;
 	int err;
 
 	for (;;) {
-		/* Only support flat objects per line at the moment */
+		/* Only support inline flattened structures at the moment */
 		while (*line == '[' || *line == ']' || *line == ',' ||
 		       *line == '{' || *line == '}' || isspace(*line))
 			line++;
@@ -272,7 +356,11 @@ static int json_parse_line(char *line, size_t num, void *data)
 		if (*line == '\0')
 			break;
 
-		len = json_parse_pair(data, line);
+		memset(name, 0, sizeof(name));
+		memset(val, 0, sizeof(val));
+
+		len = json_parse_pair(line, name, sizeof(name), val,
+				      sizeof(val));
 		if (!len)
 			return -EINVAL;
 
@@ -286,9 +374,11 @@ static int json_parse_line(char *line, size_t num, void *data)
 		if (*line != '\0')
 			line++;
 
-		err = json_pair(data);
-		if (err)
-			return err;
+		if (map) {
+			err = map_set(map, name, val);
+			if (err)
+				return err;
+		}
 	}
 
 	return 0;
@@ -296,44 +386,29 @@ static int json_parse_line(char *line, size_t num, void *data)
 
 int json_read(int fd, size_t count, struct map *map)
 {
-	struct json json = {
-		.map = map,
-	};
-
-	return line_read(fd, count, json_parse_line, &json);
+	return line_read(fd, count, json_line_cb, map);
 }
 
 bool json_is_string(const char *str)
 {
 	size_t len;
 
-	len = json_parse_string(str);
-	if (!len || str[len] != '\0')
+	len = strlen(str);
+	if (!len)
 		return false;
 
-	return true;
-}
-
-static bool json_is_number(const char *str)
-{
-	char *end;
-
-	strtoul(str, &end, 10);
-
-	/* not a valid number if end is not a null character */
-	return !(*str == 0 || *end != 0);
-}
-
-static bool json_is_literal(const char *str)
-{
-	return strcmp(str, "true") == 0 || strcmp(str, "false") == 0 ||
-		strcmp(str, "null") == 0;
+	return json_parse_string(str, NULL, 0) == len;
 }
 
 bool json_is_valid(const char *str)
 {
-	return json_is_string(str) || json_is_number(str) ||
-		json_is_literal(str);
+	size_t len;
+
+	len = strlen(str);
+	if (!len)
+		return false;
+
+	return json_parse_value(str, NULL, 0) == len;
 }
 
 int json_escape(const char *str, char *buf, size_t size)
@@ -389,68 +464,4 @@ int json_escape(const char *str, char *buf, size_t size)
 	} while (null--);
 
 	return 0;
-}
-
-int json_unescape(const char *str, char *buf, size_t size)
-{
-	bool escaped = false;
-	const char *end;
-	int len;
-	char c;
-
-	if (json_is_string(str)) {
-		end = strrchr(str, '"');
-		if (!end)
-			return -EINVAL; /* Unlikely */
-
-		while (++str < end) {
-			c = *str;
-
-			if (escaped) {
-				switch (c) {
-				case '\\':
-					c = '\\';
-					break;
-				case 'b':
-					c = '\b';
-					break;
-				case 'f':
-					c = '\f';
-					break;
-				case 'n':
-					c = '\n';
-					break;
-				case 'r':
-					c = '\r';
-					break;
-				case 't':
-					c = '\t';
-					break;
-				}
-
-				escaped = false;
-			} else if (*str == '\\') {
-				escaped = true;
-				continue;
-			}
-
-			len = snprintf(buf, size, "%c", c);
-			if (len < 0 || len >= size)
-				return -ENOSPC;
-
-			size -= len;
-			buf += len;
-		}
-
-		return 0;
-	}
-
-	if (json_is_number(str) || json_is_literal(str)) {
-		strncpy(buf, str, size);
-		if (buf[size - 1] != '\0')
-			return -ENOSPC;
-		return 0;
-	}
-
-	return -EINVAL;
 }
