@@ -1,0 +1,38 @@
+#
+# bash-completion - bash completion script for i3blocks
+# Copyright (C) 2019  Gaël Portay
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+_i3blocks()
+{
+	local cur prev words cword
+	_init_completion || return
+
+	case $prev in
+	-c)
+		_filedir
+		return
+		;;
+	-o)
+		COMPREPLY=( $( compgen -W "term" -- "$cur" ) )
+		return
+		;;
+	esac
+
+	COMPREPLY=( $( compgen -W "-c -o -v -h -V" -- "$cur" ) )
+	return
+} &&
+complete -F _i3blocks i3blocks

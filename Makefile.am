@@ -20,3 +20,14 @@ i3blocks_SOURCES = \
 	sys.c \
 	sys.h \
 	term.h
+
+if ENABLE_BASH_COMPLETION
+bashcompletiondir = $(BASH_COMPLETION_DIR)
+bashcompletion_DATA = bash-completion
+
+install-data-local:
+	( cd '$(DESTDIR)$(BASH_COMPLETION_DIR)' && mv bash-completion i3blocks )
+
+uninstall-local:
+	( cd '$(DESTDIR)$(BASH_COMPLETION_DIR)' && rm -rf i3blocks )
+endif
