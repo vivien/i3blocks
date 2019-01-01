@@ -362,6 +362,7 @@ Can I use my own variables?::
 Yes, any variable defined in the block is exported as is to the environment of its command.
 The `foo=bar` property can be accessed with `$foo` from a shell script, `ENV["foo"]` from Ruby, and so on.
 +
+The IEEE and The Open Group state that link:http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap08.html["The name space of environment variable names containing lowercase letters is reserved for applications."].
 i3bar suggests to prefix your own keys with an underscore (`_`), but it might be more intuitive to use uppercase environment variables, so it is your call to define your own naming convention.
 
 Why `$foo` doesn't work from the configuration file?::
