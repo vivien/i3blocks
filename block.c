@@ -182,7 +182,6 @@ static int block_send_json(struct block *block)
 static int block_send(struct block *block)
 {
 	const char *button = block_get(block, "button");
-	int err;
 
 	if (!button) {
 		block_error(block, "no click data to send");
@@ -482,7 +481,6 @@ int block_reap(struct block *block)
 static int i3blocks_setup(struct block *block)
 {
 	const char *value;
-	int err;
 
 	value = map_get(block->config, "command");
 	if (value && *value != '\0')
