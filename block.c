@@ -584,7 +584,7 @@ void block_printf(struct block *block, int lvl, const char *fmt, ...)
 	va_list ap;
 	int err;
 
-	if (lvl > log_level)
+	if (lvl > (int)log_level)
 		return;
 
 	va_start(ap, fmt);

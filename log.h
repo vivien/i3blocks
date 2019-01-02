@@ -40,7 +40,7 @@ static inline void log_printf(int lvl, const char *fmt, ...)
 {
 	va_list ap;
 
-	if (lvl <= LOG_ERROR || lvl <= log_level) {
+	if (lvl <= LOG_ERROR || lvl <= (int)log_level) {
 		va_start(ap, fmt);
 		vfprintf(stderr, fmt, ap);
 		va_end(ap);

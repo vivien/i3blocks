@@ -452,7 +452,7 @@ int json_escape(const char *str, char *buf, size_t size)
 		}
 
 		/* Ensure the result was not truncated */
-		if (len < 0 || len >= size)
+		if (len < 0 || (size_t)len >= size)
 			return -ENOSPC;
 
 		size -= len;
