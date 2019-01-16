@@ -30,7 +30,7 @@ color=#A4C2F4
 
 # Query my default IP address only on startup
 [ip]
-command=hostname --all-ip-addresses | awk '{ print "IP:" $1 }'
+command=hostname --ip-address | awk '{ print "IP:" $1 }'
 interval=once
 color=#91E78B
 
