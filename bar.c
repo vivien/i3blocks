@@ -48,6 +48,19 @@ static struct {
 	{ "markup", true },
 };
 
+static void i3bar_log(int lvl, const char *fmt, ...);
+
+static int i3bar_index_of_key(const char *key)
+{
+    int i;
+     
+	for (i = 0; i < sizeof(i3bar_keys) / sizeof(i3bar_keys[0]); i++)
+		if (strcmp(i3bar_keys[i].key, key) == 0)
+			return i;
+
+	return -1;
+}
+
 static bool i3bar_is_string(const char *key)
 {
 	int i;
@@ -64,11 +77,18 @@ static int i3bar_dump_key(const char *key, const char *value, void *data)
 	char buf[BUFSIZ];
 	bool escape;
 	int err;
+    int idx;
+
+    idx = i3bar_index_of_key(key);
+    if (idx == -1) {
+        i3bar_log(LOG_DEBUG, "skipping non-i3bar property, \"%s\":%s", key, value);
+        return 0; /* Skip keys that i3bar doesn't know about */
+    }
 
 	if (!value)
 		value = "null";
 
-	if (i3bar_is_string(key)) {
+	if (i3bar_keys[idx].string) {
 		if (json_is_string(value))
 			escape = false; /* Expected string already quoted */
 		else
