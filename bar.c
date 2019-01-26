@@ -61,17 +61,6 @@ static int i3bar_index_of_key(const char *key)
 	return -1;
 }
 
-static bool i3bar_is_string(const char *key)
-{
-	int i;
-
-	for (i = 0; i < sizeof(i3bar_keys) / sizeof(i3bar_keys[0]); i++)
-		if (strcmp(i3bar_keys[i].key, key) == 0)
-			return i3bar_keys[i].string;
-
-	return false;
-}
-
 static int i3bar_dump_key(const char *key, const char *value, void *data)
 {
 	char buf[BUFSIZ];
