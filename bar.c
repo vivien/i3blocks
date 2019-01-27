@@ -33,6 +33,8 @@ static struct {
 	const char * const key;
 	bool string;
 } i3bar_keys[] = {
+	{ "", false }, /* unknown key */
+
 	{ "full_text", true },
 	{ "short_text", true },
 	{ "color", true },
@@ -48,19 +50,21 @@ static struct {
 	{ "markup", true },
 };
 
-static bool i3bar_is_string(const char *key)
+static unsigned int i3bar_indexof(const char *key)
 {
-	int i;
+	unsigned int i;
 
 	for (i = 0; i < sizeof(i3bar_keys) / sizeof(i3bar_keys[0]); i++)
 		if (strcmp(i3bar_keys[i].key, key) == 0)
-			return i3bar_keys[i].string;
+			return i;
 
-	return false;
+	return 0;
 }
 
 static int i3bar_dump_key(const char *key, const char *value, void *data)
 {
+	unsigned int index = i3bar_indexof(key);
+	bool string = i3bar_keys[index].string;
 	char buf[BUFSIZ];
 	bool escape;
 	int err;
@@ -68,7 +72,7 @@ static int i3bar_dump_key(const char *key, const char *value, void *data)
 	if (!value)
 		value = "null";
 
-	if (i3bar_is_string(key)) {
+	if (string) {
 		if (json_is_string(value))
 			escape = false; /* Expected string already quoted */
 		else
