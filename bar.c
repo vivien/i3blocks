@@ -35,6 +35,7 @@ static struct {
 } i3bar_keys[] = {
 	{ "", false }, /* unknown key */
 
+	/* Standard keys */
 	{ "full_text", true },
 	{ "short_text", true },
 	{ "color", true },
@@ -48,6 +49,12 @@ static struct {
 	{ "separator", false },
 	{ "separator_block_width", false },
 	{ "markup", true },
+
+	/* i3-gaps features */
+	{ "border_top", false },
+	{ "border_bottom", false },
+	{ "border_left", false },
+	{ "border_right", false },
 };
 
 static unsigned int i3bar_indexof(const char *key)
