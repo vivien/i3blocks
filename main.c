@@ -26,6 +26,7 @@
 
 #include "bar.h"
 #include "log.h"
+#include "sys.h"
 
 log_handle_t log_handle = NULL;
 int log_level = LOG_FATAL;
@@ -36,6 +37,7 @@ main(int argc, char *argv[])
 {
 	char *path = NULL;
 	struct bar *bar;
+	bool term;
 	int c;
 
 	while (c = getopt(argc, argv, "c:vhV"), c != -1) {
@@ -58,7 +60,9 @@ main(int argc, char *argv[])
 		}
 	}
 
-	bar = bar_create();
+	term = !sys_isatty(STDOUT_FILENO);
+
+	bar = bar_create(term);
 	if (!bar)
 		return EXIT_FAILURE;
 

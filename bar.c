@@ -137,6 +137,49 @@ static void i3bar_dump(struct bar *bar)
 	fflush(stdout);
 }
 
+static void term_save_cursor(void)
+{
+	fprintf(stdout, "\033[s\033[?25l");
+}
+
+static void term_restore_cursor(void)
+{
+	fprintf(stdout, "\033[u\033[K");
+}
+
+static void term_reset_cursor(void)
+{
+	fprintf(stdout, "\033[?25h");
+}
+
+static void term_start(struct bar *bar)
+{
+	term_save_cursor();
+	term_restore_cursor();
+}
+
+static void term_stop(struct bar *bar)
+{
+	term_reset_cursor();
+}
+
+static void term_dump(struct bar *bar)
+{
+	int i;
+
+	term_restore_cursor();
+
+	for (i = 0; i < bar->num; ++i) {
+		struct block *block = bar->blocks + i;
+		const char *full_text = block_get(block, "full_text");
+
+		if (full_text)
+    			fprintf(stdout, "%s ", full_text);
+	}
+
+	fflush(stdout);
+}
+
 static void bar_freeze(struct bar *bar)
 {
 	bar->frozen = true;
@@ -304,7 +347,10 @@ void bar_dump(struct bar *bar)
 		return;
 	}
 
-	i3bar_dump(bar);
+	if (bar->term)
+		term_dump(bar);
+	else
+		i3bar_dump(bar);
 }
 
 static struct block *bar_add_block(struct bar *bar)
@@ -364,7 +410,10 @@ void bar_destroy(struct bar *bar)
 {
 	int i;
 
-	i3bar_stop(bar);
+	if (bar->term)
+		term_stop(bar);
+	else
+		i3bar_stop(bar);
 
 	for (i = 0; i < bar->num; i++) {
 		map_destroy(bar->blocks[i].env);
@@ -374,7 +423,7 @@ void bar_destroy(struct bar *bar)
 	free(bar);
 }
 
-struct bar *bar_create(void)
+struct bar *bar_create(bool term)
 {
 	struct bar *bar;
 
@@ -382,7 +431,11 @@ struct bar *bar_create(void)
 	if (!bar)
 		return NULL;
 
-	i3bar_start(bar);
+	bar->term = term;
+	if (bar->term)
+    		term_start(bar);
+	else
+		i3bar_start(bar);
 
 	return bar;
 }

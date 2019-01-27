@@ -25,9 +25,10 @@ struct bar {
 	struct block *blocks;
 	unsigned int num;
 	bool frozen;
+	bool term;
 };
 
-struct bar *bar_create(void);
+struct bar *bar_create(bool term);
 void bar_destroy(struct bar *bar);
 void bar_load(struct bar *bar, const char *path);
 void bar_schedule(struct bar *bar);
