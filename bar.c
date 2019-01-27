@@ -69,6 +69,10 @@ static int i3bar_dump_key(const char *key, const char *value, void *data)
 	bool escape;
 	int err;
 
+	/* Skip unknown keys */
+	if (!index)
+		return 0;
+
 	if (!value)
 		value = "null";
 
