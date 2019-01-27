@@ -35,21 +35,25 @@ void *log_data = NULL;
 int
 main(int argc, char *argv[])
 {
+	char *output = NULL;
 	char *path = NULL;
 	struct bar *bar;
 	bool term;
 	int c;
 
-	while (c = getopt(argc, argv, "c:vhV"), c != -1) {
+	while (c = getopt(argc, argv, "c:o:vhV"), c != -1) {
 		switch (c) {
 		case 'c':
 			path = optarg;
+			break;
+		case 'o':
+			output = optarg;
 			break;
 		case 'v':
 			log_level++;
 			break;
 		case 'h':
-			printf("Usage: %s [-c <configfile>] [-v] [-h] [-V]\n", argv[0]);
+			printf("Usage: %s [-c <configfile>] [-o <output>] [-v] [-h] [-V]\n", argv[0]);
 			return 0;
 		case 'V':
 			printf(PACKAGE_STRING " © 2014 Vivien Didelot and contributors\n");
@@ -61,6 +65,8 @@ main(int argc, char *argv[])
 	}
 
 	term = !sys_isatty(STDOUT_FILENO);
+	if (output)
+		term = !strcmp(output, "term");
 
 	bar = bar_create(term);
 	if (!bar)
