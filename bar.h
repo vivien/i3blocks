@@ -21,6 +21,10 @@
 
 #include <stdbool.h>
 
+struct map;
+
+int i3bar_read(int fd, size_t count, struct map *map);
+
 struct bar {
 	struct block *blocks;
 	unsigned int num;

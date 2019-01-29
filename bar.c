@@ -23,7 +23,9 @@
 #include "block.h"
 #include "config.h"
 #include "json.h"
+#include "line.h"
 #include "log.h"
+#include "map.h"
 #include "sched.h"
 #include "sys.h"
 
@@ -66,6 +68,27 @@ static unsigned int i3bar_indexof(const char *key)
 			return i;
 
 	return 0;
+}
+
+static int i3bar_line_cb(char *line, size_t num, void *data)
+{
+	unsigned int index = num + 1;
+	struct map *map = data;
+	const char *key;
+
+	if (index >= sizeof(i3bar_keys) / sizeof(i3bar_keys[0])) {
+		debug("ignoring excess line %d: %s", num, line);
+		return 0;
+	}
+
+	key = i3bar_keys[index].key;
+
+	return map_set(map, key, line);
+}
+
+int i3bar_read(int fd, size_t count, struct map *map)
+{
+	return line_read(fd, count, i3bar_line_cb, map);
 }
 
 static int i3bar_dump_key(const char *key, const char *value, void *data)

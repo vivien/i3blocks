@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "bar.h"
 #include "block.h"
 #include "json.h"
 #include "line.h"
@@ -88,27 +89,6 @@ static int block_child_env(struct block *block)
 	return block_for_each(block, block_setenv, NULL);
 }
 
-static int block_update_raw(char *line, size_t num, void *data)
-{
-	struct block *block = data;
-	static const char * const keys[] = {
-		"full_text",
-		"short_text",
-		"color",
-		"background",
-	};
-	const char *key;
-
-	if (num >= sizeof(keys) / sizeof(keys[0])) {
-		block_error(block, "too much lines for raw update");
-		return -EINVAL;
-	}
-
-	key = keys[num];
-
-	return block_set(block, key, line);
-}
-
 static int block_stdout(struct block *block)
 {
 	const char *label, *full_text;
@@ -125,7 +105,7 @@ static int block_stdout(struct block *block)
 	if (block->format == FORMAT_JSON)
 		err = json_read(out, count, block->env);
 	else
-		err = line_read(out, count, block_update_raw, block);
+		err = i3bar_read(out, count, block->env);
 
 	if (err && err != -EAGAIN)
 		return err;
