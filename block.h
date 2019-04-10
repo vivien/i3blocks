@@ -57,7 +57,6 @@ struct block {
 	unsigned long timestamp;
 	int in[2];
 	int out[2];
-	int err[2];
 	int code;
 	pid_t pid;
 

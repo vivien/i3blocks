@@ -280,21 +280,6 @@ static int block_child_stdout(struct block *block)
 	return sys_close(block->out[1]);
 }
 
-static int block_child_stderr(struct block *block)
-{
-	int err;
-
-	err = sys_close(block->err[0]);
-	if (err)
-		return err;
-
-	err = sys_dup(block->err[1], STDERR_FILENO);
-	if (err)
-		return err;
-
-	return sys_close(block->err[1]);
-}
-
 static int block_child_exec(struct block *block)
 {
 	return sys_execsh(block->command);
@@ -304,7 +289,6 @@ static int block_child(struct block *block)
 {
 	int err;
 
-	/* Error messages are merged into the parent's stderr... */
 	err = block_child_env(block);
 	if (err)
 		return err;
@@ -321,11 +305,6 @@ static int block_child(struct block *block)
 	if (err)
 		return err;
 
-	err = block_child_stderr(block);
-	if (err)
-		return err;
-
-	/* ... until here */
 	return block_child_exec(block);
 }
 
@@ -353,12 +332,6 @@ static int block_parent_stdout(struct block *block)
 	return 0;
 }
 
-static int block_parent_stderr(struct block *block)
-{
-	/* Close write end of stderr pipe */
-	return sys_close(block->err[1]);
-}
-
 static int block_parent(struct block *block)
 {
 	int err;
@@ -368,10 +341,6 @@ static int block_parent(struct block *block)
 		return err;
 
 	err = block_parent_stdout(block);
-	if (err)
-		return err;
-
-	err = block_parent_stderr(block);
 	if (err)
 		return err;
 
@@ -400,10 +369,6 @@ static int block_fork(struct block *block)
 static int block_open(struct block *block)
 {
 	int err;
-
-	err = sys_pipe(block->err);
-	if (err)
-		return err;
 
 	err = sys_pipe(block->out);
 	if (err)
@@ -478,32 +443,6 @@ void block_close(struct block *block)
 		block_error(block, "failed to close stdout");
 
 	block->out[0] = -1;
-
-	err = sys_close(block->err[0]);
-	if (err)
-		block_error(block, "failed to close stderr");
-
-	block->err[0] = -1;
-}
-
-static int block_stderr_line(char *line, size_t num, void *data)
-{
-	struct block *block = data;
-
-	block_debug(block, "&stderr:%02d: %s", num, line);
-
-	return 0;
-}
-
-static int block_stderr(struct block *block)
-{
-	int err;
-
-	err = line_read(block->err[0], -1, block_stderr_line, block);
-	if (err && err != -EAGAIN)
-		return err;
-
-	return 0;
 }
 
 int block_reap(struct block *block)
@@ -518,10 +457,6 @@ int block_reap(struct block *block)
 		block_error(block, "Internal error");
 		return err;
 	}
-
-	err = block_stderr(block);
-	if (err)
-		return err;
 
 	switch (block->code) {
 	case 0:
