@@ -539,11 +539,17 @@ int block_reap(struct block *block)
 	return 0;
 }
 
-int block_setup(struct block *block)
+int block_setup(struct block *block, const struct map *map)
 {
-	const struct map *config = block->config;
+	struct map *config = block->config;
 	const char *value;
 	int err;
+
+	if (map) {
+		err = map_copy(config, map);
+		if (err)
+			return err;
+	}
 
 	value = map_get(config, "command");
 	if (value && *value != '\0')
@@ -573,10 +579,6 @@ int block_setup(struct block *block)
 	else
 		block->signal = atoi(value);
 
-	block->env = map_create();
-	if (!block->env)
-		return -ENOMEM;
-
 	err = block_reset(block);
 	if (err)
 		return err;
@@ -584,4 +586,36 @@ int block_setup(struct block *block)
 	block_debug(block, "new block");
 
 	return 0;
+}
+
+void block_destroy(struct block *block)
+{
+	map_destroy(block->config);
+	map_destroy(block->env);
+	free(block);
+}
+
+struct block *block_create(void)
+{
+	struct block *block;
+	int err;
+
+	block = calloc(1, sizeof(struct block));
+	if (!block)
+		return NULL;
+
+	block->config = map_create();
+	if (!block->config) {
+		free(block);
+		return NULL;
+	}
+
+	block->env = map_create();
+	if (!block->env) {
+		map_destroy(block->config);
+		free(block);
+		return NULL;
+	}
+
+	return block;
 }

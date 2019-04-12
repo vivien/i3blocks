@@ -52,7 +52,12 @@ struct block {
 	int err[2];
 	int code;
 	pid_t pid;
+
+	struct block *next;
 };
+
+struct block *block_create(void);
+void block_destroy(struct block *block);
 
 const char *block_get(const struct block *block, const char *key);
 int block_set(struct block *block, const char *key, const char *value);
@@ -72,7 +77,7 @@ int block_for_each(const struct block *block,
 #define block_error(block, msg, ...) \
 	error("[%s] " msg, block_name(block), ##__VA_ARGS__)
 
-int block_setup(struct block *block);
+int block_setup(struct block *block, const struct map *map);
 int block_click(struct block *block);
 int block_spawn(struct block *block);
 void block_touch(struct block *block);

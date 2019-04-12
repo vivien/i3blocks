@@ -39,19 +39,18 @@ gcd(int a, int b)
 static unsigned int
 longest_sleep(struct bar *bar)
 {
+	struct block *block = bar->blocks;
 	unsigned int time = 0;
-	int i;
 
-	if (bar->num > 0 && bar->blocks->interval > 0)
-		time = bar->blocks->interval; /* first block's interval */
-
-	if (bar->num < 2)
-		return time;
+	if (block->interval > 0)
+		time = block->interval;
 
 	/* The maximum sleep time is actually the GCD between all block intervals */
-	for (i = 1; i < bar->num; ++i)
-		if ((bar->blocks + i)->interval > 0)
-			time = gcd(time, (bar->blocks + i)->interval);
+	while (block->next) {
+		block = block->next;
+		if (block->interval > 0)
+			time = gcd(time, block->interval);
+	}
 
 	return time;
 }
@@ -159,26 +158,24 @@ sched_init(struct bar *bar)
 
 static void sched_poll_timed(struct bar *bar)
 {
-	int i;
+	struct block *block = bar->blocks;
 
-	for (i = 0; i < bar->num; i++) {
-		struct block *block = bar->blocks + i;
-
+	while (block) {
 		/* spawn unless it is only meant for click or signal */
 		if (block->interval != 0) {
 			block_spawn(block);
 			block_touch(block);
 		}
+
+		block = block->next;
 	}
 }
 
 static void sched_poll_expired(struct bar *bar)
 {
-	int i;
+	struct block *block = bar->blocks;
 
-	for (i = 0; i < bar->num; i++) {
-		struct block *block = bar->blocks + i;
-
+	while (block) {
 		if (block->interval > 0) {
 			const unsigned long next_update = block->timestamp + block->interval;
 			unsigned long now;
@@ -194,28 +191,31 @@ static void sched_poll_expired(struct bar *bar)
 				block_touch(block);
 			}
 		}
+
+		block = block->next;
 	}
 }
 
 static void sched_poll_signaled(struct bar *bar, int sig)
 {
-	int i;
+	struct block *block = bar->blocks;
 
-	for (i = 0; i < bar->num; i++) {
-		struct block *block = bar->blocks + i;
-
+	while (block) {
 		if (block->signal == sig) {
 			block_debug(block, "signaled");
 			block_spawn(block);
 			block_touch(block);
 		}
+
+		block = block->next;
 	}
 }
 
 static void sched_poll_exited(struct bar *bar)
 {
+	struct block *block;
 	pid_t pid;
-	int i, err;
+	int err;
 
 	for (;;) {
 		err = sys_waitid(&pid);
@@ -223,9 +223,8 @@ static void sched_poll_exited(struct bar *bar)
 			break;
 
 		/* Find the dead process */
-		for (i = 0; i < bar->num; i++) {
-			struct block *block = bar->blocks + i;
-
+		block = bar->blocks;
+		while (block) {
 			if (block->pid == pid) {
 				block_debug(block, "exited");
 				block_reap(block);
@@ -241,30 +240,32 @@ static void sched_poll_exited(struct bar *bar)
 				}
 				break;
 			}
+
+			block = block->next;
 		}
 	}
 }
 
 static void sched_poll_readable(struct bar *bar, const int fd)
 {
-	int i;
+	struct block *block = bar->blocks;
 
-	for (i = 0; i < bar->num; i++) {
-		struct block *block = bar->blocks + i;
-
+	while (block) {
 		if (block->out[0] == fd) {
 			block_debug(block, "readable");
 			block_update(block);
 			break;
 		}
+
+		block = block->next;
 	}
 }
 
 void
 sched_start(struct bar *bar)
 {
-	struct block *block;
-	int i, sig, fd;
+	struct block *block = bar->blocks;
+	int sig, fd;
 	int err;
 
 	/* First forks (for commands with an interval) */
@@ -327,11 +328,11 @@ sched_start(struct bar *bar)
 	}
 
 	/* Disable event I/O for blocks (persistent) */
-	for (i = 0; i < bar->num; i++) {
-		block = bar->blocks + i;
-
+	while (block) {
 		if (block->interval == INTERVAL_PERSIST)
 			sys_async(block->out[0], 0);
+
+		block = block->next;
 	}
 	
 	/* Disable event I/O for stdin (clicks) */

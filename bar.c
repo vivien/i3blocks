@@ -140,20 +140,18 @@ static void i3bar_dump_block(struct block *block)
 
 static void i3bar_dump(struct bar *bar)
 {
-	int i;
+	struct block *block = bar->blocks;
 
 	fprintf(stdout, ",[{\"full_text\":\"\"}");
 
-	for (i = 0; i < bar->num; ++i) {
-		struct block *block = bar->blocks + i;
-
+	while (block) {
 		/* full_text is the only mandatory key */
-		if (!block_get(block, "full_text")) {
+		if (block_get(block, "full_text"))
+			i3bar_dump_block(block);
+		else
 			block_debug(block, "no text to display, skipping");
-			continue;
-		}
 
-		i3bar_dump_block(block);
+		block = block->next;
 	}
 
 	fprintf(stdout, "]\n");
@@ -188,16 +186,17 @@ static void term_stop(struct bar *bar)
 
 static void term_dump(struct bar *bar)
 {
-	int i;
+	struct block *block = bar->blocks;
 
 	term_restore_cursor();
 
-	for (i = 0; i < bar->num; ++i) {
-		struct block *block = bar->blocks + i;
+	while (block) {
 		const char *full_text = block_get(block, "full_text");
 
 		if (full_text)
     			fprintf(stdout, "%s ", full_text);
+
+		block = block->next;
 	}
 
 	fflush(stdout);
@@ -295,21 +294,21 @@ static struct block *bar_find(struct bar *bar, const struct map *map)
 {
 	const char *block_name, *block_instance;
 	const char *map_name, *map_instance;
-	struct block *block;
-	int i;
+	struct block *block = bar->blocks;
 
 	/* "name" and "instance" are the only identifiers provided by i3bar */
 	map_name = map_get(map, "name") ? : "";
 	map_instance = map_get(map, "instance") ? : "";
 
-	for (i = 0; i < bar->num; i++) {
-		block = bar->blocks + i;
+	while (block) {
 		block_name = block_get(block, "name") ? : "";
 		block_instance = block_get(block, "instance") ? : "";
 
 		if (strcmp(block_name, map_name) == 0 &&
 		    strcmp(block_instance, map_instance) == 0)
 			return block;
+
+		block = block->next;
 	}
 
 	return NULL;
@@ -376,17 +375,19 @@ void bar_dump(struct bar *bar)
 		i3bar_dump(bar);
 }
 
-static struct block *bar_add_block(struct bar *bar)
+static struct block *bar_add_block(struct bar *bar, const struct map *map)
 {
-	struct block *block = NULL;
-	void *reloc;
+	struct block *block;
+	int err;
 
-	reloc = realloc(bar->blocks, sizeof(struct block) * (bar->num + 1));
-	if (reloc) {
-		bar->blocks = reloc;
-		block = bar->blocks + bar->num;
-		memset(block, 0, sizeof(*block));
-		bar->num++;
+	block = block_create();
+	if (!block)
+		return NULL;
+
+	err = block_setup(block, map);
+	if (err) {
+		block_destroy(block);
+		return NULL;
 	}
 
 	return block;
@@ -395,15 +396,19 @@ static struct block *bar_add_block(struct bar *bar)
 static int bar_config_cb(struct map *map, void *data)
 {
 	struct bar *bar = data;
-	struct block *block;
+	struct block *block = bar->blocks;
 
-	block = bar_add_block(bar);
-	if (!block)
+	while (block->next)
+		block = block->next;
+
+	block->next = bar_add_block(bar, map);
+
+	map_destroy(map);
+
+	if (!block->next)
 		return -ENOMEM;
 
-	block->config = map;
-
-	return block_setup(block);
+	return 0;
 }
 
 void bar_load(struct bar *bar, const char *path)
@@ -431,28 +436,37 @@ void bar_schedule(struct bar *bar)
 
 void bar_destroy(struct bar *bar)
 {
-	int i;
+	struct block *block = bar->blocks;
+	struct block *next;
 
 	if (bar->term)
 		term_stop(bar);
 	else
 		i3bar_stop(bar);
 
-	for (i = 0; i < bar->num; i++) {
-		map_destroy(bar->blocks[i].env);
-		map_destroy(bar->blocks[i].config);
+	while (block) {
+		next = block->next;
+		block_destroy(block);
+		block = next;
 	}
-	free(bar->blocks);
+
 	free(bar);
 }
 
 struct bar *bar_create(bool term)
 {
 	struct bar *bar;
+	int err;
 
 	bar = calloc(1, sizeof(struct bar));
 	if (!bar)
 		return NULL;
+
+	bar->blocks = bar_add_block(bar, NULL);
+	if (!bar->blocks) {
+		free(bar);
+		return NULL;
+	}
 
 	bar->term = term;
 	if (bar->term)
