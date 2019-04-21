@@ -28,9 +28,7 @@
 #include "log.h"
 #include "sys.h"
 
-log_handle_t log_handle = NULL;
-int log_level = LOG_FATAL;
-void *log_data = NULL;
+unsigned int log_level;
 
 int main(int argc, char *argv[])
 {
