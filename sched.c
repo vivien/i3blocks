@@ -225,23 +225,30 @@ static void sched_poll_exited(struct bar *bar)
 		/* Find the dead process */
 		block = bar->blocks;
 		while (block) {
-			if (block->pid == pid) {
-				block_debug(block, "exited");
-				block_reap(block);
-				if (block->interval == INTERVAL_PERSIST) {
-					block_debug(block, "unexpected exit?");
-				} else {
-					block_update(block);
-				}
-				block_close(block);
-				if (block->interval == INTERVAL_REPEAT) {
-					block_spawn(block);
-					block_touch(block);
-				}
+			if (block->pid == pid)
 				break;
-			}
 
 			block = block->next;
+		}
+
+		if (block) {
+			block_debug(block, "exited");
+			block_reap(block);
+			if (block->interval == INTERVAL_PERSIST) {
+				block_debug(block, "unexpected exit?");
+			} else {
+				block_update(block);
+			}
+			block_close(block);
+			if (block->interval == INTERVAL_REPEAT) {
+				block_spawn(block);
+				block_touch(block);
+			}
+		} else {
+			error("unknown child process %d", pid);
+			err = sys_waitpid(pid, NULL);
+			if (err)
+				break;
 		}
 	}
 }
