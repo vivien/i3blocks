@@ -169,15 +169,20 @@ static int block_send_key(const char *key, const char *value, void *data)
 
 static int block_send_json(struct block *block)
 {
+	int err;
+
 	dprintf(block->in[1], "{\"\":\"\"");
-	block_for_each(block, block_send_key, block);
+	err = block_for_each(block, block_send_key, block);
 	dprintf(block->in[1], "}\n");
+
+	return err;
 }
 
 /* Push data to forked process through the open stdin pipe */
 static int block_send(struct block *block)
 {
 	const char *button = block_get(block, "button");
+	int err;
 
 	if (!button) {
 		block_error(block, "no click data to send");
@@ -185,14 +190,14 @@ static int block_send(struct block *block)
 	}
 
 	if (!block_is_spawned(block)) {
-		block_debug(block, "process not spawned");
+		block_error(block, "persistent block not spawned");
 		return 0;
 	}
 
 	if (block->format == FORMAT_JSON)
-		block_send_json(block);
-	else
-		dprintf(block->in[1], "%s\n", button);
+		return block_send_json(block);
+
+	dprintf(block->in[1], "%s\n", button);
 
 	return 0;
 }
