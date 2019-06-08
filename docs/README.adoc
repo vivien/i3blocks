@@ -48,6 +48,7 @@ interval=5
 * Gentoo: link:https://packages.gentoo.org/packages/x11-misc/i3blocks[x11-misc/i3blocks]
 * Debian: link:https://packages.debian.org/i3blocks[i3blocks]
 * Ubuntu: link:http://packages.ubuntu.com/i3blocks[i3blocks]
+* Fedora (COPR): link:https://copr.fedorainfracloud.org/coprs/wyvie/i3blocks[i3blocks]
 
 Or can be installed from source with:
 
