@@ -18,6 +18,9 @@
 
 #include <ctype.h>
 #include <string.h>
+#include <xcb/xcb.h>
+#include <xcb/xcb_xrm.h>
+#include <malloc.h>
 
 #include "ini.h"
 #include "line.h"
@@ -85,6 +88,20 @@ static int ini_parse_line(char *line, size_t num, void *data)
 		*equals = '\0';
 		key = line;
 		value = equals + 1;
+
+        if (strncmp(value, "resource:", strlen("resource:")) == 0) {
+            int screen;
+            xcb_connection_t *conn = xcb_connect(NULL, &screen);
+
+            xcb_xrm_database_t *database = xcb_xrm_database_from_default(conn);
+            char *resource;
+            xcb_xrm_resource_get_string(database, equals + 1 + strlen("resource:"), NULL, &resource);
+            value = strdup(resource);
+            free(resource);
+            xcb_xrm_database_free(database);
+
+            xcb_disconnect(conn);
+        }
 
 		return ini_property(data, key, value);
 	}
