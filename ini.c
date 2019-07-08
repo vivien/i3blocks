@@ -57,7 +57,6 @@ static int ini_property(struct ini *ini, char *key, char *value)
         if (xcb_xrm_resource_get_string(ini->database, value + strlen("resource:"), NULL, &resource) == 0) {
             value = strdup(resource);
             free(resource);
-            printf("Read xres %s\n", value);
         } else {
             error("invalid Xresource key: \"%s\"", value);
             return -EINVAL;
