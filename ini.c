@@ -30,6 +30,7 @@ struct ini {
 	ini_sec_cb_t *sec_cb;
 	ini_prop_cb_t *prop_cb;
 	void *data;
+    xcb_xrm_database_t *database;
 };
 
 static int ini_section(struct ini *ini, char *section)
@@ -44,6 +45,24 @@ static int ini_property(struct ini *ini, char *key, char *value)
 {
 	if (!ini->prop_cb)
 		return 0;
+
+	// If the value begins with 'resource:` then query Xresources for the actual value.
+    if (strncmp(value, "resource:", strlen("resource:")) == 0) {
+        if (!ini->database) {
+            error("Unable to access Xresources.");
+            return -EINVAL;
+        }
+
+        char *resource;
+        if (xcb_xrm_resource_get_string(ini->database, value + strlen("resource:"), NULL, &resource) == 0) {
+            value = strdup(resource);
+            free(resource);
+            printf("Read xres %s\n", value);
+        } else {
+            error("invalid Xresource key: \"%s\"", value);
+            return -EINVAL;
+        }
+    }
 
 	return ini->prop_cb(key, value, ini->data);
 }
@@ -89,20 +108,6 @@ static int ini_parse_line(char *line, size_t num, void *data)
 		key = line;
 		value = equals + 1;
 
-        if (strncmp(value, "resource:", strlen("resource:")) == 0) {
-            int screen;
-            xcb_connection_t *conn = xcb_connect(NULL, &screen);
-
-            xcb_xrm_database_t *database = xcb_xrm_database_from_default(conn);
-            char *resource;
-            xcb_xrm_resource_get_string(database, equals + 1 + strlen("resource:"), NULL, &resource);
-            value = strdup(resource);
-            free(resource);
-            xcb_xrm_database_free(database);
-
-            xcb_disconnect(conn);
-        }
-
 		return ini_property(data, key, value);
 	}
 
@@ -113,11 +118,23 @@ static int ini_parse_line(char *line, size_t num, void *data)
 int ini_read(int fd, size_t count, ini_sec_cb_t *sec_cb, ini_prop_cb_t *prop_cb,
 	     void *data)
 {
+    int screen;
+    xcb_connection_t *conn = xcb_connect(NULL, &screen);
+
+    xcb_xrm_database_t *xdatabase = xcb_xrm_database_from_default(conn);
+
 	struct ini ini = {
 		.sec_cb = sec_cb,
 		.prop_cb = prop_cb,
 		.data = data,
+		.database = xdatabase
 	};
 
-	return line_read(fd, count, ini_parse_line, &ini);
+	int val = line_read(fd, count, ini_parse_line, &ini);
+
+    xcb_xrm_database_free(xdatabase);
+
+    xcb_disconnect(conn);
+
+	return val;
 }
