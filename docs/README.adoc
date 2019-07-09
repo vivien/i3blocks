@@ -11,6 +11,7 @@ a Xresource named "blockColor" then you can load that into i3xrocks via:
 
 ---
 color=resource:blockColor
+
 ---
 
 Otherwise this aims to be identical to i3blocks.  Please refer to the upstream project for documentation.
