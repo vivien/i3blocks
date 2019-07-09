@@ -1,5 +1,5 @@
 *.o
-i3blocks
+i3xrocks
 .deps/
 Makefile
 Makefile.in
@@ -9,6 +9,6 @@ build-aux/
 config.log
 config.status
 configure
-i3blocks-config.h*
+i3xrocks-config.h*
 stamp-h1
 

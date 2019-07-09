@@ -1,5 +1,5 @@
 /*
- * i3blocks.c - main entry point, load the config and start the scheduler
+ * i3xrocks.c - main entry point, load the config and start the scheduler
  * Copyright (C) 2014  Vivien Didelot
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,7 +17,7 @@
  */
 
 #ifdef HAVE_CONFIG_H
-#include "i3blocks-config.h"
+#include "i3xrocks-config.h"
 #endif
 
 #include <getopt.h>
@@ -56,7 +56,7 @@ main(int argc, char *argv[])
 			printf("Usage: %s [-c <configfile>] [-o <output>] [-v] [-h] [-V]\n", argv[0]);
 			return 0;
 		case 'V':
-			printf(PACKAGE_STRING " © 2014 Vivien Didelot and contributors\n");
+			printf(PACKAGE_STRING " © 2019 Ken Gilmer, i3blocks © 2014 Vivien Didelot and contributors\n");
 			return 0;
 		default:
 			error("Try '%s -h' for more information.", argv[0]);

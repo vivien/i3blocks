@@ -49,7 +49,7 @@ static int ini_property(struct ini *ini, char *key, char *value)
 	// If the value begins with 'resource:` then query Xresources for the actual value.
     if (strncmp(value, "resource:", strlen("resource:")) == 0) {
         if (!ini->database) {
-            error("Unable to access Xresources.");
+            fatal("Unable to access Xresources.");
             return -EINVAL;
         }
 
@@ -58,7 +58,7 @@ static int ini_property(struct ini *ini, char *key, char *value)
             value = strdup(resource);
             free(resource);
         } else {
-            error("invalid Xresource key: \"%s\"", value);
+            fatal("invalid Xresource key: \"%s\"", value);
             return -EINVAL;
         }
     }

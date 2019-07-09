@@ -1,5 +1,5 @@
 '\" t
-.\"     Title: i3blocks
+.\"     Title: i3xrocks
 .\"    Author: [see the "AUTHOR(S)" section]
 .\" Generator: Asciidoctor 1.5.8
 .\"      Date: 2018-09-25
@@ -7,7 +7,7 @@
 .\"    Source: \ \&
 .\"  Language: English
 .\"
-.TH "I3BLOCKS" "1" "2018-09-25" "\ \&" "\ \&"
+.TH "i3xrocks" "1" "2018-09-25" "\ \&" "\ \&"
 .ie \n(.g .ds Aq \(aq
 .el       .ds Aq '
 .ss \n[.ss] 0
@@ -28,13 +28,13 @@
 .  LINKSTYLE blue R < >
 .\}
 .SH "NAME"
-i3blocks \- A minimalist scheduler for your status line scripts
+i3xrocks \- A minimalist scheduler for your status line scripts
 .SH "SYNOPSIS"
 .sp
-\fBi3blocks\fP [\fIOPTION\fP]...
+\fBi3xrocks\fP [\fIOPTION\fP]...
 .SH "DESCRIPTION"
 .sp
-The i3blocks(1) command generates a status line for i3bar(1).
+The i3xrocks(1) command generates a status line for i3bar(1).
 It schedules command lines described in a simple configuration file at specified time intervals, upon signal reception or on clicks.
 .SH "OPTIONS"
 .sp
@@ -58,17 +58,17 @@ Using \fB\-vv\fP and more will show more debug output on standard error.
 .RE
 .SH "CONFIGURATION"
 .sp
-i3blocks must be defined as the status line command of the \fBbar\fP block described in your i3(1) configuration file:
+i3xrocks must be defined as the status line command of the \fBbar\fP block described in your i3(1) configuration file:
 .sp
 .if n .RS 4
 .nf
 bar {
-  status_command i3blocks
+  status_command i3xrocks
 }
 .fi
 .if n .RE
 .sp
-By default, i3blocks looks for a configuration file in the following order (note that /etc may be prefixed with /usr/local depending on the compilation flags):
+By default, i3xrocks looks for a configuration file in the following order (note that /etc may be prefixed with /usr/local depending on the compilation flags):
 .sp
 .RS 4
 .ie n \{\
@@ -78,7 +78,7 @@ By default, i3blocks looks for a configuration file in the following order (note
 .  sp -1
 .  IP " 1." 4.2
 .\}
-\fI$XDG_CONFIG_HOME/i3blocks/config\fP (or \fI~/.config/i3blocks/config\fP)
+\fI$XDG_CONFIG_HOME/i3xrocks/config\fP (or \fI~/.config/i3xrocks/config\fP)
 .RE
 .sp
 .RS 4
@@ -89,7 +89,7 @@ By default, i3blocks looks for a configuration file in the following order (note
 .  sp -1
 .  IP " 2." 4.2
 .\}
-\fI~/.i3blocks.conf\fP
+\fI~/.i3xrocks.conf\fP
 .RE
 .sp
 .RS 4
@@ -100,7 +100,7 @@ By default, i3blocks looks for a configuration file in the following order (note
 .  sp -1
 .  IP " 3." 4.2
 .\}
-\fI$XDG_CONFIG_DIRS/i3blocks/config\fP (or \fI/etc/xdg/i3blocks/config\fP)
+\fI$XDG_CONFIG_DIRS/i3xrocks/config\fP (or \fI/etc/xdg/i3xrocks/config\fP)
 .RE
 .sp
 .RS 4
@@ -111,7 +111,7 @@ By default, i3blocks looks for a configuration file in the following order (note
 .  sp -1
 .  IP " 4." 4.2
 .\}
-\fI/etc/i3blocks.conf\fP
+\fI/etc/i3xrocks.conf\fP
 .RE
 .sp
 The configuration file uses a simplified INI format.
@@ -124,7 +124,7 @@ You must refer to \c
 .URL "http://i3wm.org/docs/i3bar\-protocol.html" "" " "
 to know what properties are understood by i3bar(1).
 .sp
-The following properties are interpreted by \fBi3blocks\fP to describe how the optional command must be scheduled.
+The following properties are interpreted by \fBi3xrocks\fP to describe how the optional command must be scheduled.
 .SS "command"
 .sp
 The command line to be invoked with \f(CRsh \-c\fP.
@@ -150,7 +150,7 @@ The signal number used to update the block.
 All the real\-time (think prioritized and queueable) signals are available to the user.
 The number is valid between \fI1\fP and \fIN\fP, where \fISIGRTMIN+N=SIGRTMAX\fP.
 (Note that there are 31 real\-time signals in Linux.)
-For instance, \fIsignal=10\fP means that this block will be updated when \fBi3blocks\fP receives the \fISIGRTMIN+10\fP signal.
+For instance, \fIsignal=10\fP means that this block will be updated when \fBi3xrocks\fP receives the \fISIGRTMIN+10\fP signal.
 .SS "format"
 .sp
 This property specifies the format of the output text.
@@ -210,17 +210,17 @@ If \fIjson\fP (or \fI1\fP) is used, the block output is read as a JSON object an
 i3(1), i3bar(1), i3status(1)
 .SH "AUTHORS"
 .sp
-i3blocks is written by Vivien Didelot and other contributors.
+i3xrocks is written by Vivien Didelot and other contributors.
 .SH "RESOURCES"
 .sp
 \fBProject web site:\fP \c
-.URL "https://vivien.github.io/i3blocks" "" ""
+.URL "https://vivien.github.io/i3xrocks" "" ""
 .sp
 \fBGit source repository and issue tracker:\fP \c
-.URL "https://github.com/vivien/i3blocks" "" ""
+.URL "https://github.com/vivien/i3xrocks" "" ""
 .sp
-\fBOfficial collection of scripts for i3blocks:\fP \c
-.URL "https://github.com/vivien/i3blocks\-contrib" "" ""
+\fBOfficial collection of scripts for i3xrocks:\fP \c
+.URL "https://github.com/vivien/i3xrocks\-contrib" "" ""
 .sp
 \fBi3bar protocol:\fP \c
 .URL "http://i3wm.org/docs/i3bar\-protocol.html" "" ""

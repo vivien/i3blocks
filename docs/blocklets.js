@@ -2,7 +2,7 @@ document.onreadystatechange = function () {
 	if (document.readyState === 'complete') {
 		var repos = document.querySelector('#repos');
 		var request = new XMLHttpRequest();
-		request.open('GET', "https://api.github.com/search/repositories?q=topic:i3blocks+topic:blocklet");
+		request.open('GET', "https://api.github.com/search/repositories?q=topic:i3xrocks+topic:blocklet");
 		request.onload = function () {
 			var data = JSON.parse(request.responseText);
 

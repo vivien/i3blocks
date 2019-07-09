@@ -168,14 +168,14 @@ int config_load(const char *path, config_cb_t *cb, void *data)
 	/* user config file? */
 	if (home) {
 		if (xdg_home)
-			snprintf(buf, sizeof(buf), "%s/i3blocks/config", xdg_home);
+			snprintf(buf, sizeof(buf), "%s/i3xrocks/config", xdg_home);
 		else
-			snprintf(buf, sizeof(buf), "%s/.config/i3blocks/config", home);
+			snprintf(buf, sizeof(buf), "%s/.config/i3xrocks/config", home);
 		err = config_open(&conf, buf);
 		if (err != -ENOENT)
 			return err;
 
-		snprintf(buf, sizeof(buf), "%s/.i3blocks.conf", home);
+		snprintf(buf, sizeof(buf), "%s/.i3xrocks.conf", home);
 		err = config_open(&conf, buf);
 		if (err != -ENOENT)
 			return err;
@@ -183,13 +183,13 @@ int config_load(const char *path, config_cb_t *cb, void *data)
 
 	/* system config file? */
 	if (xdg_dirs)
-		snprintf(buf, sizeof(buf), "%s/i3blocks/config", xdg_dirs);
+		snprintf(buf, sizeof(buf), "%s/i3xrocks/config", xdg_dirs);
 	else
-		snprintf(buf, sizeof(buf), "%s/xdg/i3blocks/config", SYSCONFDIR);
+		snprintf(buf, sizeof(buf), "%s/xdg/i3xrocks/config", SYSCONFDIR);
 	err = config_open(&conf, buf);
 	if (err != -ENOENT)
 		return err;
 
-	snprintf(buf, sizeof(buf), "%s/i3blocks.conf", SYSCONFDIR);
+	snprintf(buf, sizeof(buf), "%s/i3xrocks.conf", SYSCONFDIR);
 	return config_open(&conf, buf);
 }

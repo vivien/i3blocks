@@ -1,4 +1,4 @@
-:progname: i3blocks
+:progname: i3xrocks
 
 = {progname}(1)
 
@@ -37,16 +37,16 @@ Using *-vv* and more will show more debug output on standard error.
 [source]
 ----
 bar {
-  status_command i3blocks
+  status_command i3xrocks
 }
 ----
 
 By default, {progname} looks for a configuration file in the following order (note that /etc may be prefixed with /usr/local depending on the compilation flags):
 
-. _$XDG_CONFIG_HOME/i3blocks/config_ (or _~/.config/i3blocks/config_)
-. _~/.i3blocks.conf_
-. _$XDG_CONFIG_DIRS/i3blocks/config_ (or _/etc/xdg/i3blocks/config_)
-. _/etc/i3blocks.conf_
+. _$XDG_CONFIG_HOME/i3xrocks/config_ (or _~/.config/i3xrocks/config_)
+. _~/.i3xrocks.conf_
+. _$XDG_CONFIG_DIRS/i3xrocks/config_ (or _/etc/xdg/i3xrocks/config_)
+. _/etc/i3xrocks.conf_
 
 The configuration file uses a simplified INI format.
 Each section describes a new block to be displayed in the status bar.
@@ -113,11 +113,11 @@ i3(1), i3bar(1), i3status(1)
 
 == RESOURCES
 
-*Project web site:* https://vivien.github.io/i3blocks
+*Project web site:* https://vivien.github.io/i3xrocks
 
-*Git source repository and issue tracker:* https://github.com/vivien/i3blocks
+*Git source repository and issue tracker:* https://github.com/vivien/i3xrocks
 
-*Official collection of scripts for {progname}:* https://github.com/vivien/i3blocks-contrib
+*Official collection of scripts for {progname}:* https://github.com/vivien/i3xrocks-contrib
 
 *i3bar protocol:* http://i3wm.org/docs/i3bar-protocol.html
 

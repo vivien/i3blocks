@@ -389,7 +389,7 @@ void bar_load(struct bar *bar, const char *path)
 
 	err = config_load(path, bar_config_cb, bar);
 	if (err)
-		fatal("Failed to load bar configuration file");
+		fatal("Failed to load bar configuration file: %s", path);
 }
 
 void bar_schedule(struct bar *bar)

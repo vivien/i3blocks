@@ -5,7 +5,7 @@
 <!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 1.5.8">
-<title>i3blocks(1)</title>
+<title>i3xrocks(1)</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /* Asciidoctor default stylesheet | MIT License | http://asciidoctor.org */
@@ -432,7 +432,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </head>
 <body class="article toc2 toc-left">
 <div id="header">
-<h1>i3blocks(1)</h1>
+<h1>i3xrocks(1)</h1>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
@@ -460,7 +460,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <h2 id="_name">NAME</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>i3blocks - A minimalist scheduler for your status line scripts</p>
+<p>i3xrocks - A minimalist scheduler for your status line scripts</p>
 </div>
 </div>
 </div>
@@ -468,7 +468,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p><strong>i3blocks</strong> [<em>OPTION</em>]&#8230;&#8203;</p>
+<p><strong>i3xrocks</strong> [<em>OPTION</em>]&#8230;&#8203;</p>
 </div>
 </div>
 </div>
@@ -476,7 +476,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The i3blocks(1) command generates a status line for i3bar(1).
+<p>The i3xrocks(1) command generates a status line for i3bar(1).
 It schedules command lines described in a simple configuration file at specified time intervals, upon signal reception or on clicks.</p>
 </div>
 </div>
@@ -510,31 +510,31 @@ Using <strong>-vv</strong> and more will show more debug output on standard erro
 <h2 id="_configuration">CONFIGURATION</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>i3blocks must be defined as the status line command of the <strong>bar</strong> block described in your i3(1) configuration file:</p>
+<p>i3xrocks must be defined as the status line command of the <strong>bar</strong> block described in your i3(1) configuration file:</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code>bar {
-  status_command i3blocks
+  status_command i3xrocks
 }</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>By default, i3blocks looks for a configuration file in the following order (note that /etc may be prefixed with /usr/local depending on the compilation flags):</p>
+<p>By default, i3xrocks looks for a configuration file in the following order (note that /etc may be prefixed with /usr/local depending on the compilation flags):</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p><em>$XDG_CONFIG_HOME/i3blocks/config</em> (or <em>~/.config/i3blocks/config</em>)</p>
+<p><em>$XDG_CONFIG_HOME/i3xrocks/config</em> (or <em>~/.config/i3xrocks/config</em>)</p>
 </li>
 <li>
-<p><em>~/.i3blocks.conf</em></p>
+<p><em>~/.i3xrocks.conf</em></p>
 </li>
 <li>
-<p><em>$XDG_CONFIG_DIRS/i3blocks/config</em> (or <em>/etc/xdg/i3blocks/config</em>)</p>
+<p><em>$XDG_CONFIG_DIRS/i3xrocks/config</em> (or <em>/etc/xdg/i3xrocks/config</em>)</p>
 </li>
 <li>
-<p><em>/etc/i3blocks.conf</em></p>
+<p><em>/etc/i3xrocks.conf</em></p>
 </li>
 </ol>
 </div>
@@ -549,7 +549,7 @@ Properties declared outside a block (i.e. at the beginning of the file) describe
 <p>You must refer to <a href="http://i3wm.org/docs/i3bar-protocol.html" class="bare">http://i3wm.org/docs/i3bar-protocol.html</a> to know what properties are understood by i3bar(1).</p>
 </div>
 <div class="paragraph">
-<p>The following properties are interpreted by <strong>i3blocks</strong> to describe how the optional command must be scheduled.</p>
+<p>The following properties are interpreted by <strong>i3xrocks</strong> to describe how the optional command must be scheduled.</p>
 </div>
 <div class="sect2">
 <h3 id="_command">command</h3>
@@ -588,7 +588,7 @@ Updates are thus limited to single lines.</p>
 All the real-time (think prioritized and queueable) signals are available to the user.
 The number is valid between <em>1</em> and <em>N</em>, where <em>SIGRTMIN+N=SIGRTMAX</em>.
 (Note that there are 31 real-time signals in Linux.)
-For instance, <em>signal=10</em> means that this block will be updated when <strong>i3blocks</strong> receives the <em>SIGRTMIN+10</em> signal.</p>
+For instance, <em>signal=10</em> means that this block will be updated when <strong>i3xrocks</strong> receives the <em>SIGRTMIN+10</em> signal.</p>
 </div>
 </div>
 <div class="sect2">
@@ -637,7 +637,7 @@ In this format, each non-empty line of the output is used to update an i3bar key
 <h2 id="_authors">AUTHORS</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>i3blocks is written by Vivien Didelot and other contributors.</p>
+<p>i3xrocks is written by Vivien Didelot and other contributors.</p>
 </div>
 </div>
 </div>
@@ -645,13 +645,13 @@ In this format, each non-empty line of the output is used to update an i3bar key
 <h2 id="_resources">RESOURCES</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p><strong>Project web site:</strong> <a href="https://vivien.github.io/i3blocks" class="bare">https://vivien.github.io/i3blocks</a></p>
+<p><strong>Project web site:</strong> <a href="https://vivien.github.io/i3xrocks" class="bare">https://vivien.github.io/i3xrocks</a></p>
 </div>
 <div class="paragraph">
-<p><strong>Git source repository and issue tracker:</strong> <a href="https://github.com/vivien/i3blocks" class="bare">https://github.com/vivien/i3blocks</a></p>
+<p><strong>Git source repository and issue tracker:</strong> <a href="https://github.com/vivien/i3xrocks" class="bare">https://github.com/vivien/i3xrocks</a></p>
 </div>
 <div class="paragraph">
-<p><strong>Official collection of scripts for i3blocks:</strong> <a href="https://github.com/vivien/i3blocks-contrib" class="bare">https://github.com/vivien/i3blocks-contrib</a></p>
+<p><strong>Official collection of scripts for i3xrocks:</strong> <a href="https://github.com/vivien/i3xrocks-contrib" class="bare">https://github.com/vivien/i3xrocks-contrib</a></p>
 </div>
 <div class="paragraph">
 <p><strong>i3bar protocol:</strong> <a href="http://i3wm.org/docs/i3bar-protocol.html" class="bare">http://i3wm.org/docs/i3bar-protocol.html</a></p>
