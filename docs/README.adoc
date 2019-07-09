@@ -15,3 +15,5 @@ color=resource:blockColor
 ---
 
 Otherwise this aims to be identical to i3blocks.  Please refer to the upstream project for documentation.
+
+Special thanks to link:https://github.com/Airblader[@Airblader] for link:https://github.com/vivien/i3blocks/issues/198#issuecomment-238035596[his patch], without which I would not have been able to make this change.
