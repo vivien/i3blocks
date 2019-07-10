@@ -20,3 +20,4 @@ i3blocks_SOURCES = \
 	sys.c \
 	sys.h \
 	term.h
+i3blocks_CFLAGS = -Wall -Wextra -Werror $(AM_CFLAGS)
