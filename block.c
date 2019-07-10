@@ -60,6 +60,8 @@ static int block_setenv(const char *name, const char *value, void *data)
 {
 	int err;
 
+	(void)data;
+
 	if (!value)
 		value = "";
 
@@ -216,6 +218,8 @@ void block_touch(struct block *block)
 	unsigned long now;
 	int err;
 
+	(void)block;
+
 	err = sys_gettime(&now);
 	if (err) {
 		block_error(block, "failed to touch block");
@@ -234,6 +238,8 @@ static int block_child_sig(struct block *block)
 {
 	sigset_t set;
 	int err;
+
+	(void)block;
 
 	/* It'd be safe to assume that all signals are unblocked by default */
 	err = sys_sigfillset(&set);

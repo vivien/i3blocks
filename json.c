@@ -347,6 +347,8 @@ static int json_line_cb(char *line, size_t num, void *data)
 	size_t len;
 	int err;
 
+	(void)num;
+
 	for (;;) {
 		/* Only support inline flattened structures at the moment */
 		while (*line == '[' || *line == ']' || *line == ',' ||
