@@ -46,15 +46,15 @@ static int ini_property(struct ini *ini, char *key, char *value)
 	if (!ini->prop_cb)
 		return 0;
 
-	// If the value begins with 'resource:` then query Xresources for the actual value.
-    if (strncmp(value, "resource:", strlen("resource:")) == 0) {
+	// If the value begins with 'xresource:` then query Xresources for the actual value.
+    if (strncmp(value, "xresource:", strlen("xresource:")) == 0) {
         if (!ini->database) {
             fatal("Unable to access Xresources.");
             return -EINVAL;
         }
 
         char *resource;
-        if (xcb_xrm_resource_get_string(ini->database, value + strlen("resource:"), NULL, &resource) == 0) {
+        if (xcb_xrm_resource_get_string(ini->database, value + strlen("xresource:"), NULL, &resource) == 0) {
             value = strdup(resource);
             free(resource);
         } else {

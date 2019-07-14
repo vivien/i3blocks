@@ -6,11 +6,11 @@
 This project is a tracking fork of link:https://github.com/vivien/i3blocks[i3blocks] which changes two things:
 
 1. The name of the program is i3xrocks instead of i3blocks.
-2. The config file can resolve Xresource dependencies if prefixed with `resource:`.  For example, if you have 
+2. The config file can resolve Xresource dependencies if prefixed with `xresource:`.  For example, if you have 
 a Xresource named "blockColor" then you can load that into i3xrocks via:
 
 ---
-color=resource:blockColor
+color=xresource:blockColor
 
 ---
 
