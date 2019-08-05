@@ -1,4 +1,4 @@
-AC_INIT([i3blocks], 1.4)
+AC_INIT([i3blocks], 1.5)
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE(foreign)
 AC_PROG_CC
