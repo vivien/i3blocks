@@ -1,6 +1,6 @@
 /*
  * ini.h - generic INI format parsing header
- * Copyright (C) 2017  Vivien Didelot
+ * Copyright (C) 2017-2019  Vivien Didelot
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

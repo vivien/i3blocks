@@ -1,6 +1,6 @@
 /*
- * i3blocks.c - main entry point, load the config and start the scheduler
- * Copyright (C) 2014  Vivien Didelot
+ * main.c - main entry point
+ * Copyright (C) 2014-2019  Vivien Didelot
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 			printf("Usage: %s [-c <configfile>] [-o <output>] [-v] [-h] [-V]\n", argv[0]);
 			return EXIT_SUCCESS;
 		case 'V':
-			printf(PACKAGE_STRING " © 2014 Vivien Didelot and contributors\n");
+			printf(PACKAGE_STRING " © 2014-2019 Vivien Didelot and contributors\n");
 			return EXIT_SUCCESS;
 		default:
 			error("Try '%s -h' for more information.", argv[0]);
