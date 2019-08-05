@@ -21,21 +21,53 @@
 
 #include <stdbool.h>
 
-struct map;
-
-int i3bar_read(int fd, size_t count, struct map *map);
+#include "block.h"
+#include "sys.h"
 
 struct bar {
 	struct block *blocks;
-	bool frozen;
+	sigset_t sigset;
 	bool term;
 };
 
-struct bar *bar_create(bool term);
-void bar_destroy(struct bar *bar);
-void bar_load(struct bar *bar, const char *path);
-void bar_schedule(struct bar *bar);
-void bar_dump(struct bar *bar);
-int bar_click(struct bar *bar);
+#define bar_printf(bar, lvl, fmt, ...) \
+	block_printf(bar->blocks, lvl, "%s" fmt, bar->term ? "TTY " : "", ##__VA_ARGS__)
+
+#define bar_fatal(bar, fmt, ...) \
+	do { \
+		fatal(fmt, ##__VA_ARGS__); \
+		bar_printf(bar, LOG_FATAL, "Oops! " fmt ". Increase log level for details.", ##__VA_ARGS__); \
+	} while (0)
+
+#define bar_error(bar, fmt, ...) \
+	do { \
+		error(fmt, ##__VA_ARGS__); \
+		bar_printf(bar, LOG_ERROR, "Error: " fmt, ##__VA_ARGS__); \
+	} while (0)
+
+#define bar_trace(bar, fmt, ...) \
+	do { \
+		trace(fmt, ##__VA_ARGS__); \
+		bar_printf(bar, LOG_TRACE, "Trace: " fmt, ##__VA_ARGS__); \
+	} while (0)
+
+#define bar_debug(bar, fmt, ...) \
+	do { \
+		debug(fmt, ##__VA_ARGS__); \
+		bar_printf(bar, LOG_DEBUG, "Debug: " fmt, ##__VA_ARGS__); \
+	} while (0)
+
+int bar_init(bool term, const char *path);
+
+struct map;
+
+/* i3bar.c */
+int i3bar_read(int fd, size_t count, struct map *map);
+int i3bar_click(struct bar *bar);
+int i3bar_print(const struct bar *bar);
+int i3bar_printf(struct block *block, int lvl, const char *msg);
+int i3bar_setup(struct block *block);
+int i3bar_start(struct bar *bar);
+void i3bar_stop(struct bar *bar);
 
 #endif /* _BAR_H */

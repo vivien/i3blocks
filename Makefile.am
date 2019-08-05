@@ -6,6 +6,7 @@ i3blocks_SOURCES = \
 	block.h \
 	config.c \
 	config.h \
+	i3bar.c \
 	ini.c \
 	ini.h \
 	json.c \
@@ -16,7 +17,6 @@ i3blocks_SOURCES = \
 	main.c \
 	map.c \
 	map.h \
-	sched.c \
-	sched.h \
 	sys.c \
-	sys.h
+	sys.h \
+	term.h

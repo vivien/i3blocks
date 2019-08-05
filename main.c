@@ -32,12 +32,10 @@ log_handle_t log_handle = NULL;
 int log_level = LOG_FATAL;
 void *log_data = NULL;
 
-int
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	char *output = NULL;
 	char *path = NULL;
-	struct bar *bar;
 	bool term;
 	int c;
 
@@ -54,13 +52,13 @@ main(int argc, char *argv[])
 			break;
 		case 'h':
 			printf("Usage: %s [-c <configfile>] [-o <output>] [-v] [-h] [-V]\n", argv[0]);
-			return 0;
+			return EXIT_SUCCESS;
 		case 'V':
 			printf(PACKAGE_STRING " © 2014 Vivien Didelot and contributors\n");
-			return 0;
+			return EXIT_SUCCESS;
 		default:
 			error("Try '%s -h' for more information.", argv[0]);
-			return 1;
+			return EXIT_FAILURE;
 		}
 	}
 
@@ -68,15 +66,8 @@ main(int argc, char *argv[])
 	if (output)
 		term = !strcmp(output, "term");
 
-	bar = bar_create(term);
-	if (!bar)
+	if (bar_init(term, path))
 		return EXIT_FAILURE;
-
-	bar_load(bar, path);
-
-	bar_schedule(bar);
-
-	bar_destroy(bar);
 
 	return EXIT_SUCCESS;
 }

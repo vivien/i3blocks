@@ -1,6 +1,6 @@
 /*
- * sched.h - scheduling header
- * Copyright (C) 2014  Vivien Didelot
+ * term.h - terminal output handling functions
+ * Copyright (C) 2014-2019  Vivien Didelot
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,10 +16,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _SCHED_H
-#define _SCHED_H
+#ifndef _TERM_H
+#define _TERM_H
 
-int sched_init(struct bar *);
-void sched_start(struct bar *);
+#include <stdio.h>
 
-#endif /* _SCHED_H */
+static inline void term_save_cursor(void)
+{
+	fprintf(stdout, "\033[s\033[?25l");
+}
+
+static inline void term_restore_cursor(void)
+{
+	fprintf(stdout, "\033[u\033[K");
+}
+
+static inline void term_reset_cursor(void)
+{
+	fprintf(stdout, "\033[?25h");
+}
+
+#endif /* _TERM_H */

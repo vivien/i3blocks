@@ -37,7 +37,7 @@ int block_set(struct block *block, const char *key, const char *value)
 	return map_set(block->env, key, value);
 }
 
-static int block_reset(struct block *block)
+int block_reset(struct block *block)
 {
 	map_clear(block->env);
 
@@ -539,23 +539,16 @@ int block_reap(struct block *block)
 	return 0;
 }
 
-int block_setup(struct block *block, const struct map *map)
+static int i3blocks_setup(struct block *block)
 {
-	struct map *config = block->config;
 	const char *value;
 	int err;
 
-	if (map) {
-		err = map_copy(config, map);
-		if (err)
-			return err;
-	}
-
-	value = map_get(config, "command");
+	value = map_get(block->config, "command");
 	if (value && *value != '\0')
 		block->command = value;
 
-	value = map_get(config, "interval");
+	value = map_get(block->config, "interval");
 	if (!value)
 		block->interval = 0;
 	else if (strcmp(value, "once") == 0)
@@ -567,17 +560,32 @@ int block_setup(struct block *block, const struct map *map)
 	else
 		block->interval = atoi(value);
 
-	value = map_get(config, "format");
+	value = map_get(block->config, "format");
 	if (value && strcmp(value, "json") == 0)
 		block->format = FORMAT_JSON;
 	else
 		block->format = FORMAT_RAW;
 
-	value = map_get(config, "signal");
+	value = map_get(block->config, "signal");
 	if (!value)
 		block->signal = 0;
 	else
 		block->signal = atoi(value);
+
+	return 0;
+}
+
+int block_setup(struct block *block)
+{
+	int err;
+
+	err = i3bar_setup(block);
+	if (err)
+		return err;
+
+	err = i3blocks_setup(block);
+	if (err)
+		return err;
 
 	err = block_reset(block);
 	if (err)
@@ -592,10 +600,11 @@ void block_destroy(struct block *block)
 {
 	map_destroy(block->config);
 	map_destroy(block->env);
+	free(block->name);
 	free(block);
 }
 
-struct block *block_create(void)
+struct block *block_create(struct bar *bar, const struct map *config)
 {
 	struct block *block;
 	int err;
@@ -604,18 +613,45 @@ struct block *block_create(void)
 	if (!block)
 		return NULL;
 
+	block->bar = bar;
+
 	block->config = map_create();
 	if (!block->config) {
-		free(block);
+		block_destroy(block);
 		return NULL;
+	}
+
+	if (config) {
+		err = map_copy(block->config, config);
+		if (err) {
+			block_destroy(block);
+			return NULL;
+		}
 	}
 
 	block->env = map_create();
 	if (!block->env) {
-		map_destroy(block->config);
-		free(block);
+		block_destroy(block);
 		return NULL;
 	}
 
 	return block;
+}
+
+void block_printf(struct block *block, int lvl, const char *fmt, ...)
+{
+	char buf[BUFSIZ];
+	va_list ap;
+	int err;
+
+	if (lvl > log_level)
+		return;
+
+	va_start(ap, fmt);
+	vsnprintf(buf, sizeof(buf), fmt, ap);
+	va_end(ap);
+
+	err = i3bar_printf(block, lvl, buf);
+	if (err)
+		fatal("failed to format message for block %s: %s", block->name, buf);
 }

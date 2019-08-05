@@ -21,6 +21,7 @@
 
 #include <sys/types.h>
 
+#include "bar.h"
 #include "log.h"
 #include "map.h"
 
@@ -36,8 +37,15 @@
 #define EXIT_ERR_INTERNAL	66
 
 struct block {
+	const struct bar *bar;
+
 	struct map *config;
 	struct map *env;
+
+	bool tainted;
+
+	/* Pretty name for log messages */
+	char *name;
 
 	/* Shortcuts */
 	const char *command;
@@ -56,28 +64,45 @@ struct block {
 	struct block *next;
 };
 
-struct block *block_create(void);
+struct block *block_create(struct bar *bar, const struct map *config);
 void block_destroy(struct block *block);
+
+int block_reset(struct block *block);
 
 const char *block_get(const struct block *block, const char *key);
 int block_set(struct block *block, const char *key, const char *value);
-
-static inline const char *block_name(const struct block *block)
-{
-	return block_get(block, "name") ? : "<unknown>";
-}
 
 int block_for_each(const struct block *block,
 		   int (*func)(const char *key, const char *value, void *data),
 		   void *data);
 
-#define block_debug(block, msg, ...) \
-	debug("[%s] " msg, block_name(block), ##__VA_ARGS__)
+void block_printf(struct block *block, int lvl, const char *fmt, ...);
 
-#define block_error(block, msg, ...) \
-	error("[%s] " msg, block_name(block), ##__VA_ARGS__)
+#define block_fatal(block, fmt, ...) \
+	do { \
+		fatal("[%s] " fmt, block->name, ##__VA_ARGS__); \
+		block_printf(block, LOG_FATAL, "Oops! " fmt, ##__VA_ARGS__); \
+	} while (0)
 
-int block_setup(struct block *block, const struct map *map);
+#define block_error(block, fmt, ...) \
+	do { \
+		error("[%s] " fmt, block->name, ##__VA_ARGS__); \
+		block_printf(block, LOG_ERROR, "Error: " fmt, ##__VA_ARGS__); \
+	} while (0)
+
+#define block_trace(block, fmt, ...) \
+	do { \
+		trace("[%s] " fmt, block->name, ##__VA_ARGS__); \
+		block_printf(block, LOG_TRACE, fmt, ##__VA_ARGS__); \
+	} while (0)
+
+#define block_debug(block, fmt, ...) \
+	do { \
+		debug("[%s] " fmt, block->name, ##__VA_ARGS__); \
+		block_printf(block, LOG_DEBUG, fmt, ##__VA_ARGS__); \
+	} while (0)
+
+int block_setup(struct block *block);
 int block_click(struct block *block);
 int block_spawn(struct block *block);
 void block_touch(struct block *block);

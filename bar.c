@@ -16,8 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "bar.h"
 #include "block.h"
@@ -28,421 +30,375 @@
 #include "map.h"
 #include "sched.h"
 #include "sys.h"
+#include "term.h"
 
-/* See https://i3wm.org/docs/i3bar-protocol.html for details */
-
-static struct {
-	const char * const key;
-	bool string;
-} i3bar_keys[] = {
-	{ "", false }, /* unknown key */
-
-	/* Standard keys */
-	{ "full_text", true },
-	{ "short_text", true },
-	{ "color", true },
-	{ "background", true },
-	{ "border", true },
-	{ "min_width", false }, /* can also be a number */
-	{ "align", true },
-	{ "name", true },
-	{ "instance", true },
-	{ "urgent", false },
-	{ "separator", false },
-	{ "separator_block_width", false },
-	{ "markup", true },
-
-	/* i3-gaps features */
-	{ "border_top", false },
-	{ "border_bottom", false },
-	{ "border_left", false },
-	{ "border_right", false },
-};
-
-static unsigned int i3bar_indexof(const char *key)
+static void bar_read(struct bar *bar)
 {
-	unsigned int i;
-
-	for (i = 0; i < sizeof(i3bar_keys) / sizeof(i3bar_keys[0]); i++)
-		if (strcmp(i3bar_keys[i].key, key) == 0)
-			return i;
-
-	return 0;
-}
-
-static int i3bar_line_cb(char *line, size_t num, void *data)
-{
-	unsigned int index = num + 1;
-	struct map *map = data;
-	const char *key;
-
-	if (index >= sizeof(i3bar_keys) / sizeof(i3bar_keys[0])) {
-		debug("ignoring excess line %d: %s", num, line);
-		return 0;
-	}
-
-	key = i3bar_keys[index].key;
-
-	return map_set(map, key, line);
-}
-
-int i3bar_read(int fd, size_t count, struct map *map)
-{
-	return line_read(fd, count, i3bar_line_cb, map);
-}
-
-static int i3bar_dump_key(const char *key, const char *value, void *data)
-{
-	unsigned int index = i3bar_indexof(key);
-	bool string = i3bar_keys[index].string;
-	char buf[BUFSIZ];
-	bool escape;
 	int err;
 
-	/* Skip unknown keys */
-	if (!index)
-		return 0;
+	err = i3bar_click(bar);
+	if (err)
+		bar_error(bar, "failed to read bar");
+}
 
-	if (!value)
-		value = "null";
+static void bar_print(struct bar *bar)
+{
+	int err;
 
-	if (string) {
-		if (json_is_string(value))
-			escape = false; /* Expected string already quoted */
-		else
-			escape = true; /* Enforce the string type */
-	} else {
-		if (json_is_valid(value))
-			escape = false; /* Already valid JSON */
-		else
-			escape = true; /* Unquoted string */
-	}
+	err = i3bar_print(bar);
+	if (err)
+		fatal("failed to print bar!");
+}
 
-	if (escape) {
-		err = json_escape(value, buf, sizeof(buf));
-		if (err)
-			return err;
+static int bar_start(struct bar *bar)
+{
+	int err;
 
-		value = buf;
-	}
+	err = i3bar_start(bar);
+	if (err)
+		return err;
 
-	fprintf(stdout, ",\"%s\":%s", key, value);
+	debug("bar started");
 
 	return 0;
 }
 
-static void i3bar_dump_block(struct block *block)
+static void bar_stop(struct bar *bar)
 {
-	fprintf(stdout, ",{\"\":\"\"");
-	block_for_each(block, i3bar_dump_key, NULL);
-	fprintf(stdout, "}");
+	i3bar_stop(bar);
+
+	debug("bar stopped");
 }
 
-static void i3bar_dump(struct bar *bar)
-{
-	struct block *block = bar->blocks;
-
-	fprintf(stdout, ",[{\"full_text\":\"\"}");
-
-	while (block) {
-		/* full_text is the only mandatory key */
-		if (block_get(block, "full_text"))
-			i3bar_dump_block(block);
-		else
-			block_debug(block, "no text to display, skipping");
-
-		block = block->next;
-	}
-
-	fprintf(stdout, "]\n");
-	fflush(stdout);
-}
-
-static void term_save_cursor(void)
-{
-	fprintf(stdout, "\033[s\033[?25l");
-}
-
-static void term_restore_cursor(void)
-{
-	fprintf(stdout, "\033[u\033[K");
-}
-
-static void term_reset_cursor(void)
-{
-	fprintf(stdout, "\033[?25h");
-}
-
-static void term_start(struct bar *bar)
-{
-	term_save_cursor();
-	term_restore_cursor();
-}
-
-static void term_stop(struct bar *bar)
-{
-	term_reset_cursor();
-}
-
-static void term_dump(struct bar *bar)
+static void bar_poll_timed(struct bar *bar)
 {
 	struct block *block = bar->blocks;
 
-	term_restore_cursor();
-
 	while (block) {
-		const char *full_text = block_get(block, "full_text");
-
-		if (full_text)
-    			fprintf(stdout, "%s ", full_text);
+		/* spawn unless it is only meant for click or signal */
+		if (block->interval != 0) {
+			block_spawn(block);
+			block_touch(block);
+		}
 
 		block = block->next;
 	}
-
-	fflush(stdout);
 }
 
-static void bar_freeze(struct bar *bar)
+static void bar_poll_expired(struct bar *bar)
 {
-	bar->frozen = true;
-}
-
-static bool bar_unfreeze(struct bar *bar)
-{
-	if (bar->frozen) {
-		bar->frozen = false;
-		return true;
-	}
-
-	return false;
-}
-
-static bool bar_frozen(struct bar *bar)
-{
-	return bar->frozen;
-}
-
-static void i3bar_log(int lvl, const char *fmt, ...)
-{
-	const char *color, *urgent, *prefix;
-	struct bar *bar = log_data;
-	char buf[BUFSIZ];
-	va_list ap;
-
-	/* Ignore messages above defined log level and errors */
-	if (log_level < lvl || lvl > LOG_ERROR)
-		return;
-
-	switch (lvl) {
-	case LOG_FATAL:
-		prefix = "Fatal! ";
-		color = "#FF0000";
-		urgent = "true";
-		break;
-	case LOG_ERROR:
-		prefix = "Error: ";
-		color = "#FF8000";
-		urgent = "true";
-		break;
-	default:
-		prefix = "";
-		color = "#FFFFFF";
-		urgent = "true";
-		break;
-	}
-
-	va_start(ap, fmt);
-	vsnprintf(buf, sizeof(buf), fmt, ap);
-	va_end(ap);
-
-	/* TODO json escape text */
-	fprintf(stdout, ",[{");
-	fprintf(stdout, "\"full_text\":\"%s%s. Increase log level and/or check stderr for details.\"", prefix, buf);
-	fprintf(stdout, ",");
-	fprintf(stdout, "\"short_text\":\"%s%s\"", prefix, buf);
-	fprintf(stdout, ",");
-	fprintf(stdout, "\"urgent\":\"%s\"", urgent);
-	fprintf(stdout, ",");
-	fprintf(stdout, "\"color\":\"%s\"", color);
-	fprintf(stdout, "}]\n");
-	fflush(stdout);
-
-	bar_freeze(bar);
-}
-
-static void i3bar_start(struct bar *bar)
-{
-	fprintf(stdout, "{\"version\":1,\"click_events\":true}\n[[]\n");
-	fflush(stdout);
-
-	/* From now on the bar can handle log messages */
-	log_data = bar;
-	log_handle = i3bar_log;
-}
-
-static void i3bar_stop(struct bar *bar)
-{
-	/* From now on the bar can handle log messages */
-	log_handle = NULL;
-	log_data = NULL;
-
-	fprintf(stdout, "]\n");
-	fflush(stdout);
-}
-
-static struct block *bar_find(struct bar *bar, const struct map *map)
-{
-	const char *block_name, *block_instance;
-	const char *map_name, *map_instance;
 	struct block *block = bar->blocks;
 
-	/* "name" and "instance" are the only identifiers provided by i3bar */
-	map_name = map_get(map, "name") ? : "";
-	map_instance = map_get(map, "instance") ? : "";
-
 	while (block) {
-		block_name = block_get(block, "name") ? : "";
-		block_instance = block_get(block, "instance") ? : "";
+		if (block->interval > 0) {
+			const unsigned long next_update = block->timestamp + block->interval;
+			unsigned long now;
+			int err;
 
-		if (strcmp(block_name, map_name) == 0 &&
-		    strcmp(block_instance, map_instance) == 0)
-			return block;
+			err = sys_gettime(&now);
+			if (err)
+				return;
+
+			if (((long) (next_update - now)) <= 0) {
+				block_debug(block, "expired");
+				block_spawn(block);
+				block_touch(block);
+			}
+		}
 
 		block = block->next;
 	}
-
-	return NULL;
 }
 
-static int bar_click_copy_cb(const char *key, const char *value, void *data)
+static void bar_poll_signaled(struct bar *bar, int sig)
 {
-	return block_set(data, key, value);
+	struct block *block = bar->blocks;
+
+	while (block) {
+		if (block->signal == sig) {
+			block_debug(block, "signaled");
+			block_spawn(block);
+			block_touch(block);
+		}
+
+		block = block->next;
+	}
 }
 
-int bar_click(struct bar *bar)
+static void bar_poll_exited(struct bar *bar)
 {
 	struct block *block;
-	struct map *click;
+	pid_t pid;
 	int err;
 
-	if (bar_unfreeze(bar))
-		bar_dump(bar);
-
-	click = map_create();
-	if (!click)
-		return -ENOMEM;
-
 	for (;;) {
-		/* Each click is one JSON object per line */
-		err = json_read(STDIN_FILENO, 1, click);
-		if (err) {
-			if (err == -EAGAIN)
-				err = 0;
+		err = sys_waitid(&pid);
+		if (err)
+			break;
 
+		/* Find the dead process */
+		block = bar->blocks;
+		while (block) {
+			if (block->pid == pid)
+				break;
+
+			block = block->next;
+		}
+
+		if (block) {
+			block_debug(block, "exited");
+			block_reap(block);
+			if (block->interval == INTERVAL_PERSIST) {
+				block_debug(block, "unexpected exit?");
+			} else {
+				block_update(block);
+			}
+			block_close(block);
+			if (block->interval == INTERVAL_REPEAT) {
+				block_spawn(block);
+				block_touch(block);
+			}
+		} else {
+			error("unknown child process %d", pid);
+			err = sys_waitpid(pid, NULL);
+			if (err)
+				break;
+		}
+	}
+}
+
+static void bar_poll_readable(struct bar *bar, const int fd)
+{
+	struct block *block = bar->blocks;
+
+	while (block) {
+		if (block->out[0] == fd) {
+			block_debug(block, "readable");
+			block_update(block);
 			break;
 		}
 
-		/* Look for the corresponding block */
-		block = bar_find(bar, click);
-		if (block) {
-			err = map_for_each(click, bar_click_copy_cb, block);
-			if (err)
-				break;
+		block = block->next;
+	}
+}
 
-			err = block_click(block);
-			if (err)
-				break;
+static int gcd(int a, int b)
+{
+	while (b != 0)
+		a %= b, a ^= b, b ^= a, a ^= b;
+
+	return a;
+}
+
+static int bar_setup(struct bar *bar)
+{
+	struct block *block = bar->blocks;
+	sigset_t *set = &bar->sigset;
+	unsigned long sleeptime = 0;
+	int sig;
+	int err;
+
+	while (block) {
+		err = block_setup(block);
+		if (err)
+			return err;
+
+		/* The maximum sleep time is actually the GCD
+		 * between all positive block intervals.
+		 */
+		if (block->interval > 0) {
+			if (sleeptime > 0)
+				sleeptime = gcd(sleeptime, block->interval);
+			else
+				sleeptime = block->interval;
 		}
 
-		map_clear(click);
+		block = block->next;
 	}
 
-	map_destroy(click);
+	err = sys_sigemptyset(set);
+	if (err)
+		return err;
+
+	/* Control signals */
+	err = sys_sigaddset(set, SIGTERM);
+	if (err)
+		return err;
+
+	err = sys_sigaddset(set, SIGINT);
+	if (err)
+		return err;
+
+	/* Timer signal */
+	err = sys_sigaddset(set, SIGALRM);
+	if (err)
+		return err;
+
+	/* Block updates (forks) */
+	err = sys_sigaddset(set, SIGCHLD);
+	if (err)
+		return err;
+
+	/* Deprecated signals */
+	err = sys_sigaddset(set, SIGUSR1);
+	if (err)
+		return err;
+
+	err = sys_sigaddset(set, SIGUSR2);
+	if (err)
+		return err;
+
+	/* Click signal */
+	err = sys_sigaddset(set, SIGIO);
+	if (err)
+		return err;
+
+	/* I/O Possible signal for persistent blocks */
+	err = sys_sigaddset(set, SIGRTMIN);
+	if (err)
+		return err;
+
+	/* Real-time signals for blocks */
+	for (sig = SIGRTMIN + 1; sig <= SIGRTMAX; sig++) {
+		err = sys_sigaddset(set, sig);
+		if (err)
+			return err;
+	}
+
+	/* Block signals for which we are interested in waiting */
+	err = sys_sigsetmask(set);
+	if (err)
+		return err;
+
+	if (sleeptime) {
+		err = sys_setitimer(sleeptime);
+		if (err)
+			return err;
+	}
+
+	err = sys_cloexec(STDIN_FILENO);
+	if (err)
+		return err;
+
+	/* Setup event I/O for stdin (clicks) */
+	err = sys_async(STDIN_FILENO, SIGIO);
+	if (err)
+		return err;
+
+	debug("bar set up");
+
+	return 0;
+}
+
+static void bar_teardown(struct bar *bar)
+{
+	struct block *block = bar->blocks;
+	int err;
+
+	/* Disable event I/O for blocks (persistent) */
+	while (block) {
+		if (block->interval == INTERVAL_PERSIST) {
+			err = sys_async(block->out[0], 0);
+			if (err)
+				block_error(block, "failed to disable event I/O");
+		}
+
+		block = block->next;
+	}
+
+	/* Disable event I/O for stdin (clicks) */
+	err = sys_async(STDIN_FILENO, 0);
+	if (err)
+		error("failed to disable event I/O on stdin");
+
+	/*
+	 * Unblock signals (so subsequent syscall can be interrupted)
+	 * and wait for child processes termination.
+	 */
+	err = sys_sigunblock(&bar->sigset);
+	if (err)
+		error("failed to unblock signals");
+
+	err = sys_waitanychild();
+	if (err)
+		error("failed to wait for any child");
+
+	debug("bar tear down");
+}
+
+static int bar_poll(struct bar *bar)
+{
+	int sig, fd;
+	int err;
+
+	err = bar_setup(bar);
+	if (err)
+		return err;
+
+	/* Initial display (for static blocks and loading labels) */
+	bar_print(bar);
+
+	/* First forks (for commands with an interval) */
+	bar_poll_timed(bar);
+
+	while (1) {
+		err = sys_sigwaitinfo(&bar->sigset, &sig, &fd);
+		if (err) {
+			/* Hiding the bar may interrupt this system call */
+			if (err == -EINTR)
+				continue;
+			break;
+		}
+
+		if (sig == SIGTERM || sig == SIGINT)
+			break;
+
+		if (sig == SIGALRM) {
+			bar_poll_expired(bar);
+			continue;
+		}
+
+		if (sig == SIGCHLD) {
+			bar_poll_exited(bar);
+			bar_print(bar);
+			continue;
+		}
+
+		if (sig == SIGIO) {
+			bar_read(bar);
+			continue;
+		}
+
+		if (sig == SIGRTMIN) {
+			bar_poll_readable(bar, fd);
+			bar_print(bar);
+			continue;
+		}
+
+		if (sig > SIGRTMIN && sig <= SIGRTMAX) {
+			bar_poll_signaled(bar, sig - SIGRTMIN);
+			continue;
+		}
+
+		if (sig == SIGUSR1 || sig == SIGUSR2) {
+			error("SIGUSR{1,2} are deprecated, ignoring.");
+			continue;
+		}
+
+		debug("unhandled signal %d", sig);
+	}
+
+	bar_teardown(bar);
 
 	return err;
 }
 
-void bar_dump(struct bar *bar)
-{
-	if (bar_frozen(bar)) {
-		debug("bar frozen, skipping");
-		return;
-	}
-
-	if (bar->term)
-		term_dump(bar);
-	else
-		i3bar_dump(bar);
-}
-
-static struct block *bar_add_block(struct bar *bar, const struct map *map)
-{
-	struct block *block;
-	int err;
-
-	block = block_create();
-	if (!block)
-		return NULL;
-
-	err = block_setup(block, map);
-	if (err) {
-		block_destroy(block);
-		return NULL;
-	}
-
-	return block;
-}
-
-static int bar_config_cb(struct map *map, void *data)
-{
-	struct bar *bar = data;
-	struct block *block = bar->blocks;
-
-	while (block->next)
-		block = block->next;
-
-	block->next = bar_add_block(bar, map);
-
-	map_destroy(map);
-
-	if (!block->next)
-		return -ENOMEM;
-
-	return 0;
-}
-
-void bar_load(struct bar *bar, const char *path)
-{
-	int err;
-
-	err = config_load(path, bar_config_cb, bar);
-	if (err)
-		fatal("Failed to load bar configuration file");
-}
-
-void bar_schedule(struct bar *bar)
-{
-	int err;
-
-	/* Initial display (for static blocks and loading labels) */
-	bar_dump(bar);
-
-	err = sched_init(bar);
-	if (err)
-		fatal("Failed to initialize scheduler");
-
-	sched_start(bar);
-}
-
-void bar_destroy(struct bar *bar)
+static void bar_destroy(struct bar *bar)
 {
 	struct block *block = bar->blocks;
 	struct block *next;
 
-	if (bar->term)
-		term_stop(bar);
-	else
-		i3bar_stop(bar);
+	bar_stop(bar);
 
 	while (block) {
 		next = block->next;
@@ -453,7 +409,7 @@ void bar_destroy(struct bar *bar)
 	free(bar);
 }
 
-struct bar *bar_create(bool term)
+static struct bar *bar_create(bool term)
 {
 	struct bar *bar;
 	int err;
@@ -462,17 +418,64 @@ struct bar *bar_create(bool term)
 	if (!bar)
 		return NULL;
 
-	bar->blocks = bar_add_block(bar, NULL);
+	bar->blocks = block_create(bar, NULL);
 	if (!bar->blocks) {
-		free(bar);
+		bar_destroy(bar);
 		return NULL;
 	}
 
 	bar->term = term;
-	if (bar->term)
-    		term_start(bar);
-	else
-		i3bar_start(bar);
+
+	err = bar_start(bar);
+	if (err) {
+		bar_destroy(bar);
+		return NULL;
+	}
 
 	return bar;
+}
+
+static int bar_config_cb(struct map *map, void *data)
+{
+	struct bar *bar = data;
+	struct block *block = bar->blocks;
+
+	while (block->next)
+		block = block->next;
+
+	block->next = block_create(bar, map);
+
+	map_destroy(map);
+
+	if (!block->next)
+		return -ENOMEM;
+
+	return 0;
+}
+
+static void bar_load(struct bar *bar, const char *path)
+{
+	int err;
+
+	err = config_load(path, bar_config_cb, bar);
+	if (err)
+		bar_fatal(bar, "Failed to load configuration file %s", path);
+}
+
+int bar_init(bool term, const char *path)
+{
+	struct bar *bar;
+	int err;
+
+	bar = bar_create(term);
+	if (!bar)
+		return -ENOMEM;
+
+	bar_load(bar, path);
+
+	err = bar_poll(bar);
+
+	bar_destroy(bar);
+
+	return err;
 }
