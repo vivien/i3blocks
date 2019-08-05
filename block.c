@@ -60,6 +60,8 @@ static int block_setenv(const char *name, const char *value, void *data)
 {
 	int err;
 
+	(void)data;
+
 	if (!value)
 		value = "";
 
@@ -182,7 +184,6 @@ static int block_send_json(struct block *block)
 static int block_send(struct block *block)
 {
 	const char *button = block_get(block, "button");
-	int err;
 
 	if (!button) {
 		block_error(block, "no click data to send");
@@ -217,6 +218,8 @@ void block_touch(struct block *block)
 	unsigned long now;
 	int err;
 
+	(void)block;
+
 	err = sys_gettime(&now);
 	if (err) {
 		block_error(block, "failed to touch block");
@@ -235,6 +238,8 @@ static int block_child_sig(struct block *block)
 {
 	sigset_t set;
 	int err;
+
+	(void)block;
 
 	/* It'd be safe to assume that all signals are unblocked by default */
 	err = sys_sigfillset(&set);
@@ -482,7 +487,6 @@ int block_reap(struct block *block)
 static int i3blocks_setup(struct block *block)
 {
 	const char *value;
-	int err;
 
 	value = map_get(block->config, "command");
 	if (value && *value != '\0')
@@ -584,7 +588,7 @@ void block_printf(struct block *block, int lvl, const char *fmt, ...)
 	va_list ap;
 	int err;
 
-	if (lvl > log_level)
+	if (lvl > (int)log_level)
 		return;
 
 	va_start(ap, fmt);

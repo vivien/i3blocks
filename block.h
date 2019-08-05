@@ -50,7 +50,7 @@ struct block {
 	/* Shortcuts */
 	const char *command;
 	int interval;
-	unsigned signal;
+	int signal;
 	unsigned format;
 
 	/* Runtime info */

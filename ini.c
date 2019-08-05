@@ -47,6 +47,8 @@ static int ini_property(struct ini *ini, char *key, char *value)
 
 static int ini_parse_line(char *line, size_t num, void *data)
 {
+	(void)num;
+
 	/* comment or empty line? */
 	if (*line == '\0' || *line == '#')
 		return 0;
