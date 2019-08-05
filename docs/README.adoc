@@ -330,7 +330,7 @@ min_width=Button=? x=? y=?
 command=echo "Button=$button x=$x y=$y"
 ----
 
-If the value of the block's interval is _persist_, then the data is written of the command standard input, one line per click.
+If the value of the block's interval is _persist_, then the data is written on the command standard input, one line per click.
 What gets written depends on the block's format.
 The raw format only gets the click button.
 The JSON format gets all block variables.
