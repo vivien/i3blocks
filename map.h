@@ -16,8 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _MAP_H
-#define _MAP_H
+#ifndef MAP_H
+#define MAP_H
 
 struct map;
 
@@ -34,4 +34,4 @@ const char *map_get(const struct map *map, const char *key);
 typedef int map_func_t(const char *key, const char *value, void *data);
 int map_for_each(const struct map *map, map_func_t *func, void *data);
 
-#endif /* _MAP_H */
+#endif /* MAP_H */

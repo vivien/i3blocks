@@ -16,8 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _BAR_H
-#define _BAR_H
+#ifndef BAR_H
+#define BAR_H
 
 #include <stdbool.h>
 
@@ -70,4 +70,4 @@ int i3bar_setup(struct block *block);
 int i3bar_start(struct bar *bar);
 void i3bar_stop(struct bar *bar);
 
-#endif /* _BAR_H */
+#endif /* BAR_H */

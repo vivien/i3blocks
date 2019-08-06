@@ -16,8 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _BLOCK_H
-#define _BLOCK_H
+#ifndef BLOCK_H
+#define BLOCK_H
 
 #include <sys/types.h>
 
@@ -109,4 +109,4 @@ int block_reap(struct block *block);
 int block_update(struct block *block);
 void block_close(struct block *block);
 
-#endif /* _BLOCK_H */
+#endif /* BLOCK_H */

@@ -16,8 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _LOG_H
-#define _LOG_H
+#ifndef LOG_H
+#define LOG_H
 
 #include <errno.h>
 #include <stdarg.h>
@@ -60,4 +60,4 @@ static inline void log_printf(int lvl, const char *fmt, ...)
 	log_printf(LOG_DEBUG, SYSLOG_DEBUG "%s:%s:%d: " fmt "\n", \
 		   __FILE__, __func__, __LINE__, ##__VA_ARGS__)
 
-#endif /* _LOG_H */
+#endif /* LOG_H */
