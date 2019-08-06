@@ -16,8 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _JSON_H
-#define _JSON_H
+#ifndef JSON_H
+#define JSON_H
 
 #include <stdbool.h>
 
@@ -29,5 +29,5 @@ bool json_is_string(const char *str);
 bool json_is_valid(const char *str);
 int json_escape(const char *str, char *buf, size_t size);
 
-#endif /* _JSON_H */
+#endif /* JSON_H */
 

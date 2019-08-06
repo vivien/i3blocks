@@ -16,8 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _SYS_H
-#define _SYS_H
+#ifndef SYS_H
+#define SYS_H
 
 #include <libgen.h> /* for dirname(3) */
 #include <signal.h>
@@ -56,4 +56,4 @@ int sys_execsh(const char *command);
 
 int sys_isatty(int fd);
 
-#endif /* _SYS_H */
+#endif /* SYS_H */

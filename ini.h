@@ -16,12 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _INI_H
-#define _INI_H
+#ifndef INI_H
+#define INI_H
 
 typedef int ini_sec_cb_t(char *section, void *data);
 typedef int ini_prop_cb_t(char *key, char *value, void *data);
 int ini_read(int fd, size_t count, ini_sec_cb_t *sec_cb, ini_prop_cb_t *prop_cb,
 	     void *data);
 
-#endif /* _INI_H */
+#endif /* INI_H */

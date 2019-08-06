@@ -16,8 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _TERM_H
-#define _TERM_H
+#ifndef TERM_H
+#define TERM_H
 
 #include <stdio.h>
 
@@ -36,4 +36,4 @@ static inline void term_reset_cursor(void)
 	fprintf(stdout, "\033[?25h");
 }
 
-#endif /* _TERM_H */
+#endif /* TERM_H */

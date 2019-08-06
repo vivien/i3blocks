@@ -16,12 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _CONFIG_H
-#define _CONFIG_H
+#ifndef CONFIG_H
+#define CONFIG_H
 
 #include "map.h"
 
 typedef int config_cb_t(struct map *map, void *data);
 int config_load(const char *path, config_cb_t *cb, void *data);
 
-#endif /* _CONFIG_H */
+#endif /* CONFIG_H */
