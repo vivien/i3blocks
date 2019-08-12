@@ -27,6 +27,9 @@ i3blocks_SOURCES = \
 dist_man1_MANS = \
 	docs/i3blocks.1
 
+dist_sysconf_DATA = \
+	i3blocks.conf
+
 if ENABLE_BASH_COMPLETION
 bashcompletiondir = $(BASH_COMPLETION_DIR)
 bashcompletion_DATA = bash-completion
