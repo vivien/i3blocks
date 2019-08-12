@@ -24,6 +24,9 @@ i3blocks_SOURCES = \
 	sys.h \
 	term.h
 
+dist_man1_MANS = \
+	docs/i3blocks.1
+
 if ENABLE_BASH_COMPLETION
 bashcompletiondir = $(BASH_COMPLETION_DIR)
 bashcompletion_DATA = bash-completion
