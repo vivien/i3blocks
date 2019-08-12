@@ -446,14 +446,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li><a href="#_synopsis">SYNOPSIS</a></li>
 <li><a href="#_description">DESCRIPTION</a></li>
 <li><a href="#_options">OPTIONS</a></li>
-<li><a href="#_configuration">CONFIGURATION</a>
-<ul class="sectlevel2">
-<li><a href="#_command">command</a></li>
-<li><a href="#_interval">interval</a></li>
-<li><a href="#_signal">signal</a></li>
-<li><a href="#_format">format</a></li>
-</ul>
-</li>
+<li><a href="#_configuration">CONFIGURATION</a></li>
 <li><a href="#_see_also">SEE ALSO</a></li>
 <li><a href="#_authors">AUTHORS</a></li>
 <li><a href="#_resources">RESOURCES</a></li>
@@ -545,89 +538,7 @@ Using <strong>-vv</strong> and more will show more debug output on standard erro
 </ol>
 </div>
 <div class="paragraph">
-<p>The configuration file uses a simplified INI format.
-Each section describes a new block to be displayed in the status bar.
-A line beginning with a <em>#</em> sign is a comment, and empty lines are ignored.
-A property is one <em>key=value</em> pair per line, without spaces surrounding the equal sign.
-Properties declared outside a block (i.e. at the beginning of the file) describe global settings and are merged into every block definitions.</p>
-</div>
-<div class="paragraph">
-<p>You must refer to <a href="http://i3wm.org/docs/i3bar-protocol.html" class="bare">http://i3wm.org/docs/i3bar-protocol.html</a> to know what properties are understood by i3bar(1).</p>
-</div>
-<div class="paragraph">
-<p>The following properties are interpreted by <strong>i3blocks</strong> to describe how the optional command must be scheduled.</p>
-</div>
-<div class="sect2">
-<h3 id="_command">command</h3>
-<div class="paragraph">
-<p>The command line to be invoked with <code>sh -c</code>.</p>
-</div>
-<div class="paragraph">
-<p>It can be relative to the configuration file where it is defined.</p>
-</div>
-<div class="paragraph">
-<p>Data read from the standard output of the command is used to update the block properties.
-Data is interpreted depending of the specified <em>format</em>.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_interval">interval</h3>
-<div class="paragraph">
-<p>If it is a positive integer, then the block is spawned on startup and the value is used as a time interval in seconds to schedule future updates.
-If undefined or 0, the block won&#8217;t be executed on startup (which is useful to simulate buttons).</p>
-</div>
-<div class="paragraph">
-<p>If <em>once</em> (or <em>-1</em>), the block will be scheduled only on startup (note that a click or signal will still trigger an update).</p>
-</div>
-<div class="paragraph">
-<p>If <em>repeat</em> (or <em>-2</em>), the block will be scheduled on startup, and as soon as it terminates (useful to repeat blocking commands).</p>
-</div>
-<div class="paragraph">
-<p>If <em>persist</em> (or <em>-3</em>), the block will be scheduled only on startup, and updated as soon as it outputs a line.
-Updates are thus limited to single lines.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_signal">signal</h3>
-<div class="paragraph">
-<p>The signal number used to update the block.
-All the real-time (think prioritized and queueable) signals are available to the user.
-The number is valid between <em>1</em> and <em>N</em>, where <em>SIGRTMIN+N=SIGRTMAX</em>.
-(Note that there are 31 real-time signals in Linux.)
-For instance, <em>signal=10</em> means that this block will be updated when <strong>i3blocks</strong> receives the <em>SIGRTMIN+10</em> signal.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_format">format</h3>
-<div class="paragraph">
-<p>This property specifies the format of the output text.</p>
-</div>
-<div class="paragraph">
-<p>When undefined, the raw format is assumed.
-In this format, each non-empty line of the output is used to update an i3bar key, in the order of definition found in the i3bar protocol:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p><em>full_text</em></p>
-</li>
-<li>
-<p><em>short_text</em></p>
-</li>
-<li>
-<p><em>color</em></p>
-</li>
-<li>
-<p><em>background</em></p>
-</li>
-</ol>
-</div>
-<div class="paragraph">
-<p>Excess lines are considered an error.</p>
-</div>
-<div class="paragraph">
-<p>If <em>json</em> (or <em>1</em>) is used, the block output is read as a JSON object and will be merged into the block properties.</p>
-</div>
+<p>For the content of the configuration file, please refer to the i3blocks website: <a href="https://vivien.github.io/i3blocks" class="bare">https://vivien.github.io/i3blocks</a></p>
 </div>
 </div>
 </div>

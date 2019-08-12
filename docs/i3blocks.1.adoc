@@ -48,60 +48,7 @@ By default, {progname} looks for a configuration file in the following order (no
 . _$XDG_CONFIG_DIRS/i3blocks/config_ (or _/etc/xdg/i3blocks/config_)
 . _/etc/i3blocks.conf_
 
-The configuration file uses a simplified INI format.
-Each section describes a new block to be displayed in the status bar.
-A line beginning with a _#_ sign is a comment, and empty lines are ignored.
-A property is one _key=value_ pair per line, without spaces surrounding the equal sign.
-Properties declared outside a block (i.e. at the beginning of the file) describe global settings and are merged into every block definitions.
-
-You must refer to http://i3wm.org/docs/i3bar-protocol.html to know what properties are understood by i3bar(1).
-
-The following properties are interpreted by **{progname}** to describe how the optional command must be scheduled.
-
-=== command
-
-The command line to be invoked with `sh -c`.
-
-It can be relative to the configuration file where it is defined.
-
-Data read from the standard output of the command is used to update the block properties.
-Data is interpreted depending of the specified _format_.
-
-=== interval
-
-If it is a positive integer, then the block is spawned on startup and the value is used as a time interval in seconds to schedule future updates.
-If undefined or 0, the block won't be executed on startup (which is useful to simulate buttons).
-
-If _once_ (or _-1_), the block will be scheduled only on startup (note that a click or signal will still trigger an update).
-
-If _repeat_ (or _-2_), the block will be scheduled on startup, and as soon as it terminates (useful to repeat blocking commands).
-
-If _persist_ (or _-3_), the block will be scheduled only on startup, and updated as soon as it outputs a line.
-Updates are thus limited to single lines.
-
-=== signal
-
-The signal number used to update the block.
-All the real-time (think prioritized and queueable) signals are available to the user.
-The number is valid between _1_ and _N_, where _SIGRTMIN+N=SIGRTMAX_.
-(Note that there are 31 real-time signals in Linux.)
-For instance, _signal=10_ means that this block will be updated when **{progname}** receives the _SIGRTMIN+10_ signal.
-
-=== format
-
-This property specifies the format of the output text.
-
-When undefined, the raw format is assumed.
-In this format, each non-empty line of the output is used to update an i3bar key, in the order of definition found in the i3bar protocol:
-
-. _full_text_
-. _short_text_
-. _color_
-. _background_
-
-Excess lines are considered an error.
-
-If _json_ (or _1_) is used, the block output is read as a JSON object and will be merged into the block properties.
+For the content of the configuration file, please refer to the i3blocks website: https://vivien.github.io/i3blocks
 
 == SEE ALSO
 
