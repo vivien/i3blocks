@@ -3,7 +3,7 @@
 
 = {progname}
 
-A minimalist scheduler for your status line scripts
+A feed generator for text based status bars
 
 {progname} executes your command lines and generates a status line from their output.
 Commands are scheduled at configured time intervals, upon signal reception or on clicks.

@@ -4,7 +4,7 @@
 
 == NAME
 
-{progname} - A minimalist scheduler for your status line scripts
+{progname} - A feed generator for text based status bars
 
 == SYNOPSIS
 
