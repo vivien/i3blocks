@@ -74,7 +74,9 @@ bar {
 }
 ----
 
-For the lazy, you can start from link:https://github.com/vivien/i3blocks-contrib[our collection of scripts], if you did not install {progname} via your package manager:
+IMPORTANT: The project's repository does not include default scripts anymore.
+
+For the lazy, you can start from link:https://github.com/vivien/i3blocks-contrib[our collection of scripts]:
 
 [source]
 ----
