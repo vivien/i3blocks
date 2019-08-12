@@ -773,7 +773,19 @@ interval=once</code></pre>
 </div>
 <div class="paragraph">
 <p>The interval value <em>repeat</em> (or <em>-2</em>) will respawn the command as soon as it terminates.
-This is useful for blocking programs which exit when the awaited event arises.</p>
+This is convenient for blocking programs which exit as soon as the awaited event arises.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+clicks are not supported with this value, since such commands are unlikely to expect data on their standard input.
+</td>
+</tr>
+</table>
 </div>
 <div class="listingblock">
 <div class="content">

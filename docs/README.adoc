@@ -218,7 +218,9 @@ interval=once
 ----
 
 The interval value _repeat_ (or _-2_) will respawn the command as soon as it terminates.
-This is useful for blocking programs which exit when the awaited event arises.
+This is convenient for blocking programs which exit as soon as the awaited event arises.
+
+NOTE: clicks are not supported with this value, since such commands are unlikely to expect data on their standard input.
 
 [source,ini]
 ----
