@@ -471,7 +471,11 @@ interval=5
 == Debugging
 
 The log level can be increased with the `-v` option.
-For a complete log, it can be interesting to redirect the standard output and error streams like this:
+
+If your window manager (and thus this program) is run via systemd, you can inspect the program outputs with `journalctl -t <identifier> -f`.
+You may also use this in conjonction with running the program manually with `systemd-cat -t <identifier> ./i3blocks`.
+
+Alternatively you can redirect the standard output and error streams from the program invokation with:
 
 [source]
 ----

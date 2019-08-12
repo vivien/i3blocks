@@ -1107,8 +1107,14 @@ interval=5</code></pre>
 <h2 id="_debugging">Debugging</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The log level can be increased with the <code>-v</code> option.
-For a complete log, it can be interesting to redirect the standard output and error streams like this:</p>
+<p>The log level can be increased with the <code>-v</code> option.</p>
+</div>
+<div class="paragraph">
+<p>If your window manager (and thus this program) is run via systemd, you can inspect the program outputs with <code>journalctl -t &lt;identifier&gt; -f</code>.
+You may also use this in conjonction with running the program manually with <code>systemd-cat -t &lt;identifier&gt; ./i3blocks</code>.</p>
+</div>
+<div class="paragraph">
+<p>Alternatively you can redirect the standard output and error streams from the program invokation with:</p>
 </div>
 <div class="listingblock">
 <div class="content">
