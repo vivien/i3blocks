@@ -1,3 +1,6 @@
+DEFS += \
+	-DSYSCONFDIR=\"$(sysconfdir)\"
+
 bin_PROGRAMS = i3blocks
 i3blocks_SOURCES = \
 	bar.c \
