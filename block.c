@@ -114,7 +114,7 @@ static int block_stdout(struct block *block)
 	label = block_get(block, "label");
 	full_text = block_get(block, "full_text");
 	if (label && full_text) {
-		snprintf(buf, sizeof(buf), "%s%s", label, full_text);
+		snprintf(buf, sizeof(buf), "%s %s", label, full_text);
 		err = block_set(block, "full_text", buf);
 		if (err)
 			return err;
