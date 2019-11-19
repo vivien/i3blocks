@@ -23,6 +23,7 @@
 #include "log.h"
 #include "map.h"
 #include "term.h"
+#include <stdlib.h>
 
 /* See https://i3wm.org/docs/i3bar-protocol.html for details */
 
@@ -148,6 +149,78 @@ static int i3bar_print_pair(const char *key, const char *value, void *data)
 	return 0;
 }
 
+static const char* i3bar_get_value_by_ref(const char *value, struct block *block)
+{
+	if(value == NULL || block == NULL)
+		return NULL;
+
+	if(value[0] == '#')	// color
+	{
+		return value;
+	}
+	if(value[0] == '&')	// reference
+	{
+		const char *ref = map_get(block->env, value + 1);
+		if(ref != NULL)
+		{
+			// reccursive reference lookup
+			return i3bar_get_value_by_ref(ref, block);
+		}
+		else
+		{
+			block_debug(block, "Cannot found reference %s.", value);
+			return value;
+		}
+	}
+
+	return value;
+}
+
+static int i3bar_parse_pattern(struct block *block, const char *pattern, char *res)
+{
+	char pattern_copy[BUFSIZ] = {0};
+
+	// TODO: parametrize wia block->conf
+	char delim[] = "%";
+
+	// copy, because strtok modifies input string
+	// TODO: use strdup
+	strcpy(pattern_copy, pattern);
+
+	char *ptr = strtok(pattern_copy, delim);
+	bool token = false;
+	while(ptr != NULL)
+	{
+		if(token)
+		{
+			const char *value = map_get(block->env, ptr);
+			if(value != NULL)
+			{
+				const char *final_value = i3bar_get_value_by_ref(value, block);
+				if(final_value)
+					strcat(res, final_value);
+				else
+				{
+					block_error(block, "Something wrong with %s",  value);	// should not hit there
+					return 2;
+				}
+			}
+			else
+			{
+				block_debug(block, "Key %s is not defined.", ptr);
+				return 1;
+			}
+		}
+		else
+			strcat(res, ptr);
+
+		token = !token;
+		ptr = strtok(NULL, delim);
+	}
+
+	return 0;
+}
+
 static int i3bar_print_block(struct block *block, void *data)
 {
 	const char *full_text = map_get(block->env, "full_text");
@@ -161,12 +234,33 @@ static int i3bar_print_block(struct block *block, void *data)
 		return 0;
 	}
 
+	char *full_text_copy = NULL;
+
+	const char *full_text_pattern = map_get(block->config, "full_text_pattern");
+	if(full_text_pattern)
+	{
+		char buf[BUFSIZ] = {0};
+
+		if(i3bar_parse_pattern(block, full_text_pattern, buf) == 0)
+		{
+			full_text_copy = strdup(full_text);
+			if(full_text_copy != NULL)
+				map_set(block->env, "full_text", buf);
+		}
+	}
+
 	if ((*mcount)++)
 		fprintf(stdout, ",");
 
 	fprintf(stdout, "{");
 	err = map_for_each(block->env, i3bar_print_pair, &pcount);
 	fprintf(stdout, "}");
+
+	if(full_text_copy)
+	{
+		map_set(block->env, "full_text", full_text_copy);
+		free(full_text_copy);
+	}
 
 	return err;
 }
