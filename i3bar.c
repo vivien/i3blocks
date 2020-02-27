@@ -165,7 +165,9 @@ static int i3bar_print_block(struct block *block, void *data)
 		fprintf(stdout, ",");
 
 	fprintf(stdout, "{");
-	err = map_for_each(block->env, i3bar_print_pair, &pcount);
+	if (!block->bar->hidden) {
+		err = map_for_each(block->env, i3bar_print_pair, &pcount);
+	}
 	fprintf(stdout, "}");
 
 	return err;

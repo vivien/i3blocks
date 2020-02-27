@@ -28,6 +28,7 @@ struct bar {
 	struct block *blocks;
 	sigset_t sigset;
 	bool term;
+	bool hidden;
 };
 
 #define bar_printf(bar, lvl, fmt, ...) \

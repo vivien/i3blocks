@@ -182,6 +182,16 @@ static void bar_poll_readable(struct bar *bar, const int fd)
 	}
 }
 
+static void bar_hide(struct bar *bar) {
+	bar->hidden = true;
+	bar_print(bar);
+}
+
+static void bar_unhide(struct bar *bar) {
+	bar->hidden = false;
+	bar_print(bar);
+}
+
 static int gcd(int a, int b)
 {
 	while (b != 0)
@@ -239,7 +249,7 @@ static int bar_setup(struct bar *bar)
 	if (err)
 		return err;
 
-	/* Deprecated signals */
+	/* Hide/unhide */
 	err = sys_sigaddset(set, SIGUSR1);
 	if (err)
 		return err;
@@ -380,9 +390,12 @@ static int bar_poll(struct bar *bar)
 			continue;
 		}
 
-		if (sig == SIGUSR1 || sig == SIGUSR2) {
-			error("SIGUSR{1,2} are deprecated, ignoring.");
-			continue;
+		if (sig == SIGUSR1) {
+			bar_hide(bar);
+		}
+
+		if (sig == SIGUSR2) {
+			bar_unhide(bar);
 		}
 
 		debug("unhandled signal %d", sig);
