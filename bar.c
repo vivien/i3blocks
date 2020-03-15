@@ -392,10 +392,12 @@ static int bar_poll(struct bar *bar)
 
 		if (sig == SIGUSR1) {
 			bar_hide(bar);
+			continue;
 		}
 
 		if (sig == SIGUSR2) {
 			bar_unhide(bar);
+			continue;
 		}
 
 		debug("unhandled signal %d", sig);
