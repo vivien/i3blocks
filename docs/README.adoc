@@ -71,6 +71,7 @@ In your i3 configuration file, define {progname} as the link:https://i3wm.org/do
 ----
 bar {
   status_command i3blocks
+  # status_command SCRIPT_DIR=/path/to/clonned/dir i3blocks
 }
 ----
 
@@ -84,6 +85,8 @@ git clone https://github.com/vivien/i3blocks-contrib ~/.config/i3blocks
 cd !$
 cp config.example config
 ----
+
+IMPORTANT: Do change your status_command with `SCRIPT_DIR=/path/to/clonned/dir` prefix to i3blocks. See example config and note https://github.com/vivien/i3blocks-contrib/wiki/FAQ#blocklets-refer-to-script_dir-what-does-that-mean-how-can-i-use-it[SCRIPT_DIR env variable].
 
 For the picky, you can start a configuration file in one of the following preferred paths:
 
