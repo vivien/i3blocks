@@ -117,7 +117,7 @@ baz=qux
 quux= quuz
 ----
 
-In this example, _block2_ contains a _foo_ property equal to _"bar"_ and a _quux_ property equal to _" quuz"_ (including the leading space).
+In this example, _block2_ contains a _foo_ property equal to _"bar"_ and a _quux_ property equal to _" quuz"_ (including the leading space).
 Everything after the equal sign will be part of the value, thus inline comments won't be stripped out.
 
 At runtime, these properties are simply variables, that are passed along to the status bar program when printing is necessary.
