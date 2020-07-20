@@ -1,3 +1,5 @@
+![Subreddit subscribers](https://img.shields.io/reddit/subreddit-subscribers/i3blocks?style=for-the-badge)
+
 :progname: i3blocks
 :toc:
 
