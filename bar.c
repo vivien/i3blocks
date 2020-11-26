@@ -435,10 +435,34 @@ static struct bar *bar_create(bool term)
 	return bar;
 }
 
+static int bar_check_block_enabled(const char* command)
+{
+  int result;
+
+  result = system(command);
+
+  if (result == 0)
+  {
+    return 1;
+  }
+
+  return 0;
+}
+
 static int bar_config_cb(struct map *map, void *data)
 {
 	struct bar *bar = data;
 	struct block *block = bar->blocks;
+
+  const char* enableif_command = map_get(map, "enableif");
+  if (enableif_command)
+  {
+    if (!bar_check_block_enabled(enableif_command))
+    {
+      map_destroy(map);
+      return 0;
+    }
+  }
 
 	while (block->next)
 		block = block->next;
