@@ -105,6 +105,26 @@ static void i3bar_print_term(const struct bar *bar)
 	fflush(stdout);
 }
 
+void amp_escape(const char *value, char *buf, size_t size)
+{
+	int i, k = 0;
+	for(i = 0; value[i] != '\0'; )
+	{
+		buf[k] = value[i];
+
+		if(value[i] == '&')
+		{
+			buf[++k] = 'a';
+			buf[++k] = 'm';
+			buf[++k] = 'p';
+			buf[++k] = ';';
+		}
+
+		++i; ++k;
+	}
+	buf[k] = 0;
+}
+
 static int i3bar_print_pair(const char *key, const char *value, void *data)
 {
 	unsigned int index = i3bar_indexof(key);
@@ -143,6 +163,14 @@ static int i3bar_print_pair(const char *key, const char *value, void *data)
 
 	if ((*pcount)++)
 		fprintf(stdout, ",");
+
+	// escape [& -> &amp;]
+	if(strncmp(key, "full_text", strlen(key)) == 0 && strchr(value, '&') != NULL)
+	{
+		static char buf1[BUFSIZ]={0};
+		amp_escape(value, buf1, sizeof(buf1));
+		value = buf1;
+	}
 
 	fprintf(stdout, "\"%s\":%s", key, value);
 
@@ -187,13 +215,13 @@ static int i3bar_parse_pattern(struct block *block, const char *pattern, char *r
 	// TODO: use strdup
 	strcpy(pattern_copy, pattern);
 
-	char *ptr = strtok(pattern_copy, delim);
+	char *key = strtok(pattern_copy, delim);
 	bool token = false;
-	while(ptr != NULL)
+	while(key != NULL)
 	{
 		if(token)
 		{
-			const char *value = map_get(block->env, ptr);
+			const char *value = map_get(block->env, key);
 			if(value != NULL)
 			{
 				const char *final_value = i3bar_get_value_by_ref(value, block);
@@ -207,15 +235,15 @@ static int i3bar_parse_pattern(struct block *block, const char *pattern, char *r
 			}
 			else
 			{
-				block_debug(block, "Key %s is not defined.", ptr);
+				block_debug(block, "Key %s is not defined.", key);
 				return 1;
 			}
 		}
 		else
-			strcat(res, ptr);
+			strcat(res, key);
 
 		token = !token;
-		ptr = strtok(NULL, delim);
+		key = strtok(NULL, delim);
 	}
 
 	return 0;
