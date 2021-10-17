@@ -234,11 +234,15 @@ static int block_child_sig(struct block *block)
 {
 	sigset_t set;
 	int err;
+	unsigned int i;
 
 	/* It'd be safe to assume that all signals are unblocked by default */
 	err = sys_sigfillset(&set);
 	if (err)
 		return err;
+
+	for (i = 0; i <= SIGRTMAX - SIGRTMIN; i++)
+		sys_sigdelset(&set, SIGRTMIN + i);
 
 	return sys_sigunblock(&set);
 }
