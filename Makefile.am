@@ -34,7 +34,7 @@ if ENABLE_BASH_COMPLETION
 bashcompletiondir = $(BASH_COMPLETION_DIR)
 bashcompletion_DATA = bash-completion
 
-install-data-local:
+install-data-local: install-bashcompletionDATA
 	( cd '$(DESTDIR)$(BASH_COMPLETION_DIR)' && mv bash-completion i3blocks )
 
 uninstall-local:
