@@ -20,10 +20,12 @@
 #define BLOCK_H
 
 #include <sys/types.h>
+#include <stdbool.h>
 
 #include "bar.h"
 #include "log.h"
 #include "map.h"
+#include "ticker.h"
 
 #define INTERVAL_ONCE		-1
 #define INTERVAL_REPEAT		-2
@@ -59,6 +61,8 @@ struct block {
 	int out[2];
 	int code;
 	pid_t pid;
+
+	struct ticker *ticker;
 
 	struct block *next;
 };
@@ -107,6 +111,7 @@ int block_spawn(struct block *block);
 void block_touch(struct block *block);
 int block_reap(struct block *block);
 int block_update(struct block *block);
+void block_set_full_text_saved(struct block *block);
 void block_close(struct block *block);
 
 #endif /* BLOCK_H */

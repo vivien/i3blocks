@@ -63,6 +63,16 @@ make
 make install
 ----
 
+=== Dependencies
+
+Since ticker feature has been introduced, there is only one package (link:https://github.com/JuliaStrings/utf8proc[libutf8proc]) which is need to be installed. On Debian-based systems it can be obtained via apt:
+
+[source]
+----
+sudo apt-get install libutf8proc-dev
+----
+
+
 == Getting started
 
 In your i3 configuration file, define {progname} as the link:https://i3wm.org/docs/userguide.html#status_command[status line command] of a new bar block:
@@ -315,6 +325,43 @@ command=printf '{"full_text":"Counter: %s", "_count":%d}\n' $_count $((_count + 
 format=json
 interval=1
 ----
+
+
+=== ticker
+
+Optional property. Enable or disable ticker feature. Valid values are `true` & `false`.
+This feature only works with the raw format. It will scroll output string char by char with given interval. Offset zeroes if there are changes in the output string.
+Default value is `false`.
+
+[source,ini]
+----
+#Output string differs every minute
+[ticker_test]
+command=echo 'TEST_STRING-'$(date +%M)
+interval=1
+ticker=true
+ticker_interval=2
+----
+
+==== ticker_delimeter
+
+Optional property (use in conjunction with _ticker_). Delimeter character which separates beginning & ending of the output string. If value is set to a string containing multiple characters, only the first character will be used as the delimeter.
+Default value is `|`.
+
+==== ticker_direction
+
+Direction of the ticker. Valid values are `right` (shortcut `r`) & `left` (shortcut `l`).
+Default value is `left`.
+
+==== ticker_chars_limit
+
+Limit of the characters to be displayed if _ticker_ is enabled. `0` or negative values set limit to default value.
+Default value is `16`.
+
+==== ticker_interval
+
+Optional property. Defines interval of time after which the output string is shifted by a single char.
+Default value is `1`.
 
 == Click
 

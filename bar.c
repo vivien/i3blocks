@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 #include "bar.h"
 #include "block.h"
@@ -28,9 +29,9 @@
 #include "line.h"
 #include "log.h"
 #include "map.h"
-#include "sched.h"
 #include "sys.h"
 #include "term.h"
+#include "ticker.h"
 
 static void bar_read(struct bar *bar)
 {
@@ -88,21 +89,34 @@ static void bar_poll_timed(struct bar *bar)
 static void bar_poll_expired(struct bar *bar)
 {
 	struct block *block = bar->blocks;
+	unsigned long now, next_update;
+	int err;
+
+	err = sys_gettime(&now);
+	if (err)
+		return;
 
 	while (block) {
 		if (block->interval > 0) {
-			const unsigned long next_update = block->timestamp + block->interval;
-			unsigned long now;
-			int err;
-
-			err = sys_gettime(&now);
-			if (err)
-				return;
+			next_update = block->timestamp + block->interval;
 
 			if (((long) (next_update - now)) <= 0) {
 				block_debug(block, "expired");
 				block_spawn(block);
 				block_touch(block);
+			}
+		}
+
+		if (block->ticker && block->ticker->interval > 0) {
+			next_update = block->ticker->timestamp + block->ticker->interval;
+
+			if (((long) (next_update - now)) <= 0) {
+				block_debug(block, "ticker expired");
+
+				if (block->interval == 0 || block->interval == INTERVAL_ONCE)
+					block_set_full_text_saved(block);
+
+				bar_print(bar);
 			}
 		}
 
@@ -148,11 +162,12 @@ static void bar_poll_exited(struct bar *bar)
 		if (block) {
 			block_debug(block, "exited");
 			block_reap(block);
-			if (block->interval == INTERVAL_PERSIST) {
+
+			if (block->interval == INTERVAL_PERSIST)
 				block_debug(block, "unexpected exit?");
-			} else {
+			else
 				block_update(block);
-			}
+
 			block_close(block);
 			if (block->interval == INTERVAL_REPEAT) {
 				block_spawn(block);
@@ -212,6 +227,14 @@ static int bar_setup(struct bar *bar)
 			else
 				sleeptime = block->interval;
 		}
+
+		if (block->ticker)
+			if (sleeptime > 0 &&
+					sleeptime > gcd(sleeptime, block->ticker->interval))
+				sleeptime = gcd(sleeptime, block->ticker->interval);
+			else
+				if (block->ticker->interval < block->interval)
+					sleeptime = block->ticker->interval;
 
 		block = block->next;
 	}

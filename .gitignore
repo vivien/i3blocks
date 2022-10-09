@@ -11,4 +11,4 @@ config.status
 configure
 i3blocks-config.h*
 stamp-h1
-
+cscope.out
