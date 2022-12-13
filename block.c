@@ -536,9 +536,12 @@ int block_setup(struct block *block)
 
 void block_destroy(struct block *block)
 {
-	map_destroy(block->config);
-	map_destroy(block->env);
-	free(block->name);
+	if (block->config)
+		map_destroy(block->config);
+	if (block->env)
+		map_destroy(block->env);
+	if (block->name)
+		free(block->name);
 	free(block);
 }
 
