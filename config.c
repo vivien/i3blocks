@@ -20,6 +20,7 @@
 #include <limits.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "config.h"
 #include "ini.h"
@@ -32,120 +33,177 @@
 #endif
 
 struct config {
-	struct map *section;
-	struct map *global;
+	struct map *includes;
+	struct map *defaults;
+	struct map *instance;
 	config_cb_t *cb;
 	void *data;
+	char workdir[PATH_MAX];
 };
 
-static int config_finalize(struct config *conf)
+static int config_include(struct config *conf, const char *path);
+
+static int config_ini_section_cb(char *section, void *data)
 {
+	struct config *conf = data;
 	int err;
 
-	if (conf->section) {
+	/* flush previous section */
+	if (!map_empty(conf->instance)) {
 		if (conf->cb) {
-			err = conf->cb(conf->section, conf->data);
+			err = conf->cb(conf->instance, conf->data);
 			if (err)
 				return err;
 		}
 
-		conf->section = NULL;
+		map_clear(conf->instance);
 	}
 
-	return 0;
+	err = map_copy(conf->instance, conf->defaults);
+	if (err)
+		return err;
+
+	return map_set(conf->instance, "name", section);
 }
 
-static int config_reset(struct config *conf)
+static int config_ini_property_cb(char *key, char *value, void *data)
 {
-	conf->section = map_create();
-	if (!conf->section)
-		return -ENOMEM;
+	struct config *conf = data;
+	char cwd[PATH_MAX];
+	struct map *map;
+	int err;
 
-	if (conf->global)
-		return map_copy(conf->section, conf->global);
+	if (strcmp(key, "include") == 0) {
+		err = config_include(conf, value);
+		if (err == -ENOENT)
+			err = -EINVAL;
 
-	return 0;
-}
+		return err;
+	}
 
-static int config_set(struct config *conf, const char *key, const char *value)
-{
-	struct map *map = conf->section;
+	map = map_empty(conf->instance) ? conf->defaults : conf->instance;
 
-	if (!map) {
-		if (!conf->global) {
-			conf->global = map_create();
-			if (!conf->global)
-				return -ENOMEM;
-		}
-
-		map = conf->global;
+	if (strcmp(key, "command") == 0) {
+		err = map_set(map, "workdir", conf->workdir);
+		if (err)
+			return err;
 	}
 
 	return map_set(map, key, value);
 }
 
-static int config_ini_section_cb(char *section, void *data)
+static int config_include(struct config *conf, const char *path)
 {
-	int err;
-
-	err = config_finalize(data);
-	if (err)
-		return err;
-
-	err = config_reset(data);
-	if (err)
-		return err;
-
-	return config_set(data, "name", section);
-}
-
-static int config_ini_property_cb(char *key, char *value, void *data)
-{
-	return config_set(data, key, value);
-}
-
-static int config_read(struct config *conf, int fd)
-{
-	int err;
-
-	err = ini_read(fd, -1, config_ini_section_cb, config_ini_property_cb,
-		       conf);
-	if (err && err != -EAGAIN)
-		return err;
-
-	return config_finalize(conf);
-}
-
-static int config_open(struct config *conf, const char *path)
-{
-	size_t plen = strlen(path);
-	char pname[plen + 1];
-	char *dname;
+	const char * const home = sys_getenv("HOME");
+	char includepath[PATH_MAX];
+	char basepath[PATH_MAX];
+	char dirpath[PATH_MAX];
+	char cwd[PATH_MAX];
+	char *base;
+	char *dir;
 	int err;
 	int fd;
 
-	debug("try file %s", path);
-
-	err = sys_open(path, &fd);
+	err = sys_getcwd(cwd, sizeof(cwd));
 	if (err)
 		return err;
 
-	strcpy(pname, path);
-	dname = dirname(pname);
-	err = sys_chdir(dname);
+	if (strncmp(path, "~/", 2) == 0 && home)
+		snprintf(includepath, sizeof(includepath), "%s/%s", home, path + 2);
+	else
+		snprintf(includepath, sizeof(includepath), "%s", path);
+
+	strcpy(dirpath, includepath);
+	dir = dirname(dirpath);
+
+	strcpy(basepath, includepath);
+	base = basename(basepath);
+
+	err = sys_chdir(dir);
+	if (err)
+		return err;
+
+	err = sys_getcwd(conf->workdir, sizeof(conf->workdir));
+	if (err)
+		return err;
+
+	snprintf(includepath, sizeof(includepath), "%s/%s", conf->workdir, base);
+
+	if (map_get(conf->includes, includepath)) {
+		error("include loop detected for %s", includepath);
+		return -ELOOP;
+	}
+
+	err = map_set(conf->includes, includepath, includepath);
+	if (err)
+		return err;
+
+	debug("including %s", includepath);
+
+	err = sys_open(base, &fd);
+	if (err)
+		return err;
+
+	err = ini_read(fd, -1, config_ini_section_cb, config_ini_property_cb, conf);
+
+	sys_close(fd);
+
+	if (err && err != -EAGAIN)
+		return err;
+
+	err = map_set(conf->includes, includepath, NULL);
+	if (err)
+		return err;
+
+	err = sys_chdir(cwd);
+	if (err)
+		return err;
+
+	strcpy(conf->workdir, cwd);
+
+	return 0;
+}
+
+static int config_parse(const char *path, config_cb_t *cb, void *data)
+{
+	struct config conf = { 0 };
+	int err;
+
+	conf.cb = cb;
+	conf.data = data;
+
+	conf.includes = map_create();
+	if (!conf.includes)
+		return -ENOMEM;
+
+	conf.defaults = map_create();
+	if (!conf.defaults) {
+		map_destroy(conf.includes);
+		return -ENOMEM;
+	}
+
+	conf.instance = map_create();
+	if (!conf.instance) {
+		map_destroy(conf.includes);
+		map_destroy(conf.defaults);
+		return -ENOMEM;
+	}
+
+	err = config_include(&conf, path);
 	if (err) {
-		error("failed to change directory to %s", dname);
+		map_destroy(conf.includes);
+		map_destroy(conf.defaults);
+		map_destroy(conf.instance);
 		return err;
 	}
 
-	debug("changed directory to %s", dname);
+	/* flush last section */
+	if (!map_empty(conf.instance) && conf.cb)
+		err = conf.cb(conf.instance, conf.data);
 
-	err = config_read(conf, fd);
-	sys_close(fd);
-
-	if (conf->global)
-		map_destroy(conf->global);
-
+	map_destroy(conf.includes);
+	map_destroy(conf.defaults);
+	map_destroy(conf.instance);
 	return err;
 }
 
@@ -154,17 +212,12 @@ int config_load(const char *path, config_cb_t *cb, void *data)
 	const char * const home = sys_getenv("HOME");
 	const char * const xdg_home = sys_getenv("XDG_CONFIG_HOME");
 	const char * const xdg_dirs = sys_getenv("XDG_CONFIG_DIRS");
-	struct config conf = {
-		.data = data,
-		.cb = cb,
-	};
 	char buf[PATH_MAX];
 	int err;
 
-
 	/* command line config file? */
 	if (path)
-		return config_open(&conf, path);
+		return config_parse(path, cb, data);
 
 	/* user config file? */
 	if (home) {
@@ -172,12 +225,12 @@ int config_load(const char *path, config_cb_t *cb, void *data)
 			snprintf(buf, sizeof(buf), "%s/i3blocks/config", xdg_home);
 		else
 			snprintf(buf, sizeof(buf), "%s/.config/i3blocks/config", home);
-		err = config_open(&conf, buf);
+		err = config_parse(buf, cb, data);
 		if (err != -ENOENT)
 			return err;
 
 		snprintf(buf, sizeof(buf), "%s/.i3blocks.conf", home);
-		err = config_open(&conf, buf);
+		err = config_parse(buf, cb, data);
 		if (err != -ENOENT)
 			return err;
 	}
@@ -187,10 +240,10 @@ int config_load(const char *path, config_cb_t *cb, void *data)
 		snprintf(buf, sizeof(buf), "%s/i3blocks/config", xdg_dirs);
 	else
 		snprintf(buf, sizeof(buf), "%s/xdg/i3blocks/config", SYSCONFDIR);
-	err = config_open(&conf, buf);
+	err = config_parse(buf, cb, data);
 	if (err != -ENOENT)
 		return err;
 
 	snprintf(buf, sizeof(buf), "%s/i3blocks.conf", SYSCONFDIR);
-	return config_open(&conf, buf);
+	return config_parse(buf, cb, data);
 }
