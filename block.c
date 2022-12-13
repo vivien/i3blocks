@@ -81,6 +81,9 @@ static int block_setenv(const char *name, const char *value, void *data)
 	if (strcmp(name, "y") == 0)
 		return sys_setenv("BLOCK_Y", value);
 
+	if (strcmp(name, "workdir") == 0)
+		return sys_chdir(value);
+
 	return 0;
 }
 
