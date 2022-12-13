@@ -19,12 +19,16 @@
 #ifndef MAP_H
 #define MAP_H
 
+#include <stdbool.h>
+
 struct map;
 
 struct map *map_create(void);
 void map_destroy(struct map *map);
 
 int map_copy(struct map *map, const struct map *base);
+
+bool map_empty(const struct map *map);
 
 void map_clear(struct map *map);
 

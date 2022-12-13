@@ -165,6 +165,13 @@ int map_for_each(const struct map *map, map_func_t *func, void *data)
 	return 0;
 }
 
+bool map_empty(const struct map *map)
+{
+	struct pair *pair = map_head(map);
+
+	return !pair->next;
+}
+
 void map_clear(struct map *map)
 {
 	struct pair *pair = map_head(map);
