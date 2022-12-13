@@ -49,6 +49,21 @@ int sys_chdir(const char *path)
 	return 0;
 }
 
+int sys_getcwd(char *buf, size_t size)
+{
+	char *cwd;
+	int rc;
+
+	cwd = getcwd(buf, size);
+	if (!cwd) {
+		sys_errno("getcwd()");
+		rc = -errno;
+		return rc;
+	}
+
+	return 0;
+}
+
 int sys_gettime(unsigned long *interval)
 {
 	struct timespec ts;

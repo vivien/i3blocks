@@ -23,6 +23,7 @@
 #include <unistd.h>
 
 int sys_chdir(const char *path);
+int sys_getcwd(char *buf, size_t size);
 
 int sys_gettime(unsigned long *interval);
 int sys_setitimer(unsigned long interval);
