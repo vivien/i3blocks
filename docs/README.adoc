@@ -127,6 +127,8 @@ If a block specifies a command, then all of its properties are passed as environ
 The output of the command is used to update the values of these variables.
 The values are reset to default (as defined in the configuration file) before the update, so that blocks get a consistent behavior at each execution.
 
+NOTE: Each line from a block output must be terminated with a newline.
+
 == i3bar properties
 
 In order to use {progname} with i3, its status bar command _i3bar_ expects specific keys.
@@ -401,6 +403,9 @@ For example:
 ----
 font pango:Inconsolata, Icons 12
 ----
+
+Why is `printf` not working?::
+As of {progname} 1.5, each line from a block output are expected to be terminated with a newline, e.g. with `printf "...\n"` from a shell script.
 
 Why is the output from my persistent block not displayed?::
 Make sure to flush stdout, for example:

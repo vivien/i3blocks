@@ -664,6 +664,18 @@ However on startup, i3blocks checks some optional properties to eventually setup
 The output of the command is used to update the values of these variables.
 The values are reset to default (as defined in the configuration file) before the update, so that blocks get a consistent behavior at each execution.</p>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+Each line from a block output must be terminated with a newline.
+</td>
+</tr>
+</table>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -1027,6 +1039,10 @@ For example:</p>
 <pre class="highlight"><code>font pango:Inconsolata, Icons 12</code></pre>
 </div>
 </div>
+</li>
+<li>
+<p><em>Why is <code>printf</code> not working?</em></p>
+<p>As of i3blocks 1.5, each line from a block output are expected to be terminated with a newline, e.g. with <code>printf "&#8230;&#8203;\n"</code> from a shell script.</p>
 </li>
 <li>
 <p><em>Why is the output from my persistent block not displayed?</em></p>
