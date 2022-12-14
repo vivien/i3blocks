@@ -3,12 +3,14 @@
 
 = {progname}
 
-A feed generator for text based status bars
+The hacker-friendly `status_command` for Sway and i3
 
-{progname} executes your command lines and generates a status line from their output.
+{progname} is a feed generator for text based status bars.
+It executes your command lines and generates a status line from their output.
 Commands are scheduled at configured time intervals, upon signal reception or on clicks.
 
 The generated line is meant to be displayed by the link:https://i3wm.org[i3] window manager through its i3bar component, as an alternative to i3status.
+This program naturally works out of the box with the link:https://swaywm.org[sway] Wayland compositor since it is a drop-in replacement for i3.
 
 {progname} is meant to be highly flexible but intuitive.
 No library package is required, just output what your status bar expects, from your favorite programming language and your preferred format.
