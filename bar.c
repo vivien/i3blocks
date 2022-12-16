@@ -445,8 +445,6 @@ static int bar_config_cb(struct map *map, void *data)
 
 	block->next = block_create(bar, map);
 
-	map_destroy(map);
-
 	if (!block->next)
 		return -ENOMEM;
 
