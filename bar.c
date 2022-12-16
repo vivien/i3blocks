@@ -438,15 +438,21 @@ static struct bar *bar_create(bool term)
 static int bar_config_cb(const struct map *map, void *data)
 {
 	struct bar *bar = data;
-	struct block *block = bar->blocks;
+	struct block *block;
+	struct block *prev;
 
-	while (block->next)
-		block = block->next;
-
-	block->next = block_create(bar, map);
-
-	if (!block->next)
+	block = block_create(bar, map);
+	if (!block)
 		return -ENOMEM;
+
+	if (bar->blocks) {
+		prev = bar->blocks;
+		while (prev->next)
+			prev = prev->next;
+		prev->next = block;
+	} else {
+		bar->blocks = block;
+	}
 
 	return 0;
 }
