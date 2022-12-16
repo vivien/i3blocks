@@ -435,7 +435,7 @@ static struct bar *bar_create(bool term)
 	return bar;
 }
 
-static int bar_config_cb(struct map *map, void *data)
+static int bar_config_cb(const struct map *map, void *data)
 {
 	struct bar *bar = data;
 	struct block *block = bar->blocks;
