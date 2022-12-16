@@ -418,12 +418,6 @@ static struct bar *bar_create(bool term)
 	if (!bar)
 		return NULL;
 
-	bar->blocks = block_create(bar, NULL);
-	if (!bar->blocks) {
-		bar_destroy(bar);
-		return NULL;
-	}
-
 	bar->term = term;
 
 	err = bar_start(bar);
