@@ -94,18 +94,12 @@ static int block_stdout(struct block *block)
 	const char *label, *full_text;
 	int out = block->out[0];
 	char buf[BUFSIZ];
-	size_t count;
 	int err;
 
-	if (block->interval == INTERVAL_PERSIST)
-		count = 1;
-	else
-		count = -1; /* SIZE_MAX */
-
 	if (block->format == FORMAT_JSON)
-		err = json_read(out, count, block->env);
+		err = json_read(out, -1, block->env);
 	else
-		err = i3bar_read(out, count, block->env);
+		err = i3bar_read(out, -1, block->env);
 
 	if (err && err != -EAGAIN)
 		return err;
