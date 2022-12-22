@@ -26,7 +26,7 @@ static int line_getc(int fd, char *c)
 	return sys_read(fd, c, 1, NULL);
 }
 
-/* Read a line including the newline character and return its positive length */
+/* Read a line and return the number of characters read (negative on error) */
 static ssize_t line_gets(int fd, char *buf, size_t size)
 {
 	size_t len = 0;
@@ -34,11 +34,11 @@ static ssize_t line_gets(int fd, char *buf, size_t size)
 
 	for (;;) {
 		if (len == size)
-			return -ENOSPC;
+			return -size;
 
 		err = line_getc(fd, buf + len);
 		if (err)
-			return err;
+			return -len;
 
 		if (buf[len++] == '\n')
 			break;
@@ -51,13 +51,22 @@ static ssize_t line_gets(int fd, char *buf, size_t size)
 /* Read a line excluding the newline character */
 static int line_parse(int fd, line_cb_t *cb, size_t num, void *data)
 {
-	char buf[BUFSIZ];
+	size_t size = BUFSIZ;
+	char buf[size];
 	ssize_t len;
 	int err;
 
 	len = line_gets(fd, buf, sizeof(buf));
-	if (len < 0)
-		return len;
+	if (len < 1) {
+		if (len == -size)
+			return -ENOSPC;
+
+		if (len == 0)
+			return -EAGAIN;
+
+		error("&%d:%.3d: not ending with a newline: %.*s", fd, num, -len, buf);
+		return -EINVAL;
+	}
 
 	/* replace newline with terminating null byte */
 	buf[len - 1] = '\0';
