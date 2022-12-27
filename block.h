@@ -106,7 +106,7 @@ int block_click(struct block *block);
 int block_spawn(struct block *block);
 void block_touch(struct block *block);
 int block_reap(struct block *block);
-int block_update(struct block *block);
+int block_drain(struct block *block);
 void block_close(struct block *block);
 
 #endif /* BLOCK_H */

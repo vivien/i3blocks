@@ -89,25 +89,28 @@ static int block_child_env(struct block *block)
 	return block_for_each(block, block_setenv, NULL);
 }
 
-static int block_stdout(struct block *block)
+static int block_read(const struct block *block, size_t count, struct map *map)
 {
-	const char *label, *full_text;
 	int out = block->out[0];
-	char buf[BUFSIZ];
-	size_t count;
-	int err;
-
-	if (block->interval == INTERVAL_PERSIST)
-		count = 1;
-	else
-		count = -1; /* SIZE_MAX */
 
 	if (block->format == FORMAT_JSON)
-		err = json_read(out, count, block->env);
+		return json_read(out, count, map);
 	else
-		err = i3bar_read(out, count, block->env);
+		return i3bar_read(out, count, map);
+}
 
-	if (err && err != -EAGAIN)
+static int block_update(struct block *block, const struct map *map)
+{
+	const char *label, *full_text;
+	char buf[BUFSIZ];
+	int err;
+
+	err = block_reset(block);
+	if (err)
+		return err;
+
+	err = map_copy(block->env, map);
+	if (err)
 		return err;
 
 	/* Deprecated label */
@@ -120,22 +123,6 @@ static int block_stdout(struct block *block)
 			return err;
 	}
 
-	return 0;
-}
-
-int block_update(struct block *block)
-{
-	int err;
-
-	/* Reset properties to default before updating from output */
-	err = block_reset(block);
-	if (err)
-		return err;
-
-	err = block_stdout(block);
-	if (err)
-		return err;
-
 	/* Exit code takes precedence over the output */
 	if (block->code == EXIT_URGENT) {
 		err = block_set(block, "urgent", "true");
@@ -143,9 +130,48 @@ int block_update(struct block *block)
 			return err;
 	}
 
-	block_debug(block, "updated successfully");
-
 	return 0;
+}
+
+int block_drain(struct block *block)
+{
+	struct map *map;
+	int err;
+
+	map = map_create();
+	if (!map)
+		return -ENOMEM;
+
+	if (block->interval == INTERVAL_PERSIST) {
+		for (;;) {
+			err = block_read(block, 1, map);
+			if (err) {
+				if (err == -EAGAIN)
+					err = 0;
+				break;
+			}
+
+			err = block_update(block, map);
+			if (err)
+				block_error(block, "failed to update");
+
+			map_clear(map);
+		}
+	} else {
+		err = block_read(block, -1, map);
+		if (err == 0)
+			err = -EINVAL; /* Unlikely more than SIZE_MAX lines */
+
+		if (err == -EAGAIN) {
+			err = block_update(block, map);
+			if (err)
+				block_error(block, "failed to update");
+		}
+	}
+
+	map_destroy(map);
+
+	return err;
 }
 
 static int block_send_key(const char *key, const char *value, void *data)

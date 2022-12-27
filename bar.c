@@ -151,7 +151,7 @@ static void bar_poll_exited(struct bar *bar)
 			if (block->interval == INTERVAL_PERSIST) {
 				block_debug(block, "unexpected exit?");
 			} else {
-				block_update(block);
+				block_drain(block);
 			}
 			block_close(block);
 			if (block->interval == INTERVAL_REPEAT) {
@@ -167,14 +167,14 @@ static void bar_poll_exited(struct bar *bar)
 	}
 }
 
-static void bar_poll_readable(struct bar *bar, const int fd)
+static void bar_poll_flushed(struct bar *bar, const int fd)
 {
 	struct block *block = bar->blocks;
 
 	while (block) {
 		if (block->out[0] == fd) {
-			block_debug(block, "readable");
-			block_update(block);
+			block_debug(block, "flushed");
+			block_drain(block);
 			break;
 		}
 
@@ -370,7 +370,7 @@ static int bar_poll(struct bar *bar)
 		}
 
 		if (sig == SIGRTMIN) {
-			bar_poll_readable(bar, fd);
+			bar_poll_flushed(bar, fd);
 			bar_print(bar);
 			continue;
 		}
