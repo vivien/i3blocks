@@ -204,6 +204,20 @@ int sys_sigaddset(sigset_t *set, int sig)
 	return 0;
 }
 
+int sys_sigdelset(sigset_t *set, int sig)
+{
+	int rc;
+
+	rc = sigdelset(set, sig);
+	if (rc == -1) {
+		sys_errno("sigdelset(%d (%s))", sig, strsignal(sig));
+		rc = -errno;
+		return rc;
+	}
+
+	return 0;
+}
+
 static int sys_sigprocmask(const sigset_t *set, int how)
 {
 	int rc;
