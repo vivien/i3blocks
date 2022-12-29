@@ -350,6 +350,8 @@ static int bar_poll(struct bar *bar)
 			break;
 		}
 
+		debug("received signal %d (%s) fd %d", sig, strsignal(sig), fd);
+
 		if (sig == SIGTERM || sig == SIGINT)
 			break;
 
