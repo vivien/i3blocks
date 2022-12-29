@@ -219,11 +219,11 @@ int sys_sigaddset(sigset_t *set, int sig)
 	return 0;
 }
 
-static int sys_sigprocmask(const sigset_t *set, int how)
+static int sys_sigprocmask(int how, const sigset_t *set, sigset_t *oldset)
 {
 	int rc;
 
-	rc = sigprocmask(how, set, NULL);
+	rc = sigprocmask(how, set, oldset);
 	if (rc == -1) {
 		sys_errno("sigprocmask()");
 		rc = -errno;
@@ -235,12 +235,12 @@ static int sys_sigprocmask(const sigset_t *set, int how)
 
 int sys_sigunblock(const sigset_t *set)
 {
-	return sys_sigprocmask(set, SIG_UNBLOCK);
+	return sys_sigprocmask(SIG_UNBLOCK, set, NULL);
 }
 
-int sys_sigsetmask(const sigset_t *set)
+int sys_sigsetmask(const sigset_t *set, sigset_t *oldset)
 {
-	return sys_sigprocmask(set, SIG_SETMASK);
+	return sys_sigprocmask(SIG_SETMASK, set, oldset);
 }
 
 int sys_sigwaitinfo(sigset_t *set, int *sig, int *fd)

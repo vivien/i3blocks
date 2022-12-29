@@ -193,8 +193,8 @@ static int gcd(int a, int b)
 static int bar_setup(struct bar *bar)
 {
 	struct block *block = bar->blocks;
-	sigset_t *set = &bar->sigset;
 	unsigned long sleeptime = 0;
+	sigset_t sigset;
 	int sig;
 	int err;
 
@@ -216,57 +216,11 @@ static int bar_setup(struct bar *bar)
 		block = block->next;
 	}
 
-	err = sys_sigemptyset(set);
+	err = sys_sigfillset(&sigset);
 	if (err)
 		return err;
 
-	/* Control signals */
-	err = sys_sigaddset(set, SIGTERM);
-	if (err)
-		return err;
-
-	err = sys_sigaddset(set, SIGINT);
-	if (err)
-		return err;
-
-	/* Timer signal */
-	err = sys_sigaddset(set, SIGALRM);
-	if (err)
-		return err;
-
-	/* Block updates (forks) */
-	err = sys_sigaddset(set, SIGCHLD);
-	if (err)
-		return err;
-
-	/* Deprecated signals */
-	err = sys_sigaddset(set, SIGUSR1);
-	if (err)
-		return err;
-
-	err = sys_sigaddset(set, SIGUSR2);
-	if (err)
-		return err;
-
-	/* Click signal */
-	err = sys_sigaddset(set, SIGIO);
-	if (err)
-		return err;
-
-	/* I/O Possible signal for persistent blocks */
-	err = sys_sigaddset(set, SIGRTMIN);
-	if (err)
-		return err;
-
-	/* Real-time signals for blocks */
-	for (sig = SIGRTMIN + 1; sig <= SIGRTMAX; sig++) {
-		err = sys_sigaddset(set, sig);
-		if (err)
-			return err;
-	}
-
-	/* Block signals for which we are interested in waiting */
-	err = sys_sigsetmask(set);
+	err = sys_sigsetmask(&sigset, &bar->sigset);
 	if (err)
 		return err;
 
@@ -311,14 +265,12 @@ static void bar_teardown(struct bar *bar)
 	if (err)
 		error("failed to disable event I/O on stdin");
 
-	/*
-	 * Unblock signals (so subsequent syscall can be interrupted)
-	 * and wait for child processes termination.
-	 */
-	err = sys_sigunblock(&bar->sigset);
+	/* Restore original sigset (so subsequent syscall can be interrupted) */
+	err = sys_sigsetmask(&bar->sigset, NULL);
 	if (err)
-		error("failed to unblock signals");
+		error("failed to set signal mask");
 
+	/* Wait for child processes termination */
 	err = sys_waitanychild();
 	if (err)
 		error("failed to wait for any child");
