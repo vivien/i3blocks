@@ -35,10 +35,7 @@ int sys_waitanychild(void);
 int sys_setenv(const char *name, const char *value);
 const char *sys_getenv(const char *name);
 
-int sys_sigemptyset(sigset_t *set);
 int sys_sigfillset(sigset_t *set);
-int sys_sigaddset(sigset_t *set, int sig);
-int sys_sigunblock(const sigset_t *set);
 int sys_sigsetmask(const sigset_t *set, sigset_t *oldset);
 int sys_sigwaitinfo(sigset_t *set, int *sig, int *fd);
 

@@ -177,20 +177,6 @@ const char *sys_getenv(const char *name)
 	return getenv(name);
 }
 
-int sys_sigemptyset(sigset_t *set)
-{
-	int rc;
-
-	rc = sigemptyset(set);
-	if (rc == -1) {
-		sys_errno("sigemptyset()");
-		rc = -errno;
-		return rc;
-	}
-
-	return 0;
-}
-
 int sys_sigfillset(sigset_t *set)
 {
 	int rc;
@@ -198,20 +184,6 @@ int sys_sigfillset(sigset_t *set)
 	rc = sigfillset(set);
 	if (rc == -1) {
 		sys_errno("sigfillset()");
-		rc = -errno;
-		return rc;
-	}
-
-	return 0;
-}
-
-int sys_sigaddset(sigset_t *set, int sig)
-{
-	int rc;
-
-	rc = sigaddset(set, sig);
-	if (rc == -1) {
-		sys_errno("sigaddset(%d (%s))", sig, strsignal(sig));
 		rc = -errno;
 		return rc;
 	}
@@ -231,11 +203,6 @@ static int sys_sigprocmask(int how, const sigset_t *set, sigset_t *oldset)
 	}
 
 	return 0;
-}
-
-int sys_sigunblock(const sigset_t *set)
-{
-	return sys_sigprocmask(SIG_UNBLOCK, set, NULL);
 }
 
 int sys_sigsetmask(const sigset_t *set, sigset_t *oldset)
