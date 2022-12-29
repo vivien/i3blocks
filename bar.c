@@ -328,6 +328,7 @@ static void bar_teardown(struct bar *bar)
 
 static int bar_poll(struct bar *bar)
 {
+	sigset_t sigset;
 	int sig, fd;
 	int err;
 
@@ -341,8 +342,12 @@ static int bar_poll(struct bar *bar)
 	/* First forks (for commands with an interval) */
 	bar_poll_timed(bar);
 
+	err = sys_sigfillset(&sigset);
+	if (err)
+		return err;
+
 	while (1) {
-		err = sys_sigwaitinfo(&bar->sigset, &sig, &fd);
+		err = sys_sigwaitinfo(&sigset, &sig, &fd);
 		if (err) {
 			/* Hiding the bar may interrupt this system call */
 			if (err == -EINTR)
