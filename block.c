@@ -261,15 +261,7 @@ void block_touch(struct block *block)
 
 static int block_child_sig(struct block *block)
 {
-	sigset_t set;
-	int err;
-
-	/* It'd be safe to assume that all signals are unblocked by default */
-	err = sys_sigfillset(&set);
-	if (err)
-		return err;
-
-	return sys_sigunblock(&set);
+	return sys_sigsetmask(&block->bar->sigset, NULL);
 }
 
 static int block_child_stdin(struct block *block)
