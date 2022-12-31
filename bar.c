@@ -169,9 +169,14 @@ static void bar_poll_exited(struct bar *bar)
 	bar_print(bar);
 }
 
-static void bar_poll_flushed(struct bar *bar, const int fd)
+static void bar_poll_flushed(struct bar *bar, int sig, int fd)
 {
 	struct block *block = bar->blocks;
+
+	if (sig == SIGIO) {
+		bar_read(bar);
+		return;
+	};
 
 	while (block) {
 		if (block->out[0] == fd) {
@@ -325,13 +330,8 @@ static int bar_poll(struct bar *bar)
 			continue;
 		}
 
-		if (sig == SIGIO) {
-			bar_read(bar);
-			continue;
-		}
-
-		if (sig == SIGRTMIN) {
-			bar_poll_flushed(bar, fd);
+		if (sig == SIGIO || sig == SIGRTMIN) {
+			bar_poll_flushed(bar, sig, fd);
 			continue;
 		}
 
