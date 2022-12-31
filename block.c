@@ -268,12 +268,6 @@ static int block_child_stdin(struct block *block)
 {
 	int err;
 
-	if (block->interval == INTERVAL_PERSIST) {
-		err = sys_close(block->in[1]);
-		if (err)
-			return err;
-	}
-
 	err = sys_dup(block->in[0], STDIN_FILENO);
 	if (err)
 		return err;
@@ -284,10 +278,6 @@ static int block_child_stdin(struct block *block)
 static int block_child_stdout(struct block *block)
 {
 	int err;
-
-	err = sys_close(block->out[0]);
-	if (err)
-		return err;
 
 	err = sys_dup(block->out[1], STDOUT_FILENO);
 	if (err)
@@ -386,8 +376,16 @@ static int block_open(struct block *block)
 	if (err)
 		return err;
 
+	err = sys_cloexec(block->out[0]);
+	if (err)
+		return err;
+
 	if (block->interval == INTERVAL_PERSIST) {
 		err = sys_pipe(block->in);
+		if (err)
+			return err;
+
+		err = sys_cloexec(block->in[1]);
 		if (err)
 			return err;
 	} else {
