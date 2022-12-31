@@ -165,6 +165,8 @@ static void bar_poll_exited(struct bar *bar)
 				break;
 		}
 	}
+
+	bar_print(bar);
 }
 
 static void bar_poll_flushed(struct bar *bar, const int fd)
@@ -175,6 +177,7 @@ static void bar_poll_flushed(struct bar *bar, const int fd)
 		if (block->out[0] == fd) {
 			block_debug(block, "flushed");
 			block_drain(block);
+			bar_print(bar);
 			break;
 		}
 
@@ -319,7 +322,6 @@ static int bar_poll(struct bar *bar)
 
 		if (sig == SIGCHLD) {
 			bar_poll_exited(bar);
-			bar_print(bar);
 			continue;
 		}
 
@@ -330,7 +332,6 @@ static int bar_poll(struct bar *bar)
 
 		if (sig == SIGRTMIN) {
 			bar_poll_flushed(bar, fd);
-			bar_print(bar);
 			continue;
 		}
 
