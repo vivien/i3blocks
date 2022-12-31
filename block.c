@@ -272,10 +272,6 @@ static int block_child_stdin(struct block *block)
 		err = sys_close(block->in[1]);
 		if (err)
 			return err;
-	} else {
-		err = sys_open("/dev/null", &block->in[0]);
-		if (err)
-			return err;
 	}
 
 	err = sys_dup(block->in[0], STDIN_FILENO);
@@ -330,11 +326,7 @@ static int block_child(struct block *block)
 
 static int block_parent_stdin(struct block *block)
 {
-	/* Close read end of stdin pipe */
-	if (block->interval == INTERVAL_PERSIST)
-		return sys_close(block->in[0]);
-
-	return 0;
+	return sys_close(block->in[0]);
 }
 
 static int block_parent_stdout(struct block *block)
@@ -394,8 +386,15 @@ static int block_open(struct block *block)
 	if (err)
 		return err;
 
-	if (block->interval == INTERVAL_PERSIST)
-		return sys_pipe(block->in);
+	if (block->interval == INTERVAL_PERSIST) {
+		err = sys_pipe(block->in);
+		if (err)
+			return err;
+	} else {
+		err = sys_open("/dev/null", &block->in[0]);
+		if (err)
+			return err;
+	}
 
 	return 0;
 }
