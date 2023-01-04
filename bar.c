@@ -179,7 +179,7 @@ static void bar_poll_flushed(struct bar *bar, int sig, int fd)
 	};
 
 	while (block) {
-		if (block->out[0] == fd) {
+		if (block->out == fd) {
 			block_debug(block, "flushed");
 			block_drain(block);
 			bar_print(bar);
@@ -260,7 +260,7 @@ static void bar_teardown(struct bar *bar)
 	/* Disable event I/O for blocks (persistent) */
 	while (block) {
 		if (block->interval == INTERVAL_PERSIST) {
-			err = sys_async(block->out[0], 0);
+			err = sys_async(block->out, 0);
 			if (err)
 				block_error(block, "failed to disable event I/O");
 		}

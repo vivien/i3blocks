@@ -89,12 +89,10 @@ static int block_setenv(const char *name, const char *value, void *data)
 
 static int block_read(const struct block *block, size_t count, struct map *map)
 {
-	int out = block->out[0];
-
 	if (block->format == FORMAT_JSON)
-		return json_read(out, count, map);
+		return json_read(block->out, count, map);
 	else
-		return i3bar_read(out, count, map);
+		return i3bar_read(block->out, count, map);
 }
 
 static int block_update(struct block *block, const struct map *map)
@@ -186,7 +184,7 @@ static int block_send_key(const char *key, const char *value, void *data)
 		value = buf;
 	}
 
-	dprintf(block->in[1], ",\"%s\":%s", key, value);
+	dprintf(block->in, ",\"%s\":%s", key, value);
 
 	return 0;
 }
@@ -195,9 +193,9 @@ static int block_send_json(struct block *block)
 {
 	int err;
 
-	dprintf(block->in[1], "{\"\":\"\"");
+	dprintf(block->in, "{\"\":\"\"");
 	err = block_for_each(block, block_send_key, block);
-	dprintf(block->in[1], "}\n");
+	dprintf(block->in, "}\n");
 
 	return err;
 }
@@ -220,7 +218,7 @@ static int block_send(struct block *block)
 	if (block->format == FORMAT_JSON)
 		return block_send_json(block);
 
-	dprintf(block->in[1], "%s\n", button);
+	dprintf(block->in, "%s\n", button);
 
 	return 0;
 }
@@ -266,19 +264,19 @@ static int block_child(struct block *block)
 	if (err)
 		return err;
 
-	err = sys_dup(block->in[0], STDIN_FILENO);
+	err = sys_dup(block->in, STDIN_FILENO);
 	if (err)
 		return err;
 
-	err = sys_close(block->in[0]);
+	err = sys_close(block->in);
 	if (err)
 		return err;
 
-	err = sys_dup(block->out[1], STDOUT_FILENO);
+	err = sys_dup(block->out, STDOUT_FILENO);
 	if (err)
 		return err;
 
-	err = sys_close(block->out[1]);
+	err = sys_close(block->out);
 	if (err)
 		return err;
 
@@ -287,26 +285,28 @@ static int block_child(struct block *block)
 
 static int block_fork(struct block *block)
 {
+	int out[2];
+	int in[2];
 	int err;
 
-	err = sys_pipe(block->out);
+	err = sys_pipe(out);
 	if (err)
 		return err;
 
-	err = sys_cloexec(block->out[0]);
+	err = sys_cloexec(out[0]);
 	if (err)
 		return err;
 
 	if (block->interval == INTERVAL_PERSIST) {
-		err = sys_pipe(block->in);
+		err = sys_pipe(in);
 		if (err)
 			return err;
 
-		err = sys_cloexec(block->in[1]);
+		err = sys_cloexec(in[1]);
 		if (err)
 			return err;
 	} else {
-		err = sys_open("/dev/null", &block->in[0]);
+		err = sys_open("/dev/null", &in[0]);
 		if (err)
 			return err;
 	}
@@ -316,21 +316,27 @@ static int block_fork(struct block *block)
 		return err;
 
 	if (block->pid == 0) {
+		block->in = in[0];
+		block->out = out[1];
+
 		err = block_child(block);
 		if (err)
 			sys_exit(EXIT_ERR_INTERNAL);
 	}
 
-	err = sys_close(block->in[0]);
+	err = sys_close(in[0]);
 	if (err)
 		return err;
 
-	err = sys_close(block->out[1]);
+	err = sys_close(out[1]);
 	if (err)
 		return err;
+
+	block->in = in[1];
+	block->out = out[0];
 
 	if (block->interval == INTERVAL_PERSIST) {
-		err = sys_async(block->out[0], SIGRTMIN);
+		err = sys_async(block->out, SIGRTMIN);
 		if (err)
 			return err;
 	}
@@ -387,18 +393,18 @@ void block_close(struct block *block)
 
 	/* Invalidate descriptors to avoid misdetection after reassignment */
 	if (block->interval == INTERVAL_PERSIST) {
-		err = sys_close(block->in[1]);
+		err = sys_close(block->in);
 		if (err)
 			block_error(block, "failed to close stdin");
 
-		block->in[1] = -1;
+		block->in = -1;
 	}
 
-	err = sys_close(block->out[0]);
+	err = sys_close(block->out);
 	if (err)
 		block_error(block, "failed to close stdout");
 
-	block->out[0] = -1;
+	block->out = -1;
 }
 
 int block_reap(struct block *block)
