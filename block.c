@@ -87,11 +87,6 @@ static int block_setenv(const char *name, const char *value, void *data)
 	return 0;
 }
 
-static int block_child_env(struct block *block)
-{
-	return block_for_each(block, block_setenv, NULL);
-}
-
 static int block_read(const struct block *block, size_t count, struct map *map)
 {
 	int out = block->out[0];
@@ -259,59 +254,35 @@ void block_touch(struct block *block)
 	block->timestamp = now;
 }
 
-static int block_child_sig(struct block *block)
-{
-	return sys_sigsetmask(&block->bar->sigset, NULL);
-}
-
-static int block_child_stdin(struct block *block)
+static int block_child(struct block *block)
 {
 	int err;
+
+	err = block_for_each(block, block_setenv, NULL);
+	if (err)
+		return err;
+
+	err = sys_sigsetmask(&block->bar->sigset, NULL);
+	if (err)
+		return err;
 
 	err = sys_dup(block->in[0], STDIN_FILENO);
 	if (err)
 		return err;
 
-	return sys_close(block->in[0]);
-}
-
-static int block_child_stdout(struct block *block)
-{
-	int err;
+	err = sys_close(block->in[0]);
+	if (err)
+		return err;
 
 	err = sys_dup(block->out[1], STDOUT_FILENO);
 	if (err)
 		return err;
 
-	return sys_close(block->out[1]);
-}
+	err = sys_close(block->out[1]);
+	if (err)
+		return err;
 
-static int block_child_exec(struct block *block)
-{
 	return sys_execsh(block->command);
-}
-
-static int block_child(struct block *block)
-{
-	int err;
-
-	err = block_child_env(block);
-	if (err)
-		return err;
-
-	err = block_child_sig(block);
-	if (err)
-		return err;
-
-	err = block_child_stdin(block);
-	if (err)
-		return err;
-
-	err = block_child_stdout(block);
-	if (err)
-		return err;
-
-	return block_child_exec(block);
 }
 
 static int block_fork(struct block *block)
