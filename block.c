@@ -355,23 +355,6 @@ static int block_fork(struct block *block)
 {
 	int err;
 
-	err = sys_fork(&block->pid);
-	if (err)
-		return err;
-
-	if (block->pid == 0) {
-		err = block_child(block);
-		if (err)
-			sys_exit(EXIT_ERR_INTERNAL);
-	}
-
-	return block_parent(block);
-}
-
-static int block_open(struct block *block)
-{
-	int err;
-
 	err = sys_pipe(block->out);
 	if (err)
 		return err;
@@ -394,7 +377,17 @@ static int block_open(struct block *block)
 			return err;
 	}
 
-	return 0;
+	err = sys_fork(&block->pid);
+	if (err)
+		return err;
+
+	if (block->pid == 0) {
+		err = block_child(block);
+		if (err)
+			sys_exit(EXIT_ERR_INTERNAL);
+	}
+
+	return block_parent(block);
 }
 
 int block_spawn(struct block *block)
@@ -410,10 +403,6 @@ int block_spawn(struct block *block)
 		block_debug(block, "process already spawned");
 		return 0;
 	}
-
-	err = block_open(block);
-	if (err)
-		return err;
 
 	return block_fork(block);
 }
