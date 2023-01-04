@@ -314,43 +314,6 @@ static int block_child(struct block *block)
 	return block_child_exec(block);
 }
 
-static int block_parent_stdin(struct block *block)
-{
-	return sys_close(block->in[0]);
-}
-
-static int block_parent_stdout(struct block *block)
-{
-	int err;
-
-	/* Close write end of stdout pipe */
-	err = sys_close(block->out[1]);
-	if (err)
-		return err;
-
-	if (block->interval == INTERVAL_PERSIST)
-		return sys_async(block->out[0], SIGRTMIN);
-
-	return 0;
-}
-
-static int block_parent(struct block *block)
-{
-	int err;
-
-	err = block_parent_stdin(block);
-	if (err)
-		return err;
-
-	err = block_parent_stdout(block);
-	if (err)
-		return err;
-
-	block_debug(block, "forked child %d", block->pid);
-
-	return 0;
-}
-
 static int block_fork(struct block *block)
 {
 	int err;
@@ -387,7 +350,23 @@ static int block_fork(struct block *block)
 			sys_exit(EXIT_ERR_INTERNAL);
 	}
 
-	return block_parent(block);
+	err = sys_close(block->in[0]);
+	if (err)
+		return err;
+
+	err = sys_close(block->out[1]);
+	if (err)
+		return err;
+
+	if (block->interval == INTERVAL_PERSIST) {
+		err = sys_async(block->out[0], SIGRTMIN);
+		if (err)
+			return err;
+	}
+
+	block_debug(block, "forked child %d", block->pid);
+
+	return 0;
 }
 
 int block_spawn(struct block *block)
