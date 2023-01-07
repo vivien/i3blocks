@@ -86,9 +86,9 @@ int i3bar_read(int fd, size_t count, struct map *map)
 	return line_read(fd, count, i3bar_line_cb, map);
 }
 
-static void i3bar_print_term(const struct bar *bar)
+static void i3bar_print_term(const struct block *bar)
 {
-	struct block *block = bar->blocks;
+	struct block *block = bar->next;
 	const char *full_text;
 
 	term_restore_cursor();
@@ -171,9 +171,9 @@ static int i3bar_print_block(struct block *block, void *data)
 	return err;
 }
 
- int i3bar_print(const struct bar *bar)
+ int i3bar_print(const struct block *bar)
 {
-	struct block *block = bar->blocks;
+	struct block *block = bar->next;
 	unsigned int mcount = 0;
 	int err;
 
@@ -198,7 +198,7 @@ static int i3bar_print_block(struct block *block, void *data)
 
 int i3bar_printf(struct block *block, int lvl, const char *msg)
 {
-	const struct bar *bar = block->bar;
+	const struct block *bar = block->bar;
 	struct map *map = block->env;
 	int err;
 
@@ -220,7 +220,7 @@ int i3bar_printf(struct block *block, int lvl, const char *msg)
 	return i3bar_print(bar);
 }
 
-int i3bar_start(struct bar *bar)
+int i3bar_start(struct block *bar)
 {
 	if (bar->term) {
 		term_save_cursor();
@@ -233,7 +233,7 @@ int i3bar_start(struct bar *bar)
 	return 0;
 }
 
-void i3bar_stop(struct bar *bar)
+void i3bar_stop(struct block *bar)
 {
 	if (bar->term) {
 		term_reset_cursor();
@@ -243,11 +243,11 @@ void i3bar_stop(struct bar *bar)
 	}
 }
 
-static struct block *i3bar_find(struct bar *bar, const struct map *map)
+static struct block *i3bar_find(struct block *bar, const struct map *map)
 {
 	const char *block_name, *block_instance;
 	const char *map_name, *map_instance;
-	struct block *block = bar->blocks;
+	struct block *block = bar->next;
 
 	/* "name" and "instance" are the only identifiers provided by i3bar */
 	map_name = map_get(map, "name") ? : "";
@@ -267,7 +267,7 @@ static struct block *i3bar_find(struct bar *bar, const struct map *map)
 	return NULL;
 }
 
-int i3bar_click(struct bar *bar)
+int i3bar_click(struct block *bar)
 {
 	struct block *block;
 	struct map *click;

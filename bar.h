@@ -24,14 +24,8 @@
 #include "block.h"
 #include "sys.h"
 
-struct bar {
-	struct block *blocks;
-	sigset_t sigset;
-	bool term;
-};
-
 #define bar_printf(bar, lvl, fmt, ...) \
-	block_printf(bar->blocks, lvl, "%s" fmt, bar->term ? "TTY " : "", ##__VA_ARGS__)
+	block_printf(bar, lvl, "%s" fmt, bar->term ? "TTY " : "", ##__VA_ARGS__)
 
 #define bar_fatal(bar, fmt, ...) \
 	do { \
@@ -63,11 +57,11 @@ struct map;
 
 /* i3bar.c */
 int i3bar_read(int fd, size_t count, struct map *map);
-int i3bar_click(struct bar *bar);
-int i3bar_print(const struct bar *bar);
+int i3bar_click(struct block *bar);
+int i3bar_print(const struct block *bar);
 int i3bar_printf(struct block *block, int lvl, const char *msg);
 int i3bar_setup(struct block *block);
-int i3bar_start(struct bar *bar);
-void i3bar_stop(struct bar *bar);
+int i3bar_start(struct block *bar);
+void i3bar_stop(struct block *bar);
 
 #endif /* BAR_H */

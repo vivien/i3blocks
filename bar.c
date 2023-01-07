@@ -32,7 +32,7 @@
 #include "sys.h"
 #include "term.h"
 
-static void bar_read(struct bar *bar)
+static void bar_read(struct block *bar)
 {
 	int err;
 
@@ -41,7 +41,7 @@ static void bar_read(struct bar *bar)
 		bar_error(bar, "failed to read bar");
 }
 
-static void bar_print(struct bar *bar)
+static void bar_print(struct block *bar)
 {
 	int err;
 
@@ -50,7 +50,7 @@ static void bar_print(struct bar *bar)
 		fatal("failed to print bar!");
 }
 
-static int bar_start(struct bar *bar)
+static int bar_start(struct block *bar)
 {
 	int err;
 
@@ -63,16 +63,16 @@ static int bar_start(struct bar *bar)
 	return 0;
 }
 
-static void bar_stop(struct bar *bar)
+static void bar_stop(struct block *bar)
 {
 	i3bar_stop(bar);
 
 	debug("bar stopped");
 }
 
-static void bar_poll_timed(struct bar *bar)
+static void bar_poll_timed(struct block *bar)
 {
-	struct block *block = bar->blocks;
+	struct block *block = bar->next;
 
 	while (block) {
 		/* spawn unless it is only meant for click or signal */
@@ -85,9 +85,9 @@ static void bar_poll_timed(struct bar *bar)
 	}
 }
 
-static void bar_poll_expired(struct bar *bar)
+static void bar_poll_expired(struct block *bar)
 {
-	struct block *block = bar->blocks;
+	struct block *block = bar->next;
 
 	while (block) {
 		if (block->interval > 0) {
@@ -110,9 +110,9 @@ static void bar_poll_expired(struct bar *bar)
 	}
 }
 
-static void bar_poll_signaled(struct bar *bar, int sig)
+static void bar_poll_signaled(struct block *bar, int sig)
 {
-	struct block *block = bar->blocks;
+	struct block *block = bar->next;
 
 	while (block) {
 		if (block->signal == sig) {
@@ -125,7 +125,7 @@ static void bar_poll_signaled(struct bar *bar, int sig)
 	}
 }
 
-static void bar_poll_exited(struct bar *bar)
+static void bar_poll_exited(struct block *bar)
 {
 	struct block *block;
 	pid_t pid;
@@ -137,7 +137,7 @@ static void bar_poll_exited(struct bar *bar)
 			break;
 
 		/* Find the dead process */
-		block = bar->blocks;
+		block = bar->next;
 		while (block) {
 			if (block->pid == pid)
 				break;
@@ -169,9 +169,9 @@ static void bar_poll_exited(struct bar *bar)
 	bar_print(bar);
 }
 
-static void bar_poll_flushed(struct bar *bar, int sig, int fd)
+static void bar_poll_flushed(struct block *bar, int sig, int fd)
 {
-	struct block *block = bar->blocks;
+	struct block *block = bar->next;
 
 	if (sig == SIGIO) {
 		bar_read(bar);
@@ -198,9 +198,9 @@ static int gcd(int a, int b)
 	return a;
 }
 
-static int bar_setup(struct bar *bar)
+static int bar_setup(struct block *bar)
 {
-	struct block *block = bar->blocks;
+	struct block *block = bar->next;
 	unsigned long sleeptime = 0;
 	sigset_t sigset;
 	int sig;
@@ -252,9 +252,9 @@ static int bar_setup(struct bar *bar)
 	return 0;
 }
 
-static void bar_teardown(struct bar *bar)
+static void bar_teardown(struct block *bar)
 {
-	struct block *block = bar->blocks;
+	struct block *block = bar->next;
 	int err;
 
 	/* Disable event I/O for blocks (persistent) */
@@ -286,7 +286,7 @@ static void bar_teardown(struct bar *bar)
 	debug("bar tear down");
 }
 
-static int bar_poll(struct bar *bar)
+static int bar_poll(struct block *bar)
 {
 	sigset_t sigset;
 	int sig, fd;
@@ -353,9 +353,9 @@ static int bar_poll(struct bar *bar)
 	return err;
 }
 
-static void bar_destroy(struct bar *bar)
+static void bar_destroy(struct block *bar)
 {
-	struct block *block = bar->blocks;
+	struct block *block = bar->next;
 	struct block *next;
 
 	bar_stop(bar);
@@ -369,12 +369,12 @@ static void bar_destroy(struct bar *bar)
 	free(bar);
 }
 
-static struct bar *bar_create(bool term)
+static struct block *bar_create(bool term)
 {
-	struct bar *bar;
+	struct block *bar;
 	int err;
 
-	bar = calloc(1, sizeof(struct bar));
+	bar = calloc(1, sizeof(struct block));
 	if (!bar)
 		return NULL;
 
@@ -391,7 +391,7 @@ static struct bar *bar_create(bool term)
 
 static int bar_config_cb(const struct map *map, void *data)
 {
-	struct bar *bar = data;
+	struct block *bar = data;
 	struct block *block;
 	struct block *prev;
 
@@ -399,19 +399,19 @@ static int bar_config_cb(const struct map *map, void *data)
 	if (!block)
 		return -ENOMEM;
 
-	if (bar->blocks) {
-		prev = bar->blocks;
+	if (bar->next) {
+		prev = bar->next;
 		while (prev->next)
 			prev = prev->next;
 		prev->next = block;
 	} else {
-		bar->blocks = block;
+		bar->next = block;
 	}
 
 	return 0;
 }
 
-static void bar_load(struct bar *bar, const char *path)
+static void bar_load(struct block *bar, const char *path)
 {
 	int err;
 
@@ -422,7 +422,7 @@ static void bar_load(struct bar *bar, const char *path)
 
 int bar_init(bool term, const char *path)
 {
-	struct bar *bar;
+	struct block *bar;
 	int err;
 
 	bar = bar_create(term);

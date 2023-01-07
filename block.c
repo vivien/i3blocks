@@ -508,7 +508,7 @@ void block_destroy(struct block *block)
 	free(block);
 }
 
-struct block *block_create(struct bar *bar, const struct map *config)
+struct block *block_create(struct block *bar, const struct map *config)
 {
 	struct block *block;
 	int err;

@@ -37,7 +37,7 @@
 #define EXIT_ERR_INTERNAL	66
 
 struct block {
-	const struct bar *bar;
+	const struct block *bar;
 
 	struct map *config;
 	struct map *env;
@@ -59,11 +59,13 @@ struct block {
 	int out;
 	int code;
 	pid_t pid;
+	bool term;
+	sigset_t sigset;
 
 	struct block *next;
 };
 
-struct block *block_create(struct bar *bar, const struct map *config);
+struct block *block_create(struct block *bar, const struct map *config);
 void block_destroy(struct block *block);
 
 int block_reset(struct block *block);
