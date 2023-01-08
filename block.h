@@ -21,7 +21,6 @@
 
 #include <sys/types.h>
 
-#include "bar.h"
 #include "log.h"
 #include "map.h"
 
@@ -110,5 +109,16 @@ void block_touch(struct block *block);
 int block_reap(struct block *block);
 int block_drain(struct block *block);
 void block_close(struct block *block);
+
+int bar_init(bool term, const char *path);
+
+/* i3bar.c */
+int i3bar_read(int fd, size_t count, struct map *map);
+int i3bar_click(struct block *bar);
+int i3bar_print(const struct block *bar);
+int i3bar_printf(struct block *block, int lvl, const char *msg);
+int i3bar_setup(struct block *block);
+int i3bar_start(struct block *bar);
+void i3bar_stop(struct block *bar);
 
 #endif /* BLOCK_H */

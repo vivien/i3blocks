@@ -21,7 +21,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "bar.h"
 #include "block.h"
 #include "config.h"
 #include "json.h"

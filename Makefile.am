@@ -4,7 +4,6 @@ DEFS += \
 bin_PROGRAMS = i3blocks
 i3blocks_SOURCES = \
 	bar.c \
-	bar.h \
 	block.c \
 	block.h \
 	config.c \

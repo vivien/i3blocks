@@ -17,10 +17,10 @@
  */
 
 #include <ctype.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "bar.h"
 #include "block.h"
 #include "json.h"
 #include "line.h"

@@ -16,7 +16,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "bar.h"
 #include "block.h"
 #include "json.h"
 #include "line.h"
