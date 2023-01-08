@@ -22,6 +22,7 @@
 #include <string.h>
 
 #include "block.h"
+#include "config.h"
 #include "json.h"
 #include "line.h"
 #include "log.h"
@@ -558,4 +559,410 @@ void block_printf(struct block *block, int lvl, const char *fmt, ...)
 	err = i3bar_printf(block, lvl, buf);
 	if (err)
 		fatal("failed to format message for block %s: %s", block->name, buf);
+}
+
+static void bar_read(struct block *bar)
+{
+	int err;
+
+	err = i3bar_click(bar);
+	if (err)
+		block_error(bar, "failed to read bar");
+}
+
+static void bar_print(struct block *bar)
+{
+	int err;
+
+	err = i3bar_print(bar);
+	if (err)
+		fatal("failed to print bar!");
+}
+
+static int bar_start(struct block *bar)
+{
+	int err;
+
+	err = i3bar_start(bar);
+	if (err)
+		return err;
+
+	debug("bar started");
+
+	return 0;
+}
+
+static void bar_stop(struct block *bar)
+{
+	i3bar_stop(bar);
+
+	debug("bar stopped");
+}
+
+static void bar_poll_timed(struct block *bar)
+{
+	struct block *block = bar->next;
+
+	while (block) {
+		/* spawn unless it is only meant for click or signal */
+		if (block->interval != 0) {
+			block_spawn(block);
+			block_touch(block);
+		}
+
+		block = block->next;
+	}
+}
+
+static void bar_poll_expired(struct block *bar)
+{
+	struct block *block = bar->next;
+
+	while (block) {
+		if (block->interval > 0) {
+			const unsigned long next_update = block->timestamp + block->interval;
+			unsigned long now;
+			int err;
+
+			err = sys_gettime(&now);
+			if (err)
+				return;
+
+			if (((long) (next_update - now)) <= 0) {
+				block_debug(block, "expired");
+				block_spawn(block);
+				block_touch(block);
+			}
+		}
+
+		block = block->next;
+	}
+}
+
+static void bar_poll_signaled(struct block *bar, int sig)
+{
+	struct block *block = bar->next;
+
+	while (block) {
+		if (block->signal == sig) {
+			block_debug(block, "signaled");
+			block_spawn(block);
+			block_touch(block);
+		}
+
+		block = block->next;
+	}
+}
+
+static void bar_poll_exited(struct block *bar)
+{
+	struct block *block;
+	pid_t pid;
+	int err;
+
+	for (;;) {
+		err = sys_waitid(&pid);
+		if (err)
+			break;
+
+		/* Find the dead process */
+		block = bar->next;
+		while (block) {
+			if (block->pid == pid)
+				break;
+
+			block = block->next;
+		}
+
+		if (block) {
+			block_debug(block, "exited");
+			block_reap(block);
+			if (block->interval == INTERVAL_PERSIST) {
+				block_debug(block, "unexpected exit?");
+			} else {
+				block_drain(block);
+			}
+			block_close(block);
+			if (block->interval == INTERVAL_REPEAT) {
+				block_spawn(block);
+				block_touch(block);
+			}
+		} else {
+			error("unknown child process %d", pid);
+			err = sys_waitpid(pid, NULL);
+			if (err)
+				break;
+		}
+	}
+
+	bar_print(bar);
+}
+
+static void bar_poll_flushed(struct block *bar, int sig, int fd)
+{
+	struct block *block = bar->next;
+
+	if (sig == SIGIO) {
+		bar_read(bar);
+		return;
+	};
+
+	while (block) {
+		if (block->out == fd) {
+			block_debug(block, "flushed");
+			block_drain(block);
+			bar_print(bar);
+			break;
+		}
+
+		block = block->next;
+	}
+}
+
+static int gcd(int a, int b)
+{
+	while (b != 0)
+		a %= b, a ^= b, b ^= a, a ^= b;
+
+	return a;
+}
+
+static int bar_setup(struct block *bar)
+{
+	struct block *block = bar->next;
+	unsigned long sleeptime = 0;
+	sigset_t sigset;
+	int sig;
+	int err;
+
+	while (block) {
+		err = block_setup(block);
+		if (err)
+			return err;
+
+		/* The maximum sleep time is actually the GCD
+		 * between all positive block intervals.
+		 */
+		if (block->interval > 0) {
+			if (sleeptime > 0)
+				sleeptime = gcd(sleeptime, block->interval);
+			else
+				sleeptime = block->interval;
+		}
+
+		block = block->next;
+	}
+
+	err = sys_sigfillset(&sigset);
+	if (err)
+		return err;
+
+	err = sys_sigsetmask(&sigset, &bar->sigset);
+	if (err)
+		return err;
+
+	if (sleeptime) {
+		err = sys_setitimer(sleeptime);
+		if (err)
+			return err;
+	}
+
+	err = sys_cloexec(STDIN_FILENO);
+	if (err)
+		return err;
+
+	/* Setup event I/O for stdin (clicks) */
+	err = sys_async(STDIN_FILENO, SIGIO);
+	if (err)
+		return err;
+
+	debug("bar set up");
+
+	return 0;
+}
+
+static void bar_teardown(struct block *bar)
+{
+	struct block *block = bar->next;
+	int err;
+
+	/* Disable event I/O for blocks (persistent) */
+	while (block) {
+		if (block->interval == INTERVAL_PERSIST) {
+			err = sys_async(block->out, 0);
+			if (err)
+				block_error(block, "failed to disable event I/O");
+		}
+
+		block = block->next;
+	}
+
+	/* Disable event I/O for stdin (clicks) */
+	err = sys_async(STDIN_FILENO, 0);
+	if (err)
+		error("failed to disable event I/O on stdin");
+
+	/* Restore original sigset (so subsequent syscall can be interrupted) */
+	err = sys_sigsetmask(&bar->sigset, NULL);
+	if (err)
+		error("failed to set signal mask");
+
+	/* Wait for child processes termination */
+	err = sys_waitanychild();
+	if (err)
+		error("failed to wait for any child");
+
+	debug("bar tear down");
+}
+
+static int bar_poll(struct block *bar)
+{
+	sigset_t sigset;
+	int sig, fd;
+	int err;
+
+	err = bar_setup(bar);
+	if (err)
+		return err;
+
+	/* Initial display (for static blocks and loading labels) */
+	bar_print(bar);
+
+	/* First forks (for commands with an interval) */
+	bar_poll_timed(bar);
+
+	err = sys_sigfillset(&sigset);
+	if (err)
+		return err;
+
+	while (1) {
+		err = sys_sigwaitinfo(&sigset, &sig, &fd);
+		if (err) {
+			/* Hiding the bar may interrupt this system call */
+			if (err == -EINTR)
+				continue;
+			break;
+		}
+
+		debug("received signal %d (%s) fd %d", sig, strsignal(sig), fd);
+
+		if (sig == SIGTERM || sig == SIGINT)
+			break;
+
+		if (sig == SIGALRM) {
+			bar_poll_expired(bar);
+			continue;
+		}
+
+		if (sig == SIGCHLD) {
+			bar_poll_exited(bar);
+			continue;
+		}
+
+		if (sig == SIGIO || sig == SIGRTMIN) {
+			bar_poll_flushed(bar, sig, fd);
+			continue;
+		}
+
+		if (sig > SIGRTMIN && sig <= SIGRTMAX) {
+			bar_poll_signaled(bar, sig - SIGRTMIN);
+			continue;
+		}
+
+		if (sig == SIGUSR1 || sig == SIGUSR2) {
+			error("SIGUSR{1,2} are deprecated, ignoring.");
+			continue;
+		}
+
+		debug("unhandled signal %d", sig);
+	}
+
+	bar_teardown(bar);
+
+	return err;
+}
+
+static void bar_destroy(struct block *bar)
+{
+	struct block *block = bar->next;
+	struct block *next;
+
+	bar_stop(bar);
+
+	while (block) {
+		next = block->next;
+		block_destroy(block);
+		block = next;
+	}
+
+	free(bar);
+}
+
+static struct block *bar_create(bool term)
+{
+	struct block *bar;
+	int err;
+
+	bar = calloc(1, sizeof(struct block));
+	if (!bar)
+		return NULL;
+
+	bar->term = term;
+
+	err = bar_start(bar);
+	if (err) {
+		bar_destroy(bar);
+		return NULL;
+	}
+
+	return bar;
+}
+
+static int bar_config_cb(const struct map *map, void *data)
+{
+	struct block *bar = data;
+	struct block *block;
+	struct block *prev;
+
+	block = block_create(bar, map);
+	if (!block)
+		return -ENOMEM;
+
+	if (bar->next) {
+		prev = bar->next;
+		while (prev->next)
+			prev = prev->next;
+		prev->next = block;
+	} else {
+		bar->next = block;
+	}
+
+	return 0;
+}
+
+static void bar_load(struct block *bar, const char *path)
+{
+	int err;
+
+	err = config_load(path, bar_config_cb, bar);
+	if (err)
+		block_fatal(bar, "Failed to load configuration file %s", path);
+}
+
+int bar_init(bool term, const char *path)
+{
+	struct block *bar;
+	int err;
+
+	bar = bar_create(term);
+	if (!bar)
+		return -ENOMEM;
+
+	bar_load(bar, path);
+
+	err = bar_poll(bar);
+
+	bar_destroy(bar);
+
+	return err;
 }
