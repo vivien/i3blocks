@@ -38,7 +38,7 @@ static void bar_read(struct block *bar)
 
 	err = i3bar_click(bar);
 	if (err)
-		bar_error(bar, "failed to read bar");
+		block_error(bar, "failed to read bar");
 }
 
 static void bar_print(struct block *bar)
@@ -417,7 +417,7 @@ static void bar_load(struct block *bar, const char *path)
 
 	err = config_load(path, bar_config_cb, bar);
 	if (err)
-		bar_fatal(bar, "Failed to load configuration file %s", path);
+		block_fatal(bar, "Failed to load configuration file %s", path);
 }
 
 int bar_init(bool term, const char *path)

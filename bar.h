@@ -24,33 +24,6 @@
 #include "block.h"
 #include "sys.h"
 
-#define bar_printf(bar, lvl, fmt, ...) \
-	block_printf(bar, lvl, "%s" fmt, bar->term ? "TTY " : "", ##__VA_ARGS__)
-
-#define bar_fatal(bar, fmt, ...) \
-	do { \
-		fatal(fmt, ##__VA_ARGS__); \
-		bar_printf(bar, LOG_FATAL, "Oops! " fmt ". Increase log level for details.", ##__VA_ARGS__); \
-	} while (0)
-
-#define bar_error(bar, fmt, ...) \
-	do { \
-		error(fmt, ##__VA_ARGS__); \
-		bar_printf(bar, LOG_ERROR, "Error: " fmt, ##__VA_ARGS__); \
-	} while (0)
-
-#define bar_trace(bar, fmt, ...) \
-	do { \
-		trace(fmt, ##__VA_ARGS__); \
-		bar_printf(bar, LOG_TRACE, "Trace: " fmt, ##__VA_ARGS__); \
-	} while (0)
-
-#define bar_debug(bar, fmt, ...) \
-	do { \
-		debug(fmt, ##__VA_ARGS__); \
-		bar_printf(bar, LOG_DEBUG, "Debug: " fmt, ##__VA_ARGS__); \
-	} while (0)
-
 int bar_init(bool term, const char *path);
 
 struct map;
