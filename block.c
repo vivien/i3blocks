@@ -28,16 +28,6 @@
 #include "log.h"
 #include "sys.h"
 
-const char *block_get(const struct block *block, const char *key)
-{
-	return map_get(block->env, key);
-}
-
-int block_set(struct block *block, const char *key, const char *value)
-{
-	return map_set(block->env, key, value);
-}
-
 int block_reset(struct block *block)
 {
 	map_clear(block->env);
@@ -111,18 +101,18 @@ static int block_update(struct block *block, const struct map *map)
 		return err;
 
 	/* Deprecated label */
-	label = block_get(block, "label");
-	full_text = block_get(block, "full_text");
+	label = map_get(block->env, "label");
+	full_text = map_get(block->env, "full_text");
 	if (label && full_text) {
 		snprintf(buf, sizeof(buf), "%s%s", label, full_text);
-		err = block_set(block, "full_text", buf);
+		err = map_set(block->env, "full_text", buf);
 		if (err)
 			return err;
 	}
 
 	/* Exit code takes precedence over the output */
 	if (block->code == EXIT_URGENT) {
-		err = block_set(block, "urgent", "true");
+		err = map_set(block->env, "urgent", "true");
 		if (err)
 			return err;
 	}
@@ -204,7 +194,7 @@ static int block_send_json(struct block *block)
 /* Push data to forked process through the open stdin pipe */
 static int block_send(struct block *block)
 {
-	const char *button = block_get(block, "button");
+	const char *button = map_get(block->env, "button");
 
 	if (!button) {
 		block_error(block, "no click data to send");

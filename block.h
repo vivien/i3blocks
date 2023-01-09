@@ -69,9 +69,6 @@ void block_destroy(struct block *block);
 
 int block_reset(struct block *block);
 
-const char *block_get(const struct block *block, const char *key);
-int block_set(struct block *block, const char *key, const char *value);
-
 int block_for_each(const struct block *block,
 		   int (*func)(const char *key, const char *value, void *data),
 		   void *data);

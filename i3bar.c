@@ -253,8 +253,8 @@ static struct block *i3bar_find(struct block *bar, const struct map *map)
 	map_instance = map_get(map, "instance") ? : "";
 
 	while (block) {
-		block_name = block_get(block, "name") ? : "";
-		block_instance = block_get(block, "instance") ? : "";
+		block_name = map_get(block->env, "name") ? : "";
+		block_instance = map_get(block->env, "instance") ? : "";
 
 		if (strcmp(block_name, map_name) == 0 &&
 		    strcmp(block_instance, map_instance) == 0)
