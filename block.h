@@ -67,8 +67,6 @@ struct block {
 struct block *block_create(struct block *bar, const struct map *config);
 void block_destroy(struct block *block);
 
-int block_reset(struct block *block);
-
 void block_printf(struct block *block, int lvl, const char *fmt, ...);
 
 #define block_fatal(block, fmt, ...) \

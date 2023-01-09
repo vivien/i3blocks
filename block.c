@@ -28,13 +28,6 @@
 #include "log.h"
 #include "sys.h"
 
-int block_reset(struct block *block)
-{
-	map_clear(block->env);
-
-	return map_copy(block->env, block->config);
-}
-
 static bool block_is_spawned(struct block *block)
 {
 	return block->pid > 0;
@@ -85,7 +78,9 @@ static int block_update(struct block *block, const struct map *map)
 	char buf[BUFSIZ];
 	int err;
 
-	err = block_reset(block);
+	map_clear(block->env);
+
+	err = map_copy(block->env, block->config);
 	if (err)
 		return err;
 
@@ -472,7 +467,9 @@ int block_setup(struct block *block)
 	if (err)
 		return err;
 
-	err = block_reset(block);
+	map_clear(block->env);
+
+	err = map_copy(block->env, block->config);
 	if (err)
 		return err;
 

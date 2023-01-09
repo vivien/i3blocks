@@ -290,7 +290,9 @@ int i3bar_click(struct block *bar)
 		block = i3bar_find(bar, click);
 		if (block) {
 			if (block->tainted) {
-				err = block_reset(block);
+				map_clear(block->env);
+
+				err = map_copy(block->env, block->config);
 				if (err)
 					break;
 
