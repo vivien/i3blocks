@@ -35,13 +35,6 @@ int block_reset(struct block *block)
 	return map_copy(block->env, block->config);
 }
 
-int block_for_each(const struct block *block,
-		   int (*func)(const char *key, const char *value, void *data),
-		   void *data)
-{
-	return map_for_each(block->env, func, data);
-}
-
 static bool block_is_spawned(struct block *block)
 {
 	return block->pid > 0;
@@ -185,7 +178,7 @@ static int block_send_json(struct block *block)
 	int err;
 
 	dprintf(block->in, "{\"\":\"\"");
-	err = block_for_each(block, block_send_key, block);
+	err = map_for_each(block->env, block_send_key, block);
 	dprintf(block->in, "}\n");
 
 	return err;
@@ -247,7 +240,7 @@ static int block_child(struct block *block)
 {
 	int err;
 
-	err = block_for_each(block, block_setenv, NULL);
+	err = map_for_each(block->env, block_setenv, NULL);
 	if (err)
 		return err;
 

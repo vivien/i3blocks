@@ -69,10 +69,6 @@ void block_destroy(struct block *block);
 
 int block_reset(struct block *block);
 
-int block_for_each(const struct block *block,
-		   int (*func)(const char *key, const char *value, void *data),
-		   void *data);
-
 void block_printf(struct block *block, int lvl, const char *fmt, ...);
 
 #define block_fatal(block, fmt, ...) \
