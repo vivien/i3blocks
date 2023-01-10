@@ -85,6 +85,18 @@ int i3bar_read(int fd, size_t count, struct map *map)
 	return line_read(fd, count, i3bar_line_cb, map);
 }
 
+int i3bar_write(struct block *block)
+{
+	const char *button = map_get(block->env, "button");
+
+	if (!button) {
+		block_error(block, "no click data to send");
+		return -EINVAL;
+	}
+
+	dprintf(block->in, "%s\n", button);
+}
+
 static void i3bar_print_term(const struct block *bar)
 {
 	struct block *block = bar->next;

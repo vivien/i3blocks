@@ -182,13 +182,6 @@ static int block_send_json(struct block *block)
 /* Push data to forked process through the open stdin pipe */
 static int block_send(struct block *block)
 {
-	const char *button = map_get(block->env, "button");
-
-	if (!button) {
-		block_error(block, "no click data to send");
-		return -EINVAL;
-	}
-
 	if (!block_is_spawned(block)) {
 		block_error(block, "persistent block not spawned");
 		return 0;
@@ -196,10 +189,8 @@ static int block_send(struct block *block)
 
 	if (block->format == FORMAT_JSON)
 		return block_send_json(block);
-
-	dprintf(block->in, "%s\n", button);
-
-	return 0;
+	else
+		return i3bar_write(block);
 }
 
 int block_click(struct block *block)

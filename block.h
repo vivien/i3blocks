@@ -105,6 +105,7 @@ int bar_init(bool term, const char *path);
 
 /* i3bar.c */
 int i3bar_read(int fd, size_t count, struct map *map);
+int i3bar_write(struct block *block);
 int i3bar_click(struct block *bar);
 int i3bar_print(const struct block *bar);
 int i3bar_printf(struct block *block, int lvl, const char *msg);
