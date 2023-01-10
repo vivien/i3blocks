@@ -301,6 +301,8 @@ int i3bar_click(struct block *bar)
 		/* Look for the corresponding block */
 		block = i3bar_find(bar, click);
 		if (block) {
+			block_debug(block, "clicked");
+
 			if (block->tainted) {
 				map_clear(block->env);
 
@@ -318,9 +320,15 @@ int i3bar_click(struct block *bar)
 				if (err)
 					break;
 
-				err = block_click(block);
-				if (err)
-					break;
+				if (block->interval == INTERVAL_PERSIST) {
+					err = block_write(block);
+					if (err)
+						break;
+				} else {
+					err = block_spawn(block);
+					if (err)
+						break;
+				}
 			}
 		}
 

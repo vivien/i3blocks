@@ -94,7 +94,7 @@ void block_printf(struct block *block, int lvl, const char *fmt, ...);
 	} while (0)
 
 int block_setup(struct block *block);
-int block_click(struct block *block);
+int block_write(struct block *block);
 int block_spawn(struct block *block);
 void block_touch(struct block *block);
 int block_reap(struct block *block);

@@ -149,7 +149,7 @@ int block_drain(struct block *block)
 	return err;
 }
 
-static int block_send_key(const char *key, const char *value, void *data)
+static int block_write_json_cb(const char *key, const char *value, void *data)
 {
 	struct block *block = data;
 	char buf[BUFSIZ];
@@ -168,39 +168,29 @@ static int block_send_key(const char *key, const char *value, void *data)
 	return 0;
 }
 
-static int block_send_json(struct block *block)
+static int block_write_json(struct block *block)
 {
 	int err;
 
 	dprintf(block->in, "{\"\":\"\"");
-	err = map_for_each(block->env, block_send_key, block);
+	err = map_for_each(block->env, block_write_json_cb, block);
 	dprintf(block->in, "}\n");
 
 	return err;
 }
 
 /* Push data to forked process through the open stdin pipe */
-static int block_send(struct block *block)
+int block_write(struct block *block)
 {
 	if (!block_is_spawned(block)) {
 		block_error(block, "persistent block not spawned");
-		return 0;
+		return -EINVAL;
 	}
 
 	if (block->format == FORMAT_JSON)
-		return block_send_json(block);
+		return block_write_json(block);
 	else
 		return i3bar_write(block);
-}
-
-int block_click(struct block *block)
-{
-	block_debug(block, "clicked");
-
-	if (block->interval == INTERVAL_PERSIST)
-		return block_send(block);
-
-	return block_spawn(block);
 }
 
 void block_touch(struct block *block)
