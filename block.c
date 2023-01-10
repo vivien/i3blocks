@@ -231,7 +231,7 @@ void block_touch(struct block *block)
 	block->timestamp = now;
 }
 
-static int block_child(struct block *block)
+static int block_exec(struct block *block)
 {
 	int err;
 
@@ -298,9 +298,11 @@ static int block_fork(struct block *block)
 		block->in = in[0];
 		block->out = out[1];
 
-		err = block_child(block);
+		err = block_exec(block);
 		if (err)
 			sys_exit(EXIT_ERR_INTERNAL);
+
+		sys_exit(EXIT_SUCCESS);
 	}
 
 	err = sys_close(in[0]);
