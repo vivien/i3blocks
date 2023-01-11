@@ -254,22 +254,23 @@ void i3bar_stop(struct block *bar)
 	}
 }
 
-static struct block *i3bar_find(struct block *bar, const struct map *map)
+static bool i3bar_match(const struct map *m1, const struct map *m2)
 {
-	const char *block_name, *block_instance;
-	const char *map_name, *map_instance;
-	struct block *block = bar->next;
+	const char *m1_name = map_get(m1, "name") ? : "";
+	const char *m2_name = map_get(m2, "name") ? : "";
+	const char *m1_instance = map_get(m1, "instance") ? : "";
+	const char *m2_instance = map_get(m2, "instance") ? : "";
 
 	/* "name" and "instance" are the only identifiers provided by i3bar */
-	map_name = map_get(map, "name") ? : "";
-	map_instance = map_get(map, "instance") ? : "";
+	return !strcmp(m1_name, m2_name) && !strcmp(m2_instance, m2_instance);
+}
+
+static struct block *i3bar_find(struct block *bar, const struct map *map)
+{
+	struct block *block = bar->next;
 
 	while (block) {
-		block_name = map_get(block->env, "name") ? : "";
-		block_instance = map_get(block->env, "instance") ? : "";
-
-		if (strcmp(block_name, map_name) == 0 &&
-		    strcmp(block_instance, map_instance) == 0)
+		if (i3bar_match(block->env, map))
 			return block;
 
 		block = block->next;
