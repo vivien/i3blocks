@@ -16,12 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef IO_H
-#define IO_H
+#ifndef LINE_H
+#define LINE_H
 
 #include <unistd.h>
 
 typedef int line_cb_t(char *line, size_t num, void *data);
 int line_read(int fd, size_t count, line_cb_t *cb, void *data);
 
-#endif /* IO_H */
+#endif /* LINE_H */
