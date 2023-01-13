@@ -1,5 +1,5 @@
 /*
- * line.c - generic line parser
+ * line.c - strict line parsing code
  * Copyright (C) 2015-2019  Vivien Didelot
  *
  * This program is free software: you can redistribute it and/or modify
@@ -20,51 +20,19 @@
 #include "log.h"
 #include "sys.h"
 
-/* Read a single character and return a negative error code if none was read */
-static int line_getc(int fd, char *c)
-{
-	return sys_read(fd, c, 1, NULL);
-}
-
-/* Read a line and return the number of characters read (negative on error) */
-static ssize_t line_gets(int fd, char *buf, size_t size)
-{
-	size_t len = 0;
-	int err;
-
-	for (;;) {
-		if (len == size)
-			return -size;
-
-		err = line_getc(fd, buf + len);
-		if (err)
-			return -len;
-
-		if (buf[len++] == '\n')
-			break;
-	}
-
-	/* at least 1 */
-	return len;
-}
-
 /* Read a line excluding the newline character */
 static int line_parse(int fd, line_cb_t *cb, size_t num, void *data)
 {
-	size_t size = BUFSIZ;
-	char buf[size];
-	ssize_t len;
+	char buf[BUFSIZ];
+	size_t len;
 	int err;
 
-	len = line_gets(fd, buf, sizeof(buf));
-	if (len < 1) {
-		if (len == -size)
-			return -ENOSPC;
+	err = sys_getline(fd, buf, sizeof(buf), &len);
+	if (err)
+		return err;
 
-		if (len == 0)
-			return -EAGAIN;
-
-		error("&%d:%.3d: not ending with a newline: %.*s", fd, num, -len, buf);
+	if (buf[len - 1] != '\n') {
+		debug("&%d:%.3d: %.*s\\ No newline", fd, num, len, buf);
 		return -EINVAL;
 	}
 

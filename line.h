@@ -1,5 +1,5 @@
 /*
- * line.h - generic line parsing header
+ * line.h - strict line parsing header
  * Copyright (C) 2015-2019  Vivien Didelot
  *
  * This program is free software: you can redistribute it and/or modify
