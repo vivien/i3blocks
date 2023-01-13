@@ -1,5 +1,5 @@
 /*
- * sys.c - system calls
+ * sys.c - stateless interaction with the system
  * Copyright (C) 2017-2019  Vivien Didelot
  *
  * This program is free software: you can redistribute it and/or modify
@@ -258,7 +258,7 @@ int sys_close(int fd)
 	return 0;
 }
 
-/* Read up to size bytes and store the positive count on success */
+/* Read up to size bytes and store the positive read count on success */
 int sys_read(int fd, void *buf, size_t size, size_t *count)
 {
 	ssize_t rc;
@@ -280,6 +280,51 @@ int sys_read(int fd, void *buf, size_t size, size_t *count)
 		*count = rc;
 
 	return 0;
+}
+
+/* Read a single character */
+int sys_getchar(int fd, char *c)
+{
+	size_t count;
+	int err;
+
+	err = sys_read(fd, c, 1, &count);
+	if (err)
+		return err;
+
+	return 0;
+}
+
+/* Read up to size chars or until a delimiter and store the read count */
+int sys_getdelim(int fd, char *buf, size_t size, char delim, size_t *count)
+{
+	size_t len = 0;
+	int err;
+
+	for (;;) {
+		if (len == size) {
+			err = -ENOSPC;
+			break;
+		}
+
+		err = sys_getchar(fd, buf + len);
+		if (err)
+			break;
+
+		if (buf[len++] == delim)
+			break;
+	}
+
+	if (count)
+		*count = len;
+
+	return err;
+}
+
+/* Read up to size chars or until a newline and store the read count */
+int sys_getline(int fd, char *buf, size_t size, size_t *count)
+{
+	return sys_getdelim(fd, buf, size, '\n', count);
 }
 
 int sys_dup(int fd1, int fd2)
