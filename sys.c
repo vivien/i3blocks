@@ -258,7 +258,7 @@ int sys_close(int fd)
 	return 0;
 }
 
-/* Read up to size bytes and store the positive read count on success */
+/* Read up to size bytes and store the read count on success */
 int sys_read(int fd, void *buf, size_t size, size_t *count)
 {
 	ssize_t rc;
@@ -271,10 +271,6 @@ int sys_read(int fd, void *buf, size_t size, size_t *count)
 			rc = -EAGAIN;
 		return rc;
 	}
-
-	/* End of file or pipe */
-	if (rc == 0)
-		return -EAGAIN;
 
 	if (count)
 		*count = rc;
@@ -291,6 +287,10 @@ int sys_getchar(int fd, char *c)
 	err = sys_read(fd, c, 1, &count);
 	if (err)
 		return err;
+
+	/* End of file or pipe */
+	if (count == 0)
+		return -EAGAIN;
 
 	return 0;
 }
