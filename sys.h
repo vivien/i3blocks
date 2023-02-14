@@ -19,7 +19,6 @@
 #ifndef SYS_H
 #define SYS_H
 
-#include <libgen.h> /* for dirname(3) */
 #include <signal.h>
 #include <unistd.h>
 

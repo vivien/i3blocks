@@ -629,10 +629,12 @@ int block_setup(struct block *block)
 
 void block_destroy(struct block *block)
 {
-	debug("block_destroy");
-	map_destroy(block->config);
-	map_destroy(block->env);
-	free(block->name);
+	if (block->config)
+		map_destroy(block->config);
+	if (block->env)
+		map_destroy(block->env);
+	if (block->name)
+		free(block->name);
 	if (block->ticker)
 		ticker_destroy(block->ticker);
 	free(block);

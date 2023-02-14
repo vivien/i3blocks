@@ -441,12 +441,6 @@ static struct bar *bar_create(bool term)
 	if (!bar)
 		return NULL;
 
-	bar->blocks = block_create(bar, NULL);
-	if (!bar->blocks) {
-		bar_destroy(bar);
-		return NULL;
-	}
-
 	bar->term = term;
 
 	err = bar_start(bar);
@@ -458,20 +452,24 @@ static struct bar *bar_create(bool term)
 	return bar;
 }
 
-static int bar_config_cb(struct map *map, void *data)
+static int bar_config_cb(const struct map *map, void *data)
 {
 	struct bar *bar = data;
-	struct block *block = bar->blocks;
+	struct block *block;
+	struct block *prev;
 
-	while (block->next)
-		block = block->next;
-
-	block->next = block_create(bar, map);
-
-	map_destroy(map);
-
-	if (!block->next)
+	block = block_create(bar, map);
+	if (!block)
 		return -ENOMEM;
+
+	if (bar->blocks) {
+		prev = bar->blocks;
+		while (prev->next)
+			prev = prev->next;
+		prev->next = block;
+	} else {
+		bar->blocks = block;
+	}
 
 	return 0;
 }

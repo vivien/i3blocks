@@ -3,12 +3,14 @@
 
 = {progname}
 
-A feed generator for text based status bars
+The hacker-friendly `status_command` for Sway and i3
 
-{progname} executes your command lines and generates a status line from their output.
+{progname} is a feed generator for text based status bars.
+It executes your command lines and generates a status line from their output.
 Commands are scheduled at configured time intervals, upon signal reception or on clicks.
 
 The generated line is meant to be displayed by the link:https://i3wm.org[i3] window manager through its i3bar component, as an alternative to i3status.
+This program naturally works out of the box with the link:https://swaywm.org[sway] Wayland compositor since it is a drop-in replacement for i3.
 
 {progname} is meant to be highly flexible but intuitive.
 No library package is required, just output what your status bar expects, from your favorite programming language and your preferred format.
@@ -136,6 +138,8 @@ However on startup, {progname} checks some optional properties to eventually set
 If a block specifies a command, then all of its properties are passed as environment variables at execution, which means that the _foo=bar_ property will be available from a shell script with `$foo`.
 The output of the command is used to update the values of these variables.
 The values are reset to default (as defined in the configuration file) before the update, so that blocks get a consistent behavior at each execution.
+
+NOTE: Each line from a block output must be terminated with a newline.
 
 == i3bar properties
 
@@ -448,6 +452,9 @@ For example:
 ----
 font pango:Inconsolata, Icons 12
 ----
+
+Why is `printf` not working?::
+As of {progname} 1.5, each line from a block output are expected to be terminated with a newline, e.g. with `printf "...\n"` from a shell script.
 
 Why is the output from my persistent block not displayed?::
 Make sure to flush stdout, for example:

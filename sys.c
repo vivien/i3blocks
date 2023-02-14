@@ -108,16 +108,17 @@ int sys_waitid(pid_t *pid)
 int sys_waitpid(pid_t pid, int *code)
 {
 	int status;
+	pid_t w;
 	int rc;
 
-	rc = waitpid(pid, &status, 0);
-	if (rc == -1) {
+	w = waitpid(pid, &status, 0);
+	if (w == -1) {
 		sys_errno("waitpid(%d)", pid);
 		rc = -errno;
 		return rc;
 	}
 
-	if (rc == 0)
+	if (w == 0)
 		return -ECHILD;
 
 	if (code)
