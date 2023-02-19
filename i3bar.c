@@ -175,7 +175,7 @@ static int i3bar_print_block(struct block *block, void *data)
 {
 	struct block *block = bar->blocks;
 	unsigned int mcount = 0;
-	int err;
+	int err = 0;
 
 	if (bar->term) {
 		i3bar_print_term(bar);
@@ -183,12 +183,14 @@ static int i3bar_print_block(struct block *block, void *data)
 	}
 
 	fprintf(stdout, ",[");
-	while (block) {
-		err = i3bar_print_block(block, &mcount);
-		if (err)
-			break;
+	if (!block->bar->hidden) {
+		while (block) {
+			err = i3bar_print_block(block, &mcount);
+			if (err)
+				break;
 
-		block = block->next;
+			block = block->next;
+		}
 	}
 	fprintf(stdout, "]\n");
 	fflush(stdout);
