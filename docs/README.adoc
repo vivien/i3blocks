@@ -169,9 +169,11 @@ These will be considered as simple variables at runtime.
 
 === command
 
-The optional _command_ property specifies a command line to be executed with `sh -c`.
-The command can be relative to the configuration file where it is defined.
-If the command outputs some text, it is used to update the block.
+The optional _command_ property specifies a command line to be executed with
+`sh -c`. The command can be relative to the configuration file where it is
+defined. If the command outputs some text, it is used to update the block. See
+the link:./#format[format section] for more information about expected text
+output.
 
 An exit code of 0 means success.
 A special exit code of _33_ will set the _urgent_ i3bar key to true.
