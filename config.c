@@ -153,7 +153,7 @@ int config_load(const char *path, config_cb_t *cb, void *data)
 {
 	const char * const home = sys_getenv("HOME");
 	const char * const xdg_home = sys_getenv("XDG_CONFIG_HOME");
-	const char * const xdg_dirs = sys_getenv("XDG_CONFIG_DIRS");
+	const char * xdg_dirs = sys_getenv("XDG_CONFIG_DIRS");
 	struct config conf = {
 		.data = data,
 		.cb = cb,
@@ -183,13 +183,22 @@ int config_load(const char *path, config_cb_t *cb, void *data)
 	}
 
 	/* system config file? */
-	if (xdg_dirs)
-		snprintf(buf, sizeof(buf), "%s/i3blocks/config", xdg_dirs);
-	else
-		snprintf(buf, sizeof(buf), "%s/xdg/i3blocks/config", SYSCONFDIR);
-	err = config_open(&conf, buf);
-	if (err != -ENOENT)
-		return err;
+	if (!xdg_dirs) xdg_dirs = SYSCONFDIR "/xdg";
+	while (*xdg_dirs) {
+		const char * end = strchr(xdg_dirs, ':');
+
+		if (end != xdg_dirs) {
+			int len = end
+			        ? end - xdg_dirs
+			        : sizeof(buf);
+			snprintf(buf, sizeof(buf), "%.*s/i3blocks/config", len, xdg_dirs);
+			err = config_open(&conf, buf);
+			if (err != -ENOENT) return err;
+		}
+
+		if (!end) break;
+		xdg_dirs = end + 1;
+	}
 
 	snprintf(buf, sizeof(buf), "%s/i3blocks.conf", SYSCONFDIR);
 	return config_open(&conf, buf);
