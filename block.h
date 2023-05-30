@@ -1,6 +1,6 @@
 /*
  * block.h - definition of a block
- * Copyright (C) 2014-2019  Vivien Didelot
+ * Copyright (C) 2014-2023  Vivien Didelot, Bogdan Migunov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,10 +20,12 @@
 #define BLOCK_H
 
 #include <sys/types.h>
+#include <stdbool.h>
 
 #include "bar.h"
 #include "log.h"
 #include "map.h"
+#include "ticker.h"
 
 #define INTERVAL_ONCE		-1
 #define INTERVAL_REPEAT		-2
@@ -59,6 +61,8 @@ struct block {
 	int out[2];
 	int code;
 	pid_t pid;
+
+	struct ticker *ticker;
 
 	struct block *next;
 };
@@ -107,6 +111,7 @@ int block_spawn(struct block *block);
 void block_touch(struct block *block);
 int block_reap(struct block *block);
 int block_update(struct block *block);
+void block_set_full_text_saved(struct block *block);
 void block_close(struct block *block);
 
 #endif /* BLOCK_H */

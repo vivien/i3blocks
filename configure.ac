@@ -7,6 +7,7 @@ PKG_CHECK_MODULES([BASH_COMPLETION], [bash-completion >= 2.0],
   [BASH_COMPLETION_DIR="$(pkg-config --variable=completionsdir bash-completion)"],
   [BASH_COMPLETION_DIR="$datadir/bash-completion/completions"]
 )
+PKG_CHECK_MODULES([UTF8PROC], [libutf8proc])
 AC_SUBST([BASH_COMPLETION_DIR])
 AM_CONDITIONAL([ENABLE_BASH_COMPLETION],[test "xBASH_COMPLETION_DIR" != "x"])
 AC_CONFIG_FILES([

@@ -443,7 +443,11 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
 <li><a href="#_example">Example</a></li>
-<li><a href="#_installation">Installation</a></li>
+<li><a href="#_installation">Installation</a>
+<ul class="sectlevel2">
+<li><a href="#_dependencies">Dependencies</a></li>
+</ul>
+</li>
 <li><a href="#_getting_started">Getting started</a></li>
 <li><a href="#_blocks">Blocks</a></li>
 <li><a href="#_i3bar_properties">i3bar properties</a></li>
@@ -453,6 +457,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li><a href="#_interval">interval</a></li>
 <li><a href="#_signal">signal</a></li>
 <li><a href="#_format">format</a></li>
+<li><a href="#_ticker">ticker</a></li>
 </ul>
 </li>
 <li><a href="#_click">Click</a></li>
@@ -552,6 +557,17 @@ cd i3blocks
 ./configure
 make
 make install</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_dependencies">Dependencies</h3>
+<div class="paragraph">
+<p>Since ticker feature has been introduced, there is only one package (<a href="https://github.com/JuliaStrings/utf8proc">libutf8proc</a>) which is need to be installed. On Debian-based systems it can be obtained via apt:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>sudo apt-get install libutf8proc-dev</code></pre>
+</div>
 </div>
 </div>
 </div>
@@ -923,6 +939,52 @@ _count=0
 command=printf '{"full_text":"Counter: %s", "_count":%d}\n' $_count $((_count + 1))
 format=json
 interval=1</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_ticker">ticker</h3>
+<div class="paragraph">
+<p>Optional property. Enable or disable ticker feature. Valid values are <code>true</code> &amp; <code>false</code>.
+This feature only works with the raw format. It will scroll output string char by char with given interval. Offset zeroes if there are changes in the output string.
+Default value is <code>false</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-ini" data-lang="ini">#Output string differs every minute
+[ticker_test]
+command=echo 'TEST_STRING-'$(date +%M)
+interval=1
+ticker=true
+ticker_interval=2</code></pre>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_ticker_delimeter">ticker_delimeter</h4>
+<div class="paragraph">
+<p>Optional property (use in conjunction with <em>ticker</em>). Delimeter character which separates beginning &amp; ending of the output string. If value is set to a string containing multiple characters, only the first character will be used as the delimeter.
+Default value is <code>|</code>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_ticker_direction">ticker_direction</h4>
+<div class="paragraph">
+<p>Direction of the ticker. Valid values are <code>right</code> (shortcut <code>r</code>) &amp; <code>left</code> (shortcut <code>l</code>).
+Default value is <code>left</code>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_ticker_chars_limit">ticker_chars_limit</h4>
+<div class="paragraph">
+<p>Limit of the characters to be displayed if <em>ticker</em> is enabled. <code>0</code> or negative values set limit to default value.
+Default value is <code>16</code>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_ticker_interval">ticker_interval</h4>
+<div class="paragraph">
+<p>Optional property. Defines interval of time after which the output string is shifted by a single char.
+Default value is <code>1</code>.</p>
 </div>
 </div>
 </div>

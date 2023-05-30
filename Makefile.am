@@ -2,6 +2,14 @@ DEFS += \
 	-DSYSCONFDIR=\"$(sysconfdir)\"
 
 bin_PROGRAMS = i3blocks
+
+i3blocks_CFLAGS = \
+	$(AM_CFLAGS) \
+	$(UTF8PROC_CFLAGS)
+
+i3blocks_LDADD = \
+	$(UTF8PROC_LIBS)
+
 i3blocks_SOURCES = \
 	bar.c \
 	bar.h \
@@ -22,7 +30,9 @@ i3blocks_SOURCES = \
 	map.h \
 	sys.c \
 	sys.h \
-	term.h
+	term.h \
+	ticker.c \
+	ticker.h
 
 dist_man1_MANS = \
 	docs/i3blocks.1

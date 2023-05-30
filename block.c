@@ -19,6 +19,8 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+#include <stdbool.h>
 
 #include "bar.h"
 #include "block.h"
@@ -26,6 +28,7 @@
 #include "line.h"
 #include "log.h"
 #include "sys.h"
+#include "ticker.h"
 
 const char *block_get(const struct block *block, const char *key)
 {
@@ -113,8 +116,36 @@ static int block_stdout(struct block *block)
 	/* Deprecated label */
 	label = block_get(block, "label");
 	full_text = block_get(block, "full_text");
-	if (label && full_text) {
-		snprintf(buf, sizeof(buf), "%s%s", label, full_text);
+
+	memset(buf, '\0', BUFSIZ);
+
+	if (full_text && (label || block->ticker)) {
+		char *ticker_output = NULL;
+		size_t label_strlen = 0;
+
+		if (label)
+			label_strlen = snprintf(buf, sizeof(buf), "%s", label);
+
+		if (block->ticker && block->format == FORMAT_RAW) {
+			ticker_output = ticker_output_get(block->ticker, full_text);
+
+			if (block->interval == 0 || block->interval == INTERVAL_ONCE ||
+					block->interval > block->ticker->interval) {
+				free(block->ticker->full_text_saved);
+				free(block->ticker->label_saved);
+
+				block->ticker->full_text_saved = strdup(full_text);
+				if (label)
+					block->ticker->label_saved = strdup(label);
+			}
+		}
+
+		if (ticker_output) {
+			strncat(buf, ticker_output, BUFSIZ - label_strlen);
+			free(ticker_output);
+		} else
+			strncat(buf, full_text, BUFSIZ - label_strlen);
+
 		err = block_set(block, "full_text", buf);
 		if (err)
 			return err;
@@ -146,6 +177,36 @@ int block_update(struct block *block)
 	block_debug(block, "updated successfully");
 
 	return 0;
+}
+
+void block_set_full_text_saved(struct block *block)
+{
+	char buf[BUFSIZ];
+
+	memset(buf, '\0', BUFSIZ);
+
+	if (block->ticker && block->ticker->full_text_saved) {
+		size_t label_strlen = 0;
+		char *ticker_output = NULL;
+
+		if (block->ticker->label_saved)
+			label_strlen = snprintf(buf, sizeof(buf), "%s",
+					block->ticker->label_saved);
+
+		if (block->ticker && block->format == FORMAT_RAW)
+			ticker_output = ticker_output_get(block->ticker,
+					block->ticker->full_text_saved);
+
+		if (ticker_output) {
+			strncat(buf, ticker_output, BUFSIZ - label_strlen);
+			free(ticker_output);
+		} else
+			strncat(buf, block->ticker->full_text_saved, BUFSIZ - label_strlen);
+	}
+
+	block_set(block, "full_text", buf);
+
+	return;
 }
 
 static int block_send_key(const char *key, const char *value, void *data)
@@ -510,6 +571,39 @@ static int i3blocks_setup(struct block *block)
 	else
 		block->signal = atoi(value);
 
+	value = map_get(block->config, TICKER_CONFIG_OPTION);
+	if (value && strcmp(value, "true") == 0)
+		block->ticker = ticker_create();
+
+	if (block->ticker) {
+		value = map_get(block->config, TICKER_CONFIG_OPTION_DELIMETER);
+		if (!value || (ticker_delimeter_set(block->ticker, value)
+				!= TICKER_RESULT_SUCCESS)) {
+			debug("Failed to set ticker delimeter. Setting default delimeter");
+			block->ticker->delimeter = TICKER_DELIMETER_DEFAULT;
+		}
+
+		value = map_get(block->config, TICKER_CONFIG_OPTION_DIRECTION);
+		if (value && (strcmp(value, "left") == 0 || strcmp(value, "l") == 0))
+			block->ticker->direction = TICKER_DIRECTION_LEFT;
+		else if (value && (strcmp(value, "right") == 0 || strcmp(value, "r") == 0))
+			block->ticker->direction = TICKER_DIRECTION_RIGHT;
+		else
+			block->ticker->direction = TICKER_DIRECTION_DEFAULT;
+
+		value = map_get(block->config, TICKER_CONFIG_OPTION_CHARS_LIMIT);
+		if (value && (atoi(value) > 0))
+			block->ticker->chars_limit = atoi(value);
+		else
+			block->ticker->chars_limit = TICKER_CHARS_LIMIT_DEFAULT;
+
+		value = map_get(block->config, TICKER_CONFIG_OPTION_INTERVAL);
+		if (value && (atoi(value) > 0))
+			block->ticker->interval = atoi(value);
+		else
+			block->ticker->interval = TICKER_INTERVAL_DEFAULT;
+	}
+
 	return 0;
 }
 
@@ -542,6 +636,8 @@ void block_destroy(struct block *block)
 		map_destroy(block->env);
 	if (block->name)
 		free(block->name);
+	if (block->ticker)
+		ticker_destroy(block->ticker);
 	free(block);
 }
 
@@ -553,6 +649,8 @@ struct block *block_create(struct bar *bar, const struct map *config)
 	block = calloc(1, sizeof(struct block));
 	if (!block)
 		return NULL;
+
+	block->ticker = NULL;
 
 	block->bar = bar;
 
