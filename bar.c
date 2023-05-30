@@ -1,6 +1,6 @@
 /*
  * bar.c - status line handling functions
- * Copyright (C) 2014-2019  Vivien Didelot
+ * Copyright (C) 2014-2023  Vivien Didelot, Bogdan Migunov
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -113,7 +113,8 @@ static void bar_poll_expired(struct bar *bar)
 			if (((long) (next_update - now)) <= 0) {
 				block_debug(block, "ticker expired");
 
-				if (block->interval == 0 || block->interval == INTERVAL_ONCE)
+				if (block->interval == 0 || block->interval == INTERVAL_ONCE ||
+						block->interval > block->ticker->interval)
 					block_set_full_text_saved(block);
 
 				bar_print(bar);

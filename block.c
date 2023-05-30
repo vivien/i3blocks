@@ -129,7 +129,8 @@ static int block_stdout(struct block *block)
 		if (block->ticker && block->format == FORMAT_RAW) {
 			ticker_output = ticker_output_get(block->ticker, full_text);
 
-			if (block->interval == 0 || block->interval == INTERVAL_ONCE) {
+			if (block->interval == 0 || block->interval == INTERVAL_ONCE ||
+					block->interval > block->ticker->interval) {
 				free(block->ticker->full_text_saved);
 				free(block->ticker->label_saved);
 
