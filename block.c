@@ -27,6 +27,8 @@
 #include "log.h"
 #include "sys.h"
 
+static const char *resolve_alias_query(const char *button);
+
 const char *block_get(const struct block *block, const char *key)
 {
 	return map_get(block->env, key);
@@ -182,6 +184,8 @@ static int block_send_json(struct block *block)
 static int block_send(struct block *block)
 {
 	const char *button = block_get(block, "button");
+	const char *query = resolve_alias_query(button);
+	const char *alias;
 
 	if (!button) {
 		block_error(block, "no click data to send");
@@ -196,7 +200,8 @@ static int block_send(struct block *block)
 	if (block->format == FORMAT_JSON)
 		return block_send_json(block);
 
-	dprintf(block->in[1], "%s\n", button);
+	alias = map_get(block->config, query);
+	dprintf(block->in[1], "%s\n", alias ? alias : button);
 
 	return 0;
 }
@@ -595,4 +600,16 @@ void block_printf(struct block *block, int lvl, const char *fmt, ...)
 	err = i3bar_printf(block, lvl, buf);
 	if (err)
 		fatal("failed to format message for block %s: %s", block->name, buf);
+}
+
+static const char *resolve_alias_query(const char *button)
+{
+	if (strcmp(button, "1") == 0)
+		return "btn_left_cmd";
+	else if (strcmp(button, "2") == 0)
+		return "btn_middle_cmd";
+	else if (strcmp(button, "3") == 0)
+		return "btn_right_cmd";
+	else
+		return button;
 }
