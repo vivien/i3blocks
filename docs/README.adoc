@@ -46,7 +46,7 @@ interval=5
 
 {progname} is already packaged for:
 
-* Archlinux: link:https://www.archlinux.org/packages/community/x86_64/i3blocks[i3blocks] in the community repository and link:https://aur.archlinux.org/packages/i3blocks-git[i3blocks-git] in the AUR
+* Archlinux: link:https://www.archlinux.org/packages/extra/x86_64/i3blocks[i3blocks] in the extra repository and link:https://aur.archlinux.org/packages/i3blocks-git[i3blocks-git] in the AUR
 * Gentoo: link:https://packages.gentoo.org/packages/x11-misc/i3blocks[x11-misc/i3blocks]
 * Debian: link:https://packages.debian.org/i3blocks[i3blocks]
 * Ubuntu: link:http://packages.ubuntu.com/i3blocks[i3blocks]
